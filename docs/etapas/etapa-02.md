@@ -15,8 +15,8 @@ Representar **un único flujo de extremo a extremo**, desde que el cliente desea
 
 | Modalidad | Canales | Responsable del registro | Condición para continuar |
 |---|---|---|---|
-| Consumo en local | Mozo | Mozo | Registro directo del pedido y mesa; sin segunda aprobación. |
-| Consumo en local | App | Cliente | Verificación presencial de la mesa y aprobación por Mozo o Administrador. |
+| Consumo en local | Mozo | Mozo | Verificar stock, confirmar y enviar directamente a cocina; sin segunda aprobación ni anticipo. |
+| Consumo en local | App | Cliente | Mozo o Administrador comprueba la mesa y aprueba; verificar stock, confirmar y enviar a cocina sin anticipo. |
 | Recojo en local | App | Cliente | Aprobación del Administrador y anticipo confirmado del 50 %. |
 | Recojo en local | Llamada o WhatsApp | Administrador | Registro y validación del Administrador; anticipo confirmado del 50 %. |
 | Delivery | App | Cliente | Aprobación del Administrador y anticipo confirmado del 50 %. |
@@ -28,10 +28,10 @@ En la aplicación, el cliente puede **iniciar sesión, registrarse o continuar c
 
 1. **Recepción y registro:** identificar modalidad, canal, productos y datos básicos para atender el pedido.
 2. **Revisión:** aprobar solicitudes de la app según el rol; los pedidos registrados por personal autorizado no precisan una segunda aprobación.
-3. **Disponibilidad:** comprobar el estado del catálogo y la cantidad disponible de los productos. No confirmar pedidos que no puedan atenderse con el stock disponible.
-4. **Anticipo cuando corresponda:** para recojo o delivery, el Administrador verifica el **50 % antes de cocina**. Sin anticipo confirmado, el pedido permanece pendiente y no genera comanda para preparar.
-5. **Confirmación:** confirmar el pedido y **descontar automáticamente el stock**. No descontarlo por solo enviar una solicitud.
-6. **Cocina:** enviar comanda, registrar `en preparación` y `listo`.
+3. **Stock antes de confirmar:** verificar primero la disponibilidad y las cantidades solicitadas para todas las modalidades. Sin stock suficiente, el pedido **no se confirma ni se envía a cocina**.
+4. **Consumo en local:** después del registro por el Mozo o de la aprobación de la app, y tras validar el stock, **confirmar el pedido presencial y enviarlo directamente a cocina**, descontando el stock al confirmar; **no requiere anticipo**.
+5. **Recojo o delivery:** después del registro o aprobación y la revisión de stock, el Administrador verifica el **anticipo del 50 %**. Solo con el anticipo confirmado se confirma el pedido, se descuenta el stock y se envía a cocina. De lo contrario, permanece pendiente.
+6. **Cocina:** recibir la comanda confirmada, registrar `en preparación` y después `listo`.
 7. **Atención final:** servir en mesa o registrar el recojo o entrega a domicilio; no se controlan repartidores ni rutas.
 8. **Cobro y cierre:** registrar la cuenta en caja; en recojo y delivery registrar el 50 % restante al entregar. Cerrar el pedido una vez completadas las operaciones que correspondan.
 
@@ -70,7 +70,8 @@ No incorporar sedes, repartidores, GPS, inventario de ingredientes, recetas, alm
 - [x] Diferenciar pedidos de Mozo, app, llamada y WhatsApp.
 - [x] Respetar aprobaciones y permisos acordados.
 - [x] Bloquear cocina sin anticipo del 50 % para recojo/delivery.
-- [x] Descontar stock solo tras confirmar el pedido.
+- [x] Verificar stock **antes de confirmar** y descontarlo automáticamente al confirmar.
+- [x] Enviar pedidos presenciales confirmados directamente a cocina, sin anticipo.
 - [x] Pasar por preparación, atención/entrega, cobro y cierre.
 - [x] Excluir logística de delivery y funcionalidades ajenas al alcance.
 - [ ] Comprobar compilación/renderización real del archivo `.puml` con PlantUML.
