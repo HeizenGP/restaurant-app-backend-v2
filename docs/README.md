@@ -1,12 +1,14 @@
 # Documentación — Restaurant App V2
 
-Proyecto reiniciado desde cero. **ETAPA 00 aprobada; ETAPA 01 en revisión; ETAPA 02 en borrador, no aprobada.**
+**ETAPA 00 aprobada. ETAPAS 01 y 02: documentación en revisión. ETAPA 03: catálogo modular en elaboración, pendiente de aprobación.** El usuario autorizó trabajar la ETAPA 03; ello no aprueba automáticamente las anteriores.
 
 - [Plan maestro de etapas 00–11](etapas/README.md)
 - [ETAPA 00 — aprobada](etapas/etapa-00.md)
-- [ETAPA 01 — análisis del negocio (en revisión)](etapas/etapa-01.md)
-- [ETAPA 02 — flujo general (en revisión)](etapas/etapa-02.md)
-- [FL-01 — flujo principal en PlantUML](etapas/etapa-02-flujo-principal.puml)
+- [ETAPA 01 — análisis del negocio](etapas/etapa-01.md)
+- [ETAPA 02 — flujo principal](etapas/etapa-02.md)
+- [FL-01 — PlantUML](etapas/etapa-02-flujo-principal.puml)
+- [ETAPA 03 — RNF, RN, prioridades y validación](etapas/etapa-03.md)
+- [ETAPA 03 — RF y criterios por módulo](etapas/etapa-03-requisitos.md)
 - [Guía operativa de Codex y AGY](agentes/README.md)
 
-Mantener la documentación compartida consistente en `develop` de backend y frontend. Las etapas en revisión no equivalen a aprobación.
+Mantener documentación compartida idéntica en `develop` de backend y frontend. No tratar borradores como aprobaciones.
