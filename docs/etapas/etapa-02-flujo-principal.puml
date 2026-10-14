@@ -12,16 +12,12 @@ start
 if (¿Modalidad de consumo?) then (Consumo en local)
   if (¿Cómo realizará el pedido?) then (Mozo)
     :Cliente ocupa una mesa;
-    :Mozo entrega la carta y registra
-productos y mesa;
+    :Mozo entrega la carta y registra productos y mesa;
   else (Aplicación)
-    :Cliente ingresa a la app
-(inicia sesión, se registra o sigue como invitado);
-    :Selecciona consumo en local,
-su mesa y los productos;
+    :Cliente ingresa a la app (inicia sesión, se registra o continúa como invitado);
+    :Selecciona consumo en local, su mesa y los productos;
     :Envía solicitud de pedido;
-    :Mozo o Administrador comprueba
-la presencia del cliente y su mesa;
+    :Mozo o Administrador comprueba la presencia del cliente y su mesa;
     if (¿Aprueba el pedido?) then (Sí)
       :Solicitud aprobada;
     else (No)
@@ -37,8 +33,7 @@ else (Recojo o delivery)
   endif
 
   if (¿Canal de pedido?) then (Aplicación)
-    :Cliente ingresa a la app
-(sesión, registro o invitado);
+    :Cliente ingresa a la app (sesión, registro o invitado);
     :Selecciona productos y envía solicitud;
     :Administrador revisa el pedido;
     if (¿Administrador aprueba?) then (Sí)
@@ -59,8 +54,7 @@ endif
 :Comprobar disponibilidad de productos y stock;
 if (¿Hay productos disponibles y stock suficiente?) then (Sí)
 else (No)
-  :Informar que el pedido no puede confirmarse
-con las existencias actuales;
+  :Informar que el pedido no puede confirmarse con las existencias actuales;
   stop
 endif
 
@@ -70,7 +64,7 @@ if (¿Es recojo o delivery?) then (Sí)
   if (¿Anticipo confirmado?) then (Sí)
   else (No)
     :Mantener pedido pendiente;
-no enviar a cocina;
+    :No enviar a cocina;
     stop
   endif
 endif
@@ -87,8 +81,7 @@ else (Recojo o delivery)
   if (¿Entrega?) then (Recojo en local)
     :Registrar entrega al cliente en el restaurante;
   else (Delivery)
-    :Registrar entrega a domicilio;
-sin gestionar repartidor ni ruta;
+    :Registrar entrega a domicilio sin gestionar repartidor ni ruta;
   endif
   :Registrar cobro del 50 % restante en caja;
 endif
