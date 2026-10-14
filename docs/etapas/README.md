@@ -1,6 +1,6 @@
 # Plan maestro de desarrollo — Restaurant App V2
 
-**Estado a 2026-10-13:** **ETAPAS 00, 01, 02 y 03 APROBADAS POR EL USUARIO.** ETAPA 04 elaborada y **pendiente de aprobación**; ETAPAS 05–11 aún no aprobadas. Los acuerdos explícitamente marcados como pendientes no se convierten por ello en decisiones ratificadas.
+**Estado a 2026-10-14:** **ETAPAS 00, 01, 02 y 03 APROBADAS POR EL USUARIO.** ETAPA 04 elaborada y pendiente de aprobación. ETAPA 05 fue autorizada, está [documentada](etapa-05.md) y **pendiente de revisión/aprobación**; ETAPAS 06–11 no están aprobadas. Los acuerdos marcados como pendientes no se convierten por ello en decisiones ratificadas.
 
 ## ETAPA 00 — Configuración de agentes de IA
 
@@ -47,7 +47,9 @@ Elaborar diagramas de casos de uso UML, diagramas de actividades, secuencias y r
 
 ## ETAPA 05 — Arquitectura de software
 
-Definir aplicaciones Flutter, roles, panel administrativo, módulos del backend, comunicación REST, arquitectura hexagonal y Vertical Slicing. Aquí consolidaremos las Skills técnicas.
+**Estado actual:** [propuesta documentada, no aprobada](etapa-05.md).
+
+Definir aplicaciones Flutter, roles, panel administrativo, módulos del backend, comunicación REST, arquitectura hexagonal y Vertical Slicing. Consolidar las Skills técnicas sin inicializar frameworks ni implementar APIs, tablas o migraciones.
 
 ## ETAPA 06 — Diseño de base de datos desde cero
 

@@ -1,0 +1,75 @@
+@startuml
+title ARQ-BE-01 — Monolito modular FastAPI
+skinparam shadowing false
+skinparam componentStyle rectangle
+
+actor "Apps Flutter" as Apps
+component "FastAPI\nadaptador HTTP" as Http
+component "Bootstrap\nconfiguración y composición" as Boot
+
+package "Módulos hexagonales" {
+  component "M01\nAcceso" as M01
+  component "M02\nCatálogo y stock" as M02
+  component "M03\nMesas" as M03
+  component "M04\nPedidos" as M04
+  component "M05\nCocina" as M05
+  component "M06\nPagos" as M06
+  component "M07\nAtención y cierre" as M07
+  component "M04 query\nvista integrada del pedido" as OrderView
+}
+
+interface "Puertos de persistencia\n(propios por módulo)" as PersistencePorts
+interface "Puerto manual / simulado\n(M06)" as SimulationPort
+component "Adaptadores de persistencia\n(ETAPAS 06–07)" as Persistence
+database "PostgreSQL\n(futuro)" as DB
+component "Adaptadores manuales / simulados" as Sim
+
+Apps --> Http : REST /api/v1
+Http --> M01
+Http --> M02
+Http --> M03
+Http --> M04
+Http --> M05
+Http --> M06
+Http --> M07
+Boot ..> Http : compone
+Boot ..> Persistence : conecta puertos
+Boot ..> Sim : selecciona adaptadores
+
+M04 --> M02 : verificar y descontar stock
+M04 --> M03 : validar mesa
+M04 --> M06 : comprobar anticipo
+M04 --> M05 : habilitar comanda
+M07 --> M04 : consultar estado / solicitar cierre
+M07 --> M06 : comprobar saldo
+Http --> OrderView : GET /orders/{id}
+OrderView --> M04 : estado comercial
+OrderView --> M05 : estado de cocina
+OrderView --> M06 : pago y saldo
+OrderView --> M07 : atención / entrega
+M06 --> SimulationPort : requiere registro manual
+Sim ..|> SimulationPort : implementa
+
+M01 --> PersistencePorts : requiere
+M02 --> PersistencePorts : requiere
+M03 --> PersistencePorts : requiere
+M04 --> PersistencePorts : requiere
+M05 --> PersistencePorts : requiere
+M06 --> PersistencePorts : requiere
+M07 --> PersistencePorts : requiere
+Persistence ..|> PersistencePorts : implementa
+Persistence --> DB
+
+note right of M04
+  ConfirmOrder coordina una UoW:
+  autorización + stock + anticipo
+  + confirmación + comanda + auditoría.
+end note
+
+note as InternalContracts
+  Las flechas entre módulos representan contratos públicos en proceso.
+  Los adaptadores implementan puertos definidos hacia adentro.
+  No hay HTTP interno, broker, microservicios ni acceso a tablas ajenas.
+end note
+InternalContracts .. M04
+@enduml

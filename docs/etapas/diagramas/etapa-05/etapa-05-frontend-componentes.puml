@@ -1,0 +1,55 @@
+@startuml
+title ARQ-FE-01 — Workspace Flutter con dos aplicaciones
+skinparam shadowing false
+skinparam componentStyle rectangle
+
+node "customer_app\nAndroid móvil" as Customer {
+  component "M01 Acceso" as C1
+  component "M02 Catálogo" as C2
+  component "M03 Mesas" as C3
+  component "M04 Pedidos / estado" as C4
+}
+
+node "staff_app\nAndroid + interfaz adaptativa" as Staff {
+  component "Shell por capacidades" as Shell
+  component "Espacio Mozo" as Waiter
+  component "Espacio Cocina" as Kitchen
+  component "Espacio Caja" as Cashier
+  component "Espacio Administración" as Admin
+  Shell --> Waiter
+  Shell --> Kitchen
+  Shell --> Cashier
+  Shell --> Admin
+}
+
+package "Paquetes compartidos mínimos" {
+  component foundation
+  component rest_api
+  component auth_session
+  component design_system
+}
+
+cloud "API REST\n/api/v1" as Api
+
+Customer --> foundation
+Customer --> rest_api
+Customer --> auth_session
+Customer --> design_system
+Staff --> foundation
+Staff --> rest_api
+Staff --> auth_session
+Staff --> design_system
+rest_api --> Api : HTTPS JSON
+
+note right of Shell
+  Una cuenta puede acumular roles.
+  Las rutas se muestran por capacidades;
+  el backend vuelve a autorizarlas.
+end note
+
+note bottom of Admin
+  Administración comparte sesión y módulos
+  con personal. El destino web/escritorio
+  inicial se decide en ETAPA 07.
+end note
+@enduml

@@ -1,24 +1,30 @@
 # Restaurant App V2 — Reglas para Codex y AGY
 
-## Estado y fuentes
-- **ETAPAS 00, 01, 02 y 03 APROBADAS POR EL USUARIO (2026-10-13). ETAPA 04 elaborada/en revisión; NO APROBADA.** No avanzar a ETAPA 05 sin aprobación expresa.
-- Índice oficial: docs/etapas/README.md. Trabajo actual: docs/etapas/etapa-04.md y sus diagramas en docs/etapas/diagramas/etapa-04/. Contexto: etapa-01.md, etapa-02.md, etapa-03.md y etapa-03-requisitos.md (línea base documental aprobada).
-- Procedimiento operativo: docs/agentes/README.md. Consultar solo los documentos pertinentes para la tarea.
+## Estado y autoridad
 
-## Trabajo seguro y eficiente
-1. Antes de modificar, identificar repositorio, rama (develop), etapa y archivos afectados; revisar contenido y cambios existentes.
-2. Hacer cambios mínimos y acotados. Evitar búsquedas o lecturas masivas, repetir contexto, generar archivos redundantes y mostrar logs extensos.
-3. No inventar acuerdos, requisitos, reglas de negocio ni aprobaciones. Distinguir confirmado, propuesto y pendiente.
-4. Mantener docs/ sincronizada entre backend y frontend para los documentos compartidos; indicar archivos modificados y validaciones realizadas.
-5. No sobrescribir trabajo ajeno ni modificar simultáneamente el mismo archivo con dos agentes. No hacer push, merges o cambios destructivos no solicitados.
-6. Nunca registrar contraseñas, claves, tokens o información sensible; usar MCP solo si es necesario y está autorizado.
+- **ETAPAS 00–03 aprobadas (2026-10-13). ETAPA 04 en revisión y no aprobada. ETAPA 05 autorizada para elaboración, documentada como propuesta y no aprobada.** No aprobar etapas por inferencia.
+- Índice oficial: `docs/etapas/README.md`. Trabajo actual: `docs/etapas/etapa-05.md`.
+- Las ETAPAS 01–03 prevalecen como línea base de negocio y requisitos. ETAPA 04 es referencia UML provisional: no usarla para resolver RN-20/RN-21, RNF-08, responsables de M07 ni comprobantes.
 
-## Restricciones vigentes hasta la configuración técnica
-- **Prohibido** instalar frameworks, inicializar Flutter/FastAPI, crear APIs, migraciones, esquema de BD o funcionalidades.
-- No reutilizar como vigentes decisiones, diagramas o código de versiones anteriores.
-- Definir Skills técnicas y reglas de arquitectura en ETAPA 05. En ETAPA 04 crear solamente UML y su documentación/trazabilidad, sin agregar RF no acordados; conservar los 7 módulos M01–M07 y las simulaciones académicas.
-- La facturación electrónica no constituye un caso de uso aprobado. Los pagos se modelan como registros/verificaciones manuales o simulados, no integraciones externas.
-- Si una tarea excede la etapa vigente, señalarla como pendiente y no implementarla.
+## Carga selectiva
 
-## Cierre de cada tarea
-Reportar brevemente: qué cambió, rutas, pruebas verificadas, pendientes y estado de aprobación. No declarar una prueba ejecutada si solo se verificó documentación.
+1. Leer este archivo, el índice y el documento de la etapa vigente.
+2. Abrir solo los RF/RN/RNF y diagramas que afecten la tarea; no releer etapas completas si una referencia puntual basta.
+3. Para un slice backend, cargar `.agents/skills/restaurant-fastapi-slice/SKILL.md` en el repositorio backend. Para Flutter, cargar `.agents/skills/restaurant-flutter-slice/SKILL.md` en el repositorio frontend. No cargar ambas Skills salvo trabajo transversal.
+4. Los documentos compartidos se leen en un repositorio y se comparan por hash/diff con el otro; no cargar dos copias idénticas al contexto.
+
+## Alcance seguro
+
+- Mantener los siete módulos M01–M07 y las decisiones aprobadas. Distinguir siempre heredado, propuesto y pendiente.
+- Durante ETAPA 05: documentar arquitectura, contratos, Skills y criterios. **No** instalar/inicializar Flutter o FastAPI, implementar APIs, crear tablas/migraciones ni agregar funcionalidades.
+- Hacer cambios mínimos dentro de la etapa. No sobrescribir trabajo ajeno, registrar secretos, ejecutar commits/push/merge ni usar conectores externos sin necesidad.
+- Mantener idénticos `docs/` compartidos entre backend y frontend. Las Skills específicas viven solo en su repositorio; ambos agentes usan el mismo `SKILL.md`.
+- Usar archivos y Git locales primero. GitHub se reserva para operaciones remotas solicitadas; Figma para ETAPA 09; otros MCP requieren una necesidad vigente.
+
+## Verificación y cierre
+
+- Confirmar repositorio y rama `develop`, revisar cambios existentes y validar enlaces, trazabilidad y diferencias entre repositorios.
+- Reportar archivos modificados, comprobaciones reales, riesgos y pendientes. No presentar inspección documental como prueba de ejecución.
+- La aprobación de una etapa corresponde exclusivamente al usuario.
+
+Procedimiento operativo ampliado: `docs/agentes/README.md`.
