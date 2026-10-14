@@ -1,0 +1,98 @@
+@startuml
+title FL-01 — Chifa ASIA: flujo principal del negocio
+skinparam shadowing false
+skinparam activityBackgroundColor #FFFFFF
+skinparam activityBorderColor #44546A
+skinparam activityDiamondBackgroundColor #F1F5F9
+skinparam activityDiamondBorderColor #44546A
+
+start
+:Cliente desea realizar un pedido en Chifa ASIA;
+
+if (¿Modalidad de consumo?) then (Consumo en local)
+  if (¿Cómo realizará el pedido?) then (Mozo)
+    :Cliente ocupa una mesa;
+    :Mozo entrega la carta y registra
+productos y mesa;
+  else (Aplicación)
+    :Cliente ingresa a la app
+(inicia sesión, se registra o sigue como invitado);
+    :Selecciona consumo en local,
+su mesa y los productos;
+    :Envía solicitud de pedido;
+    :Mozo o Administrador comprueba
+la presencia del cliente y su mesa;
+    if (¿Aprueba el pedido?) then (Sí)
+      :Solicitud aprobada;
+    else (No)
+      :Informar rechazo al cliente;
+      stop
+    endif
+  endif
+else (Recojo o delivery)
+  if (¿Modalidad?) then (Recojo en local)
+    :Indicar recojo en el restaurante;
+  else (Delivery)
+    :Indicar delivery y dirección de entrega;
+  endif
+
+  if (¿Canal de pedido?) then (Aplicación)
+    :Cliente ingresa a la app
+(sesión, registro o invitado);
+    :Selecciona productos y envía solicitud;
+    :Administrador revisa el pedido;
+    if (¿Administrador aprueba?) then (Sí)
+      :Solicitud aprobada;
+    else (No)
+      :Informar rechazo al cliente;
+      stop
+    endif
+  elseif (¿Canal de pedido?) then (Llamada)
+    :Cliente llama al restaurante;
+    :Administrador registra y valida el pedido;
+  else (WhatsApp)
+    :Cliente envía pedido por WhatsApp;
+    :Administrador registra y valida el pedido;
+  endif
+endif
+
+:Comprobar disponibilidad de productos y stock;
+if (¿Hay productos disponibles y stock suficiente?) then (Sí)
+else (No)
+  :Informar que el pedido no puede confirmarse
+con las existencias actuales;
+  stop
+endif
+
+if (¿Es recojo o delivery?) then (Sí)
+  :Solicitar anticipo del 50 %;
+  :Administrador verifica el anticipo;
+  if (¿Anticipo confirmado?) then (Sí)
+  else (No)
+    :Mantener pedido pendiente;
+no enviar a cocina;
+    stop
+  endif
+endif
+
+:Confirmar pedido y descontar automáticamente el stock;
+:Enviar comanda a cocina;
+:Personal de cocina marca pedido en preparación;
+:Personal de cocina termina y marca pedido listo;
+
+if (¿Modalidad de consumo?) then (Consumo en local)
+  :Mozo sirve el pedido en mesa;
+  :Registrar cobro de la cuenta en caja;
+else (Recojo o delivery)
+  if (¿Entrega?) then (Recojo en local)
+    :Registrar entrega al cliente en el restaurante;
+  else (Delivery)
+    :Registrar entrega a domicilio;
+sin gestionar repartidor ni ruta;
+  endif
+  :Registrar cobro del 50 % restante en caja;
+endif
+
+:Actualizar pago y cerrar pedido;
+stop
+@enduml
