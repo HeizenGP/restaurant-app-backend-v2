@@ -15,26 +15,25 @@ No instalar frameworks ni implementar funcionalidades todavía. Las Skills espec
 
 ## ETAPA 01 — Análisis del negocio y alcance
 
-Definir desde cero el funcionamiento de **Chifa ASIA** como un solo restaurante, sin sedes: problemas y objetivos del negocio, actores (**cliente, mozo, cajero, administrador y superadministrador**), responsabilidades, modalidades de consumo (**en local, recojo en local y delivery**) y funcionalidades incluidas, simuladas o excluidas.
+Definir desde cero el funcionamiento de **Chifa ASIA**, un restaurante sin sedes: problemática y objetivos; seis actores (**cliente, mozo, cajero, administrador, personal de cocina y superadministrador**); responsabilidades, roles acumulativos, tres modalidades y siete módulos funcionales esenciales, incluido el **catálogo de productos con control de stock**.
 
-Acordar solo las decisiones necesarias para representar el recorrido real del pedido, desde su recepción hasta su entrega y cobro. Considerar estos canales:
-- **Consumo en local:** atención y registro del pedido por el mozo, o pedido del cliente desde la aplicación seleccionando su mesa.
-- **Recojo en local y delivery:** pedido por aplicación, llamada o WhatsApp. Los pedidos recibidos por llamada o WhatsApp los registra el administrador.
-- **Pedidos desde la aplicación:** requieren revisión y aprobación del personal autorizado; en consumo en local se comprueba presencialmente que el cliente ocupa la mesa indicada.
-- **Recojo y delivery:** exigir confirmación del anticipo del **50 %** antes de enviar el pedido a cocina.
+Acordar el recorrido del pedido de recepción a entrega/cobro, sin definir todavía diagramas ni requisitos formales:
+- **Consumo en local:** pedido por mozo (envío directo a cocina) o por app con mesa seleccionada y aprobación del Mozo o Administrador tras verificarla presencialmente.
+- **Recojo en local y delivery:** pedidos por app (aprobación del Administrador) o por llamada/WhatsApp (registro y validación del Administrador); el Administrador verifica **anticipo del 50 % antes de cocina**.
+- **Stock:** cantidades por producto, descuento automático al confirmar el pedido y disponibilidad editable por el Administrador.
+- **Cocina:** comandas y estados de preparación a cargo del personal de cocina.
+- **Delivery:** sin gestión de repartidores ni logística de rutas.
 
-Las decisiones operativas secundarias se dejan para cuando afecten un flujo esencial. No diseñar todavía diagramas, requisitos ni arquitectura.
+Clasificar funcionalidades incluidas, simuladas/manuales y excluidas. Postergar detalles secundarios que no afecten el flujo principal.
 
 ## ETAPA 02 — Flujo principal y subflujos del negocio
 
-Diseñar **un único flujo principal de extremo a extremo** para Chifa ASIA, iniciado cuando el cliente desea realizar un pedido, con decisiones (rombos) para escoger:
-1. **Consumo en local:** atención por mozo o pedido desde la app.
-2. **Recojo en local:** pedido por app, llamada o WhatsApp.
-3. **Delivery:** pedido por app, llamada o WhatsApp.
+Diseñar **un único flujo principal de extremo a extremo**, iniciado cuando un cliente desea hacer un pedido, con rombos para elegir modalidad y canal:
+1. **Consumo en local:** mozo o app.
+2. **Recojo en local:** app, llamada o WhatsApp.
+3. **Delivery:** app, llamada o WhatsApp.
 
-Unificar los caminos en los puntos que correspondan: registro del pedido, validación/aprobación cuando aplique, **anticipo confirmado del 50 % para recojo y delivery antes de cocina**, preparación, entrega y cierre.
-
-Complementar el flujo principal únicamente con subflujos necesarios para aclarar responsabilidades de cliente, mozo, administración, caja y cocina, sin llenar el análisis de casos secundarios. Validar que ningún camino omita la aprobación o el anticipo exigidos y que los pasos sean coherentes con las decisiones de la ETAPA 01.
+Unificar registro, aprobaciones según modalidad, anticipo obligatorio del 50 % para recojo/delivery antes de cocina, descuento de stock al confirmar, preparación de comandas, servicio o entrega, cobro restante y cierre. Crear solo los subflujos necesarios para comprender actores, decisiones y excepciones esenciales; no diagramar logística de repartidores.
 
 ## ETAPA 03 — Ingeniería de requisitos
 
