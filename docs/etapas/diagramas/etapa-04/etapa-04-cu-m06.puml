@@ -1,0 +1,29 @@
+@startuml
+left to right direction
+title CU-06 — M06 Caja y pagos (sin pasarela real)
+skinparam shadowing false
+actor "Cajero" as J
+actor "Administrador" as A
+rectangle "M06 — Caja y pagos" {
+  usecase "RF-M06-01\nRegistrar cobro y actualizar saldo" as U1
+  usecase "RF-M06-02\nCalcular anticipo de 50 %" as U2
+  usecase "RF-M06-03\nVerificar anticipo administrativamente" as U3
+  usecase "RF-M06-04\nBloquear comanda sin anticipo" as U4
+  usecase "RF-M06-05\nCobrar saldo restante y consultar saldo" as U5
+  usecase "RF-M06-06\nConsultar pago y bloquear cierre con saldo" as U6
+}
+J -- U1
+J -- U5
+J -- U6
+A -- U3
+U3 .> U2 : <<include>>
+U5 .> U1 : <<include>>
+note right of U3
+  Verificación manual/simulada.
+  No confiere permiso general de Caja.
+end note
+note bottom of U4
+  Condición para confirmar pedido
+  de recojo o delivery; no pasarela externa.
+end note
+@enduml

@@ -1,0 +1,29 @@
+@startuml
+left to right direction
+title CU-01 — M01 Usuarios y accesos
+skinparam shadowing false
+actor "Cliente" as C
+actor "Administrador" as A
+actor "Personal autorizado" as P
+rectangle "M01 — Usuarios y accesos" {
+  usecase "RF-M01-01\nRegistrarse e iniciar sesión" as U1
+  usecase "RF-M01-02\nContinuar como invitado" as U2
+  usecase "RF-M01-03\nRestringir acciones por rol" as U3
+  usecase "RF-M01-04\nAsignar múltiples roles" as U4
+  usecase "RF-M01-05\nAcceso total Super Administrador\ny denegar accesos indebidos" as U5
+}
+C -- U1
+C -- U2
+A -- U4
+P -- U3
+P -- U5
+note right of P
+  Actor abstracto: cualquiera de los
+  seis roles sujeto a autorización.
+  No constituye un séptimo rol.
+end note
+note bottom of U5
+  Super Administrador: autorización global.
+  Cajero sin otros roles: solo Caja.
+end note
+@enduml

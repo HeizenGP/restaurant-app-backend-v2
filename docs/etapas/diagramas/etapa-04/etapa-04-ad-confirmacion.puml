@@ -1,0 +1,55 @@
+@startuml
+title AD-01 — Condiciones para confirmar y atender pedidos
+skinparam shadowing false
+start
+:Registrar solicitud según modalidad y canal;
+if (¿Origen es aplicación?) then (Sí)
+  if (¿Consumo en local?) then (Sí)
+    :Mozo o Administrador verifica mesa;
+  else (Recojo/delivery)
+    :Administrador revisa solicitud;
+  endif
+  if (¿Aprobado?) then (Sí)
+  else (No)
+    :Rechazar e informar a cliente;
+    stop
+  endif
+else (Personal autorizado)
+  :Mozo registra local o Administrador registra canal externo;
+endif
+:Verificar disponibilidad y stock;
+if (¿Stock suficiente y productos habilitados?) then (Sí)
+else (No)
+  :No confirmar ni descontar stock;
+  :Informar falta de disponibilidad;
+  stop
+endif
+if (¿Recojo o delivery?) then (Sí)
+  :Calcular 50 % del total;
+  :Administrador verifica anticipo de forma manual/simulada;
+  if (¿Anticipo confirmado?) then (Sí)
+  else (No)
+    :Conservar pedido pendiente y bloquear comanda;
+    stop
+  endif
+else (En local)
+  :Sin anticipo requerido;
+endif
+:Confirmar pedido y descontar stock una sola vez;
+:Emitir comanda;
+:Personal de cocina marca En preparación;
+:Personal de cocina marca Listo;
+if (¿Consumo en local?) then (Sí)
+  :Mozo registra servicio en mesa;
+  :Caja registra cobro;
+else (Recojo/delivery)
+  :Registrar recojo o entrega;
+  :Caja registra 50 % restante;
+endif
+if (¿Entrega/servicio registrado y saldo cero?) then (Sí)
+  :Cerrar pedido (RN-21 propuesta);
+else (No)
+  :Mantener pendiente de cierre;
+endif
+stop
+@enduml

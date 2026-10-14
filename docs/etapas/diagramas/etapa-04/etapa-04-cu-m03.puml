@@ -1,0 +1,23 @@
+@startuml
+left to right direction
+title CU-03 — M03 Gestión de mesas
+skinparam shadowing false
+actor "Cliente" as C
+actor "Mozo" as M
+actor "Administrador" as A
+rectangle "M03 — Gestión de mesas" {
+  usecase "RF-M03-01\nRegistrar/actualizar mesas y distribución" as U1
+  usecase "RF-M03-02\nConsultar mesas desde app" as U2
+  usecase "RF-M03-03\nAsociar mesa a pedido local" as U3
+  usecase "RF-M03-04\nConsultar/actualizar ocupación" as U4
+}
+A -- U1
+C -- U2
+C -- U3
+M -- U3
+M -- U4
+A -- U4
+note bottom of U4
+  Should Have, prioridad propuesta.
+end note
+@enduml

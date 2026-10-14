@@ -1,0 +1,35 @@
+@startuml
+title SD-02 — Pedido en local enviado desde la app
+skinparam shadowing false
+actor Cliente
+participant "Sistema" as S
+actor "Mozo o Administrador" as Validador
+actor "Personal de cocina" as Cocina
+actor Cajero
+Cliente -> S : Elegir local, mesa y productos; enviar solicitud
+S --> Cliente : Solicitud pendiente de aprobación
+Validador -> Validador : Comprobar presencialmente mesa seleccionada
+Validador -> S : Aprobar o rechazar solicitud
+alt Rechazada
+  S --> Cliente : Mostrar rechazo (sin comanda)
+else Aprobada
+  S -> S : Verificar productos y stock
+  alt Stock insuficiente
+    S --> Cliente : Informar imposibilidad de confirmar
+  else Stock suficiente
+    S -> S : Confirmar y descontar stock una sola vez
+    S --> Cocina : Habilitar comanda
+    Cocina -> S : En preparación y luego Listo
+    Validador -> S : Registrar servicio en mesa
+    Cajero -> S : Registrar cobro
+    S -> S : Evaluar condiciones de cierre
+    opt Entrega registrada y saldo cero (RN-21 propuesta)
+      S -> S : Cerrar pedido
+    end
+  end
+end
+note over S
+  Verificación de mesa presencial, no GPS.
+  Validador = Mozo o Administrador; no Cajero.
+end note
+@enduml

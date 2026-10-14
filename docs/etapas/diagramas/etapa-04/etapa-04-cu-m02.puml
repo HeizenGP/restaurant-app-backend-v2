@@ -1,0 +1,27 @@
+@startuml
+left to right direction
+title CU-02 — M02 Catálogo y stock de productos
+skinparam shadowing false
+actor "Cliente" as C
+actor "Administrador" as A
+rectangle "M02 — Catálogo y stock" {
+  usecase "RF-M02-01\nConsultar catálogo y disponibilidad" as U1
+  usecase "RF-M02-02\nGestionar categorías, productos y precios" as U2
+  usecase "RF-M02-03\nModificar cantidad de stock" as U3
+  usecase "RF-M02-04\nCambiar disponibilidad manual" as U4
+  usecase "RF-M02-05\nVerificar disponibilidad y stock" as U5
+  usecase "RF-M02-06\nDescontar stock al confirmar" as U6
+  usecase "Confirmar pedido\n(M04, punto de enlace)" as CONF
+}
+C -- U1
+A -- U2
+A -- U3
+A -- U4
+CONF .> U5 : <<include>>
+CONF .> U6 : <<include>>
+note bottom of CONF
+  Verificar antes de confirmar;
+  descontar una sola vez al confirmar.
+  Enlace lógico con M04, no endpoint.
+end note
+@enduml

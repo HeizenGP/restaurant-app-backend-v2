@@ -1,0 +1,27 @@
+@startuml
+left to right direction
+title CU-07 — M07 Atención, entregas y cierre
+skinparam shadowing false
+actor "Mozo" as M
+actor "Administrador" as A
+rectangle "M07 — Atención y cierre" {
+  usecase "RF-M07-01\nRegistrar pedido servido en mesa" as U1
+  usecase "RF-M07-02\nRegistrar recojo en el local" as U2
+  usecase "RF-M07-03\nRegistrar entrega de delivery" as U3
+  usecase "RF-M07-04\nCerrar pedido según entrega y saldo" as U4
+}
+M -- U1
+A -- U2
+A -- U3
+A -- U4
+note right of U2
+  Actor asignado como propuesta.
+  El responsable final del registro
+  de recojo/delivery está pendiente.
+end note
+note bottom of U4
+  Regla RN-21 pendiente de validación.
+  No gestionar repartidores ni rutas.
+  Responsable de cierre por ratificar.
+end note
+@enduml

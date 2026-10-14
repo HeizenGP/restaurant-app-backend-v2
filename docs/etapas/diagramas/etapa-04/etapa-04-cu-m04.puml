@@ -1,0 +1,42 @@
+@startuml
+left to right direction
+title CU-04 — M04 Gestión de pedidos
+skinparam shadowing false
+actor "Cliente" as C
+actor "Mozo" as M
+actor "Administrador" as A
+rectangle "M04 — Gestión de pedidos" {
+  usecase "RF-M04-01\nElegir modalidad" as U1
+  usecase "RF-M04-02\nSolicitar pedido desde app" as U2
+  usecase "RF-M04-03\nRegistrar pedido con mozo" as U3
+  usecase "RF-M04-04\nRegistrar pedido por llamada/WhatsApp" as U4
+  usecase "RF-M04-05\nRegistrar datos según modalidad" as U5
+  usecase "RF-M04-06\nAprobar/rechazar app local\ntras verificar mesa" as U6
+  usecase "RF-M04-07\nAprobar/rechazar app recojo/delivery" as U7
+  usecase "RF-M04-08\nNotificar rechazo/bloquear cocina" as U8
+  usecase "RF-M04-09\nConfirmar solo si cumple condiciones" as U9
+  usecase "RF-M04-10\nConsultar estado del pedido" as U10
+  usecase "RF-M04-11\nCalcular total" as U11
+}
+C -- U1
+C -- U2
+C -- U10
+M -- U3
+M -- U6
+A -- U4
+A -- U6
+A -- U7
+M -- U9
+A -- U9
+U2 .> U5 : <<include>>
+U3 .> U5 : <<include>>
+U4 .> U5 : <<include>>
+U5 .> U11 : <<include>>
+U8 .> U6 : <<extend>>
+U8 .> U7 : <<extend>>
+note right of U9
+  Stock suficiente siempre.
+  Recojo/delivery: anticipo del 50 % confirmado.
+  Pedido de app: aprobación según modalidad.
+end note
+@enduml

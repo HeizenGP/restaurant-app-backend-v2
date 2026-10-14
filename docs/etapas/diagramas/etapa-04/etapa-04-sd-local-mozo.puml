@@ -1,0 +1,32 @@
+@startuml
+title SD-01 — Pedido presencial registrado por mozo
+skinparam shadowing false
+actor Cliente
+actor Mozo
+participant "Sistema" as S
+actor "Personal de cocina" as Cocina
+actor Cajero
+Cliente -> Mozo : Solicitar pedido en mesa
+Mozo -> S : Registrar pedido, mesa y productos
+S -> S : Calcular total y verificar disponibilidad
+alt Sin stock suficiente
+  S --> Mozo : Rechazar confirmación (sin descuento)
+else Stock suficiente
+  Mozo -> S : Confirmar pedido presencial
+  S -> S : Descontar stock una sola vez
+  S --> Cocina : Habilitar comanda confirmada
+  Cocina -> S : Marcar En preparación
+  Cocina -> S : Marcar Listo
+  Mozo -> S : Registrar pedido servido
+  Cajero -> S : Registrar cobro
+  S -> S : Verificar entrega/servicio y saldo cero
+  alt Condiciones de cierre cumplidas (RN-21 propuesta)
+    S -> S : Cerrar pedido
+  else Saldo pendiente o no servido
+    S --> Cajero : Bloquear cierre e informar pendiente
+  end
+end
+note over S
+  Sin aprobación adicional ni anticipo para local por mozo.
+end note
+@enduml
