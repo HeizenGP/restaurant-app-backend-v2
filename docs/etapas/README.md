@@ -15,11 +15,26 @@ No instalar frameworks ni implementar funcionalidades todavía. Las Skills espec
 
 ## ETAPA 01 — Análisis del negocio y alcance
 
-Establecer cómo funcionará el restaurante, qué problemas resolveremos, los actores, las modalidades de consumo y las funcionalidades incluidas o simuladas.
+Definir desde cero el funcionamiento de **Chifa ASIA** como un solo restaurante, sin sedes: problemas y objetivos del negocio, actores (**cliente, mozo, cajero, administrador y superadministrador**), responsabilidades, modalidades de consumo (**en local, recojo en local y delivery**) y funcionalidades incluidas, simuladas o excluidas.
 
-## ETAPA 02 — Definición de flujos del negocio
+Acordar solo las decisiones necesarias para representar el recorrido real del pedido, desde su recepción hasta su entrega y cobro. Considerar estos canales:
+- **Consumo en local:** atención y registro del pedido por el mozo, o pedido del cliente desde la aplicación seleccionando su mesa.
+- **Recojo en local y delivery:** pedido por aplicación, llamada o WhatsApp. Los pedidos recibidos por llamada o WhatsApp los registra el administrador.
+- **Pedidos desde la aplicación:** requieren revisión y aprobación del personal autorizado; en consumo en local se comprueba presencialmente que el cliente ocupa la mesa indicada.
+- **Recojo y delivery:** exigir confirmación del anticipo del **50 %** antes de enviar el pedido a cocina.
 
-Diseñar los flujos de clientes, mozos, cocina, caja y administración, incluyendo las modalidades de consumo en mesa, recojo en tienda y delivery.
+Las decisiones operativas secundarias se dejan para cuando afecten un flujo esencial. No diseñar todavía diagramas, requisitos ni arquitectura.
+
+## ETAPA 02 — Flujo principal y subflujos del negocio
+
+Diseñar **un único flujo principal de extremo a extremo** para Chifa ASIA, iniciado cuando el cliente desea realizar un pedido, con decisiones (rombos) para escoger:
+1. **Consumo en local:** atención por mozo o pedido desde la app.
+2. **Recojo en local:** pedido por app, llamada o WhatsApp.
+3. **Delivery:** pedido por app, llamada o WhatsApp.
+
+Unificar los caminos en los puntos que correspondan: registro del pedido, validación/aprobación cuando aplique, **anticipo confirmado del 50 % para recojo y delivery antes de cocina**, preparación, entrega y cierre.
+
+Complementar el flujo principal únicamente con subflujos necesarios para aclarar responsabilidades de cliente, mozo, administración, caja y cocina, sin llenar el análisis de casos secundarios. Validar que ningún camino omita la aprobación o el anticipo exigidos y que los pasos sean coherentes con las decisiones de la ETAPA 01.
 
 ## ETAPA 03 — Ingeniería de requisitos
 
