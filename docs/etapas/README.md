@@ -1,76 +1,195 @@
 # Plan maestro de desarrollo — Restaurant App V2
 
-**Estado a 2026-10-14:** **ETAPAS 00, 01, 02 y 03 APROBADAS POR EL USUARIO.** ETAPA 04 elaborada y pendiente de aprobación. ETAPA 05 fue autorizada, está [documentada](etapa-05.md) y **pendiente de revisión/aprobación**; ETAPAS 06–11 no están aprobadas. Los acuerdos marcados como pendientes no se convierten por ello en decisiones ratificadas.
+**Proyecto:** Chifa ASIA — sistema académico para un solo restaurante.  
+**Actualización:** 2026-10-14. **Rama de trabajo:** develop.  
+**Estado:** ETAPAS 00–03 **aprobadas**; ETAPAS 04–05 **elaboradas/documentadas**, con validaciones y aprobación formal pendientes; ETAPAS 06–11 **por desarrollar**. La ETAPA 05 incluye dos Skills preparadas. No confundir diseño/documentación con software implementado.
 
-## ETAPA 00 — Configuración de agentes de IA
+## 1. Propósito y reglas del plan
 
-**Empezamos aquí.**
+Desarrollar progresivamente un ecosistema para clientes, mozos, caja, cocina y administración, conservando las decisiones aprobadas de negocio. Este archivo es la **hoja de ruta ejecutiva**: el detalle y la evidencia pertenecen al documento de cada etapa, no se duplican aquí.
 
-Definir y configurar las herramientas para que Codex y AGY trabajen coordinadamente y consuman los mínimos tokens necesarios.
+**Línea base:** seis actores (Cliente, Mozo, Cajero, Administrador, Personal de cocina y Super Administrador), roles acumulativos, modalidades **consumo en local, recojo y delivery**, siete módulos **M01–M07**, **40 RF** y **11 RNF** documentados en ETAPA 03.
 
-- **00.1.** Estrategia de ahorro de tokens.
-- **00.2.** Reglas compartidas mediante `AGENTS.md`.
-- **00.3.** Skills, documentación modular, MCP y gestión del contexto.
-- **00.4.** Validación de configuración en ambos repositorios.
+**Reglas transversales que no deben cambiarse por una decisión técnica:**
 
-No instalar frameworks ni implementar funcionalidades todavía. Las Skills especializadas se completarán cuando conozcamos la arquitectura.
+- **Local por mozo:** registra y confirma sin segunda aprobación; **local por app:** Mozo o Administrador comprueba presencialmente la mesa antes de aprobar.
+- **Recojo/delivery por app:** aprobación del Administrador; **por llamada/WhatsApp:** registro y validación manual del Administrador.
+- **Recojo/delivery:** anticipo verificado del **50 % antes de cocina**; el saldo restante se registra al entregar.
+- **Stock:** comprobar antes de confirmar y descontar una sola vez al confirmar; las solicitudes pendientes no descuentan existencias.
+- **Cocina y cierre:** solo pedidos confirmados generan comandas; cocina registra preparación/listo, y la atención/cobro se registran según modalidad.
+- **Alcance académico:** pago/anticipo manual o simulado, sin pasarela bancaria; llamada/WhatsApp sin integración automática; delivery sin repartidores, rutas ni GPS. La facturación SUNAT no se incorpora sin RF y aprobación explícitos. No asumir nuevas funciones por analogía con versiones antiguas.
+- **Pendientes explícitos:** RN-20/RN-21, métrica RNF-08, responsables de operaciones M07 y exclusiones propuestas se conservan identificados hasta una decisión expresa.
 
-## ETAPA 01 — Análisis del negocio y alcance
+## 2. Estado y secuencia
 
-Definir desde cero el funcionamiento de **Chifa ASIA**, un restaurante sin sedes: problemática y objetivos; seis actores (**cliente, mozo, cajero, administrador, personal de cocina y superadministrador**); responsabilidades, roles acumulativos, tres modalidades y siete módulos funcionales esenciales, incluido el **catálogo de productos con control de stock**.
+| Etapa | Nombre | Estado | Fuente/entregable principal |
+|---|---|---|---|
+| **00** | Configuración de agentes de IA | **Aprobada** | [Configuración y reglas](etapa-00.md) |
+| **01** | Análisis del negocio y alcance | **Aprobada** | [Análisis del negocio](etapa-01.md) |
+| **02** | Flujo principal y subflujos | **Aprobada** | [Flujos](etapa-02.md) y [FL-01](etapa-02-flujo-principal.puml) |
+| **03** | Ingeniería de requisitos | **Aprobada** | [Reglas/RNF](etapa-03.md) y [40 RF/CA](etapa-03-requisitos.md) |
+| **04** | Modelado del sistema | **Elaborada; pendiente de validación/aprobación** | [Modelado UML](etapa-04.md) y [13 diagramas](diagramas/etapa-04/) |
+| **05** | Arquitectura de software | **Documentada; pendiente de validación/aprobación** | [Arquitectura](etapa-05.md), [diagramas](diagramas/etapa-05/) y Skills técnicas |
+| **06** | Diseño de base de datos | **Siguiente etapa** | Modelo lógico/físico PostgreSQL por definir |
+| **07** | Configuración técnica | Por iniciar | Proyectos ejecutables, infraestructura y migraciones iniciales |
+| **08** | Desarrollo del backend | Por iniciar | API REST y pruebas de los siete módulos |
+| **09** | Diseño UX/UI en Figma | Por iniciar | Interfaces y prototipos aprobados |
+| **10** | Desarrollo del frontend | Por iniciar | Apps Flutter conectadas al backend |
+| **11** | Integración, pruebas y entrega | Por iniciar | Validación extremo a extremo y demostración académica |
 
-Acordar el recorrido del pedido de recepción a entrega/cobro, sin definir todavía diagramas ni requisitos formales:
-- **Consumo en local:** pedido por mozo (envío directo a cocina) o por app con mesa seleccionada y aprobación del Mozo o Administrador tras verificarla presencialmente.
-- **Recojo en local y delivery:** pedidos por app (aprobación del Administrador) o por llamada/WhatsApp (registro y validación del Administrador); el Administrador verifica **anticipo del 50 % antes de cocina**.
-- **Stock:** cantidades por producto, descuento automático al confirmar el pedido y disponibilidad editable por el Administrador.
-- **Cocina:** comandas y estados de preparación a cargo del personal de cocina.
-- **Delivery:** sin gestión de repartidores ni logística de rutas.
+La elaboración de una etapa no equivale a su aprobación, ni una casilla de documentación a una prueba técnica ejecutada. **No iniciar trabajo dependiente de decisiones pendientes sin resolver su impacto primero.**
 
-Clasificar funcionalidades incluidas, simuladas/manuales y excluidas. Postergar detalles secundarios que no afecten el flujo principal.
+## 3. Etapas y criterios de cierre
 
-## ETAPA 02 — Flujo principal y subflujos del negocio
+### ETAPA 00 — Configuración de agentes de IA · APROBADA
 
-Diseñar **un único flujo principal de extremo a extremo**, iniciado cuando un cliente desea hacer un pedido, con rombos para elegir modalidad y canal:
-1. **Consumo en local:** mozo o app.
-2. **Recojo en local:** app, llamada o WhatsApp.
-3. **Delivery:** app, llamada o WhatsApp.
+**Objetivo:** coordinar Codex y AGY con reglas mínimas y contexto selectivo.
 
-Unificar registro, aprobaciones según modalidad, anticipo obligatorio del 50 % para recojo/delivery antes de cocina, descuento de stock al confirmar, preparación de comandas, servicio o entrega, cobro restante y cierre. Crear solo los subflujos necesarios para comprender actores, decisiones y excepciones esenciales; no diagramar logística de repartidores.
+- Definir ahorro de tokens, reglas compartidas en **AGENTS.md**, organización de **docs/** y uso de MCP por necesidad.
+- Separar instrucciones permanentes de documentación extensa; no instalar frameworks ni implementar funciones en esta etapa.
+- Reservar Skills de FastAPI y Flutter para su definición arquitectónica en ETAPA 05.
 
-## ETAPA 03 — Ingeniería de requisitos
+**Entregable/cierre:** instrucciones y flujo de trabajo de agentes documentados y validados en ambos repositorios. [Evidencia](etapa-00.md).
 
-Definir requisitos funcionales, no funcionales, reglas de negocio, prioridades y criterios de aceptación a partir de los flujos aprobados.
+### ETAPA 01 — Análisis del negocio y alcance · APROBADA
 
-## ETAPA 04 — Modelado del sistema
+**Objetivo:** definir qué hará Chifa ASIA, quién operará cada función y qué se simulará.
 
-Elaborar diagramas de casos de uso UML, diagramas de actividades, secuencias y relaciones entre actores y funcionalidades.
+- Describir problema, objetivos, actores/permisos acumulativos, modalidades/canales y responsabilidades.
+- Delimitar los **7 módulos**: M01 Accesos, M02 Catálogo/stock, M03 Mesas, M04 Pedidos, M05 Cocina, M06 Caja/pagos, M07 Atención/entregas.
+- Clasificar capacidades incluidas, manuales/simuladas, excluidas y expresamente pendientes; no diseñar APIs ni base de datos.
 
-## ETAPA 05 — Arquitectura de software
+**Entregable/cierre:** [alcance y reglas de negocio](etapa-01.md), trazables y sin decisiones implícitas.
 
-**Estado actual:** [propuesta documentada, no aprobada](etapa-05.md).
+### ETAPA 02 — Flujo principal y subflujos del negocio · APROBADA
 
-Definir aplicaciones Flutter, roles, panel administrativo, módulos del backend, comunicación REST, arquitectura hexagonal y Vertical Slicing. Consolidar las Skills técnicas sin inicializar frameworks ni implementar APIs, tablas o migraciones.
+**Objetivo:** representar el pedido desde que el cliente lo solicita hasta atención, cobro y cierre.
 
-## ETAPA 06 — Diseño de base de datos desde cero
+- Mantener un **FL-01 principal** con modalidad/canal: local (mozo/app), recojo (app/llamada/WhatsApp), delivery (app/llamada/WhatsApp).
+- Representar aprobaciones, mesa presencial, validación/descuento de stock, anticipo, comanda, preparación, entrega y cobro.
+- Documentar excepciones esenciales: rechazo, falta de stock, anticipo no confirmado y cancelación con anticipo; no modelar logística de repartidores.
 
-Desarrollar el modelo entidad-relación, normalización, tablas, relaciones, restricciones, índices y diseño físico de PostgreSQL.
+**Entregable/cierre:** [flujo documentado](etapa-02.md) y [fuente PlantUML](etapa-02-flujo-principal.puml). Registrar cualquier comprobación de renderización no ejecutada como pendiente técnico.
 
-## ETAPA 07 — Configuración técnica
+### ETAPA 03 — Ingeniería de requisitos · APROBADA
 
-Inicializar FastAPI, SQLAlchemy Async, asyncpg, Alembic, conexión PostgreSQL, autenticación y estructura de Flutter. Crear las primeras migraciones.
+**Objetivo:** convertir el alcance y los flujos en una especificación verificable **por módulo**, no organizada artificialmente por pantallas.
 
-## ETAPA 08 — Desarrollo del backend
+- Mantener **40 RF**, criterios de aceptación Dado–Cuando–Entonces, **11 RNF**, RN y prioridades MoSCoW.
+- Definir permisos, estados, condiciones y resultados observables; incluir casos negativos de stock, autorizaciones, anticipo y cierre.
+- Conservar identificadores estables y pendientes expresos sin inventar valores, integraciones ni nuevas reglas.
 
-Implementar los módulos, APIs REST, validaciones, permisos, operaciones de negocio y simulaciones de servicios externos.
+**Entregable/cierre:** [RN/RNF y prioridades](etapa-03.md) y [catálogo de RF/CA](etapa-03-requisitos.md) aprobados como línea base documental.
 
-## ETAPA 09 — Diseño UX/UI en Figma
+### ETAPA 04 — Modelado del sistema · ELABORADA / PENDIENTE DE APROBACIÓN
 
-Diseñar y validar pantallas, componentes visuales, navegación y prototipos de las aplicaciones. Esta etapa puede comenzar en paralelo con el backend cuando los flujos estén aprobados.
+**Objetivo:** expresar comportamiento e interacción actor–sistema con UML, sin fijar arquitectura ni tablas.
 
-## ETAPA 10 — Desarrollo del frontend
+- Modelar casos de uso por actor/módulo, actividad principal y secuencias por canal.
+- Mantener **13 fuentes PlantUML** y trazabilidad **40/40 RF → casos de uso**, incluyendo excepciones de rechazo, stock, anticipo y cierre.
+- Revisar asociaciones de roles y decisiones pendientes; **compilar y renderizar** realmente los diagramas.
 
-Implementar las interfaces Flutter para clientes y personal, el panel administrativo acordado y el consumo de las APIs.
+**Entregable:** [modelo y matriz de trazabilidad](etapa-04.md), [diagramas](diagramas/etapa-04/).  
+**Cierre pendiente:** evidencia de compilación/renderización, resolución de observaciones y aprobación del usuario.
 
-## ETAPA 11 — Integración, pruebas y entrega
+### ETAPA 05 — Arquitectura de software · DOCUMENTADA / PENDIENTE DE APROBACIÓN
 
-Ejecutar pruebas unitarias, integración y flujos completos; verificar simulaciones, corregir errores y preparar la demostración académica.
+**Objetivo:** establecer límites y contratos técnicos antes de crear código.
+
+- Documentar **monolito modular FastAPI**, arquitectura hexagonal y **Vertical Slicing** para M01–M07; interfaces internas, transacciones e idempotencia.
+- Definir **API REST JSON**, autenticación y permisos, seguridad, errores y puertos/adaptadores para simulaciones.
+- Definir organización Flutter propuesta: **customer_app** y **staff_app** (mozos, cocina, caja y administración adaptativa), con responsabilidades compartidas sin duplicar funcionalidades.
+- Preparar Skills **restaurant-fastapi-slice** (backend) y **restaurant-flutter-slice** (frontend); mantener **AGENTS.md** breve, cargar solo el contexto/Skill pertinente y usar MCP bajo demanda.
+- Evitar instalar FastAPI/Flutter, programar endpoints, crear tablas o migraciones durante esta etapa.
+
+**Entregable:** [decisiones y contratos arquitectónicos](etapa-05.md), [diagramas](diagramas/etapa-05/) y Skills en **.agents/skills/** de su respectivo repositorio.  
+**Cierre pendiente:** revisar impactos de ETAPA 04, validar diagramas/Skills y aprobar decisiones de ETAPA 05.
+
+### ETAPA 06 — Diseño de base de datos desde cero · SIGUIENTE
+
+**Objetivo:** convertir requisitos y contratos aprobados en un modelo PostgreSQL consistente; **aún sin crear la base de datos ejecutable**.
+
+- Identificar entidades/relaciones de M01–M07, cardinalidades y propiedad de datos por módulo.
+- Diseñar modelo entidad-relación, normalización, esquema lógico y físico, tipos, claves, restricciones e índices.
+- Definir integridad de pedidos, estados, stock, permisos, anticipos, cobros y trazabilidad/auditoría.
+- Especificar estrategia física para confirmación atómica, concurrencia de stock e idempotencia, respetando RNF-04/05/10.
+- Revisar trazabilidad **RF/RN → entidades y restricciones**, y documentar decisiones sin incorporar ingredientes, sedes, logística u otras exclusiones.
+
+**Entregable:** DER editable, diccionario de datos, esquema físico propuesto y documento de decisiones/validación en **docs/etapas/**.  
+**Cierre:** modelo revisado contra los 40 RF, reglas y arquitectura aprobada; conflictos y decisiones pendientes resueltos o explícitamente aislados antes de migraciones.
+
+### ETAPA 07 — Configuración técnica
+
+**Objetivo:** convertir la arquitectura aprobada en proyectos ejecutables con infraestructura mínima reproducible.
+
+- Inicializar **FastAPI**, SQLAlchemy Async, asyncpg, Alembic y **PostgreSQL** (Docker para desarrollo) según versiones verificadas.
+- Crear estructura hexagonal/slices, configuración por entornos, secretos fuera del repositorio, dependencias, CORS, diagnóstico/healthcheck y registros básicos.
+- Crear esquema y migraciones **iniciales** desde el modelo aprobado; validar conexión real y actualización desde base vacía.
+- Inicializar workspace Flutter y **customer_app/staff_app**, configuración de API local/remota y herramientas de análisis y pruebas.
+- Configurar base técnica de sesiones/autenticación y autorización, **sin implementar todavía los 40 RF completos**.
+
+**Entregable:** backend y aplicaciones base que arrancan, migraciones reproducibles, instrucciones de ejecución y comprobaciones automáticas mínimas.  
+**Cierre:** arranque local, conexión PostgreSQL, migración desde cero, análisis estático y pruebas de humo reproducibles.
+
+### ETAPA 08 — Desarrollo del backend
+
+**Objetivo:** implementar los **40 RF** de M01–M07 como casos de uso y contratos REST, respetando el comportamiento aprobado.
+
+- Implementar accesos/roles, catálogo/stock, mesas, registro/aprobación de pedidos, cocina/comandas, caja/anticipos, atención/entregas y cierre.
+- Garantizar transiciones autorizadas, verificación del 50 %, stock atómico y sin doble descuento, cobros idempotentes y bloqueo de operaciones inválidas.
+- Implementar simulaciones explícitas y auditables; **no** integrar pagos reales, WhatsApp automático, GPS ni SUNAT sin nuevos requisitos.
+- Incorporar validaciones, manejo de errores, OpenAPI, pruebas unitarias y de integración **contra PostgreSQL real de pruebas**.
+- Mantener correspondencia **RF/CA → caso de uso → endpoint → prueba**.
+
+**Entregable:** API documentada y funcional, migraciones incrementales pertinentes, matriz de cobertura y resultados verificables.  
+**Cierre:** todos los RF del alcance implementados o señalados como pendientes aprobados; permisos, errores y flujos críticos pasan pruebas reproducibles.
+
+### ETAPA 09 — Diseño UX/UI en Figma
+
+**Objetivo:** diseñar interfaces coherentes con roles, RF y contratos reales, sin programarlas todavía.
+
+- Definir sistema visual, componentes reutilizables, navegación, accesibilidad y estados loading/empty/error/success.
+- Diseñar **app cliente** (cuenta/invitado, catálogo, mesa, pedido, seguimiento) y **app de personal** (mozo, cocina, caja, administración adaptativa).
+- Cubrir aprobación/rechazo, stock insuficiente, anticipo pendiente, comanda y cierre; **identificar claramente acciones simuladas**.
+- Construir prototipos de recorridos principales y revisar cada pantalla frente a RF, actor, permisos y API disponible/propuesta.
+
+**Entregable:** archivo Figma organizado, componentes y prototipos validados, mapa **pantalla → RF/CA → API**.  
+**Cierre:** aprobación visual/funcional; no diseñar acciones que carezcan de respaldo en requisitos. **Puede trabajar en paralelo con ETAPA 08** cuando los flujos y contratos afectados estén estables.
+
+### ETAPA 10 — Desarrollo del frontend
+
+**Objetivo:** transformar el diseño aprobado en las dos aplicaciones Flutter conectadas al backend.
+
+- Implementar **customer_app** y **staff_app**, reutilizando paquetes justificados y respetando los slices definidos.
+- Construir pantallas, estado, navegación por permisos, formularios, tratamiento de errores y persistencia segura de sesión.
+- Consumir APIs reales con configuración por entorno; no duplicar reglas de negocio del servidor ni mostrar éxito sin respuesta confirmada.
+- Implementar flujos de mozo, cocina, caja y administración junto con las tres modalidades del cliente.
+- Probar widgets, navegación y estados críticos, incluido el uso en dispositivo Android; validar las pantallas adaptativas acordadas.
+
+**Entregable:** apps operativas, vinculadas a API, con pruebas y matriz **RF/CA → pantalla → API**.  
+**Cierre:** recorridos principales funcionan en los dispositivos objetivo y representan correctamente validaciones y simulaciones.
+
+### ETAPA 11 — Integración, pruebas y entrega
+
+**Objetivo:** demostrar funcionamiento de extremo a extremo y cerrar el proyecto académico con evidencia.
+
+- Probar los recorridos completos: local por mozo/app, recojo por app/canal externo y delivery por app/canal externo.
+- Verificar permisos, excepciones, concurrencia de stock, pagos/anticipos simulados, idempotencia, saldos, comandas y cierre.
+- Ejecutar pruebas unitarias, integración, funcionales, seguridad básica y rendimiento **según métricas aprobadas**.
+- Validar backend con PostgreSQL y frontend en los dispositivos/entornos acordados; documentar incidencias y correcciones.
+- Preparar instalación, configuración sin secretos, manual de demostración, evidencias y entrega académica.
+
+**Entregable:** reporte de pruebas, incidencias resueltas o aceptadas, documentación final y demostración reproducible.  
+**Cierre:** criterios de aceptación satisfechos y entrega expresamente aprobada.
+
+## 4. Reglas de avance, trazabilidad y eficiencia
+
+1. **Aprobación:** el usuario aprueba cada etapa; avanzar para redactar un borrador no supone aprobación. Antes de implementar decisiones de ETAPAS 04–05, revisar su estado y los pendientes que afectan el trabajo.
+2. **Trazabilidad:** conservar la cadena **RN/RF/CA → UML → arquitectura → BD → API → interfaz → prueba**, con referencias específicas y sin cambiar identificadores por estética.
+3. **Sin adelantar etapas:** ETAPA 06 diseña; ETAPA 07 inicializa y migra; ETAPA 08 implementa backend; ETAPA 09 diseña UI; ETAPA 10 implementa Flutter; ETAPA 11 integra y certifica el recorrido académico.
+4. **Documentación:** usar **docs/** de ambos repositorios como fuente compartida y mantener iguales los documentos comunes. Cada etapa añade su documento y artefactos solo cuando aportan valor; conservar los archivos previamente aprobados.
+5. **Agentes/tokens:** cargar **AGENTS.md + este índice + documento de la etapa**, y únicamente Skills, RF/diagramas o código pertinentes. Evitar lecturas completas repetidas, Skills duplicadas, MCP innecesarios y logs extensos.
+6. **Validación honesta:** distinguir documento revisado, archivo verificado, compilación, ejecución de pruebas y aprobación; nunca marcar como hecha una comprobación no ejecutada.
+7. **Control de cambios:** cambios de alcance, roles, políticas o simulaciones regresan a los documentos afectados y actualizan trazabilidad. No introducir funcionalidades extra como solución a una etapa técnica.
+
+**Próximo hito:** validar/aprobar ETAPAS 04 y 05; después abordar **ETAPA 06 — Diseño de base de datos desde cero** sin alterar la línea base del negocio.
