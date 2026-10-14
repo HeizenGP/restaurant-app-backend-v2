@@ -1,6 +1,6 @@
 # ETAPA 00 — Configuración de agentes de IA
 
-**Estado: EN CURSO / NO APROBADA.** Fecha de inicio: 2026-10-13.
+**Estado: APROBADA por el usuario el 2026-10-13.** Fecha de inicio: 2026-10-13.
 
 ## Objetivo
 Preparar una forma compartida, documentada y de bajo consumo de contexto para que Codex y AGY colaboren en los repositorios backend y frontend antes de implementar el sistema.
@@ -22,10 +22,10 @@ Preparar una forma compartida, documentada y de bajo consumo de contexto para qu
 
 ### 00.4 — Validación de configuración
 - [x] Revisar desde GitHub la estructura inicial y la rama `develop` en ambos repositorios.
-- [ ] Confirmar después de los commits la existencia y consistencia de las guías en ambos repositorios.
-- [ ] Ejecutar prueba de lectura de instrucciones de Codex en ambos workspaces locales.
-- [ ] Ejecutar prueba de lectura de instrucciones de AGY en ambos workspaces locales.
-- [ ] Comprobar MCP en el entorno local solo cuando sea necesario para una tarea real.
+- [x] Confirmar después de los commits la existencia y consistencia de las guías en ambos repositorios.
+- [x] Validación de la configuración de Codex en ambos repositorios: aprobada por el usuario (sin evidencia técnica local adjunta).
+- [x] Validación de la configuración de AGY en ambos repositorios: aprobada por el usuario (sin evidencia técnica local adjunta).
+- [x] Política MCP documentada; la prueba de cada conexión se efectuará cuando se necesite, no se declara realizada.
 
 ## Criterios para aprobar la ETAPA 00
 
@@ -41,5 +41,5 @@ No instalar dependencias o frameworks, no generar apps, no crear API ni base de 
 ## Evidencia y pendientes
 - Evidencia documental: `AGENTS.md`, `docs/agentes/README.md`, este archivo y el plan maestro.
 - Verificación GitHub: se completa al revisar los archivos publicados en ambos repositorios.
-- Pendiente de entorno: comprobación de que Codex y AGY leen efectivamente estas reglas al abrir cada repositorio; la conexión de MCP se comprueba según necesidad.
-- **No pasar a ETAPA 01 automáticamente.**
+- El usuario aprueba la validación de ambos repositorios; no se adjuntaron registros locales de ejecución. La conexión real de MCP se comprobará según necesidad.
+- **Siguiente: ETAPA 01 — POR INICIAR / NO APROBADA.**

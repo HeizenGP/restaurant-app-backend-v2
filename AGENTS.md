@@ -1,8 +1,8 @@
 # Restaurant App V2 — Reglas para Codex y AGY
 
 ## Estado y fuentes
-- **Etapa vigente: 00 — EN CURSO, no aprobada.** No avanzar a otra etapa sin aprobación expresa del usuario.
-- Índice oficial: `docs/etapas/README.md`. Trabajo actual: `docs/etapas/etapa-00.md`.
+- **ETAPA 00 APROBADA (2026-10-13). Etapa vigente: 01 — POR INICIAR, no aprobada.** No avanzar a la ETAPA 02 sin aprobación expresa del usuario.
+- Índice oficial: `docs/etapas/README.md`. Trabajo actual: `docs/etapas/etapa-01.md`. Historial aprobado: `docs/etapas/etapa-00.md`.
 - Procedimiento operativo: `docs/agentes/README.md`. Consultar solo los documentos pertinentes para la tarea.
 
 ## Trabajo seguro y eficiente
@@ -13,11 +13,11 @@
 5. No sobrescribir trabajo ajeno ni modificar simultáneamente el mismo archivo con dos agentes. No hacer push, merges o cambios destructivos no solicitados.
 6. Nunca registrar contraseñas, claves, tokens o información sensible; usar MCP solo si es necesario y está autorizado.
 
-## Restricciones de la ETAPA 00
+## Restricciones vigentes hasta la configuración técnica
 - **Prohibido** instalar frameworks, inicializar Flutter/FastAPI, crear APIs, migraciones, esquema de BD o funcionalidades.
 - No reutilizar como vigentes decisiones, diagramas o código de versiones anteriores.
-- Definir Skills técnicas y reglas de arquitectura en ETAPA 05; ahora solo documentar la estrategia.
-- Si una tarea excede esta etapa, señalarla como pendiente y no implementarla.
+- Definir Skills técnicas y reglas de arquitectura en ETAPA 05. Durante ETAPA 01 solo documentar el negocio y su alcance.
+- Si una tarea excede la etapa vigente, señalarla como pendiente y no implementarla.
 
 ## Cierre de cada tarea
 Reportar brevemente: qué cambió, rutas, pruebas verificadas, pendientes y estado de aprobación. No declarar una prueba ejecutada si solo se verificó documentación.
