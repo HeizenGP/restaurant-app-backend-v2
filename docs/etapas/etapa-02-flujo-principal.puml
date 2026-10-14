@@ -1,5 +1,5 @@
 @startuml
-title FL-01 — Chifa ASIA: flujo principal del negocio
+title FL-01 - Chifa ASIA: flujo principal de pedidos
 skinparam shadowing false
 skinparam activityBackgroundColor #FFFFFF
 skinparam activityBorderColor #44546A
@@ -7,85 +7,91 @@ skinparam activityDiamondBackgroundColor #F1F5F9
 skinparam activityDiamondBorderColor #44546A
 
 start
-:Cliente desea realizar un pedido en Chifa ASIA;
+:Cliente desea realizar un pedido;
 
-if (¿Modalidad de consumo?) then (Consumo en local)
-  if (¿Cómo realizará el pedido?) then (Mozo)
-    :Cliente ocupa una mesa;
-    :Mozo entrega la carta y registra productos y mesa;
+if (¿Modalidad de consumo?) then (En local)
+  if (¿Canal de atención?) then (Mozo)
+    :Mozo atiende al cliente;
+    :Registra productos y mesa;
   else (Aplicación)
-    :Cliente ingresa a la app (inicia sesión, se registra o continúa como invitado);
-    :Selecciona consumo en local, su mesa y los productos;
-    :Envía solicitud de pedido;
-    :Mozo o Administrador comprueba la presencia del cliente y su mesa;
-    if (¿Aprueba el pedido?) then (Sí)
-      :Solicitud aprobada;
+    :Cliente ingresa, se registra o continúa como invitado;
+    :Selecciona mesa y productos;
+    :Envía solicitud;
+    :Mozo o Administrador verifica la mesa;
+    if (¿Solicitud aprobada?) then (Sí)
+      :Pedido presencial aprobado;
     else (No)
       :Informar rechazo al cliente;
       stop
     endif
   endif
 else (Recojo o delivery)
-  if (¿Modalidad?) then (Recojo en local)
-    :Indicar recojo en el restaurante;
+  if (¿Tipo de pedido?) then (Recojo)
+    :Elegir recojo en local;
   else (Delivery)
-    :Indicar delivery y dirección de entrega;
+    :Registrar dirección de entrega;
   endif
 
   if (¿Canal de pedido?) then (Aplicación)
-    :Cliente ingresa a la app (sesión, registro o invitado);
+    :Cliente ingresa, se registra o continúa como invitado;
     :Selecciona productos y envía solicitud;
-    :Administrador revisa el pedido;
+    :Administrador revisa la solicitud;
     if (¿Administrador aprueba?) then (Sí)
       :Solicitud aprobada;
     else (No)
       :Informar rechazo al cliente;
       stop
     endif
-  elseif (¿Canal de pedido?) then (Llamada)
-    :Cliente llama al restaurante;
-    :Administrador registra y valida el pedido;
-  else (WhatsApp)
-    :Cliente envía pedido por WhatsApp;
+  else (Llamada o WhatsApp)
+    if (¿Canal externo?) then (Llamada)
+      :Cliente realiza una llamada;
+    else (WhatsApp)
+      :Cliente escribe por WhatsApp;
+    endif
     :Administrador registra y valida el pedido;
   endif
 endif
 
-:Comprobar disponibilidad de productos y stock;
-if (¿Hay productos disponibles y stock suficiente?) then (Sí)
+:Verificar disponibilidad y cantidad de stock;
+if (¿Productos disponibles y stock suficiente?) then (Sí)
+  if (¿Consumo en local?) then (Sí)
+    :Confirmar pedido presencial;
+  else (Recojo o delivery)
+    :Solicitar anticipo del 50 %;
+    :Administrador verifica el pago;
+    if (¿Anticipo confirmado?) then (Sí)
+      :Confirmar pedido de recojo o delivery;
+    else (No)
+      :Mantener pedido pendiente;
+      :No enviar comanda a cocina;
+      stop
+    endif
+  endif
+  :Descontar stock al confirmar el pedido;
+  :Enviar comanda directamente a cocina;
 else (No)
-  :Informar que el pedido no puede confirmarse con las existencias actuales;
+  :Informar falta de stock;
+  :No confirmar el pedido;
   stop
 endif
 
-if (¿Es recojo o delivery?) then (Sí)
-  :Solicitar anticipo del 50 %;
-  :Administrador verifica el anticipo;
-  if (¿Anticipo confirmado?) then (Sí)
-  else (No)
-    :Mantener pedido pendiente;
-    :No enviar a cocina;
-    stop
-  endif
-endif
+:Personal de cocina recibe la comanda;
+:Actualizar estado a En preparación;
+:Preparar productos;
+:Actualizar estado a Listo;
 
-:Confirmar pedido y descontar automáticamente el stock;
-:Enviar comanda a cocina;
-:Personal de cocina marca pedido en preparación;
-:Personal de cocina termina y marca pedido listo;
-
-if (¿Modalidad de consumo?) then (Consumo en local)
-  :Mozo sirve el pedido en mesa;
-  :Registrar cobro de la cuenta en caja;
+if (¿Modalidad?) then (En local)
+  :Mozo sirve en mesa;
+  :Caja registra cobro;
 else (Recojo o delivery)
-  if (¿Entrega?) then (Recojo en local)
-    :Registrar entrega al cliente en el restaurante;
+  if (¿Tipo de entrega?) then (Recojo)
+    :Registrar recojo en el local;
   else (Delivery)
-    :Registrar entrega a domicilio sin gestionar repartidor ni ruta;
+    :Registrar entrega a domicilio;
   endif
-  :Registrar cobro del 50 % restante en caja;
+  :Caja registra el 50 % restante;
 endif
 
-:Actualizar pago y cerrar pedido;
+:Cerrar pedido;
 stop
 @enduml
