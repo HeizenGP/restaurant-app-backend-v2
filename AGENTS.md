@@ -1,8 +1,8 @@
 # Restaurant App V2 — Reglas para Codex y AGY
 
 ## Estado y fuentes
-- **ETAPA 00 APROBADA (2026-10-13). ETAPAS 01–03 en revisión/no aprobadas. ETAPA 04 autorizada para elaboración y revisión; NO APROBADA.** No avanzar a ETAPA 05 sin aprobación expresa.
-- Índice oficial: docs/etapas/README.md. Trabajo actual: docs/etapas/etapa-04.md y sus diagramas en docs/etapas/diagramas/etapa-04/. Contexto: etapa-01.md, etapa-02.md, etapa-03.md y etapa-03-requisitos.md (en revisión).
+- **ETAPAS 00, 01, 02 y 03 APROBADAS POR EL USUARIO (2026-10-13). ETAPA 04 elaborada/en revisión; NO APROBADA.** No avanzar a ETAPA 05 sin aprobación expresa.
+- Índice oficial: docs/etapas/README.md. Trabajo actual: docs/etapas/etapa-04.md y sus diagramas en docs/etapas/diagramas/etapa-04/. Contexto: etapa-01.md, etapa-02.md, etapa-03.md y etapa-03-requisitos.md (línea base documental aprobada).
 - Procedimiento operativo: docs/agentes/README.md. Consultar solo los documentos pertinentes para la tarea.
 
 ## Trabajo seguro y eficiente

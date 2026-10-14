@@ -1,6 +1,6 @@
 # Documentación — Restaurant App V2
 
-**ETAPA 00 aprobada. ETAPAS 01 y 02: documentación en revisión. ETAPA 03: catálogo modular pendiente de aprobación. ETAPA 04: modelado UML elaborado, en revisión y no aprobado.** La autorización para preparar una etapa no aprueba automáticamente las anteriores.
+**ETAPAS 00–03 APROBADAS por el usuario (2026-10-13). ETAPA 04: modelado UML elaborado, en revisión y NO APROBADO.** La aprobación documental no certifica pruebas técnicas pendientes ni decide automáticamente propuestas explícitamente abiertas.
 
 - [Plan maestro de etapas 00–11](etapas/README.md)
 - [ETAPA 00 — aprobada](etapas/etapa-00.md)

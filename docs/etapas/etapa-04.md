@@ -2,7 +2,7 @@
 
 **Proyecto:** Restaurant App V2 — Chifa ASIA.  
 **Estado:** BORRADOR TÉCNICO / PENDIENTE DE REVISIÓN Y APROBACIÓN.  
-**Autorización:** el usuario solicitó continuar con ETAPA 04; ello no aprueba automáticamente las ETAPAS 01–03.  
+**Antecedentes:** ETAPAS 01–03 aprobadas expresamente por el usuario el 2026-10-13. La ETAPA 04 fue autorizada para elaboración, pero **no está aprobada**.  
 **Fuentes:** [ETAPA 01](etapa-01.md), [ETAPA 02](etapa-02.md), [ETAPA 03 — RN/RNF](etapa-03.md) y [ETAPA 03 — 40 RF](etapa-03-requisitos.md).
 
 ## 1. Objetivo y límites
@@ -84,7 +84,7 @@ Cada RF de la ETAPA 03 debe aparecer **exactamente una vez en su diagrama CU mod
 1. **RN-20 y RN-21:** confirmar formalmente integridad de stock y política de cierre propuesta; la representación UML no implica aprobación.
 2. **Responsable de recojo, entrega delivery y cierre:** M07 no asigna expresamente todos los roles; CU-07 y SD-03/04 muestran Administrador como **propuesta**, pendiente de ratificación. No crear un rol de repartidor.
 3. **Simulación de comprobantes:** el usuario quiere simular servicios académicos, pero la facturación no tiene RF vigente; formalizar alcance antes de modelarla.
-4. **Etapas 01–03:** siguen formalmente en revisión en el repositorio. Prioridades MoSCoW y RNF-08 siguen pendientes de aprobación.
+4. **Etapas 01–03:** aprobadas por el usuario el 2026-10-13; las prioridades MoSCoW también quedan aprobadas como línea base documental. La métrica propuesta de RNF-08 sigue pendiente de ratificación específica.
 
 ## 6. Validación y criterios de aceptación
 

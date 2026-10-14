@@ -1,9 +1,9 @@
 # ETAPA 02 — Flujo principal del negocio
 
 **Proyecto:** Chifa ASIA — Restaurant App V2  
-**Estado:** BORRADOR EN REVISIÓN / NO APROBADA  
+**Estado:** APROBADA POR EL USUARIO (2026-10-13)  
 **Alcance:** flujo general para el curso de Aplicaciones Móviles (Ingeniería de Sistemas).  
-**Antecedente:** [ETAPA 01](etapa-01.md), en revisión; el usuario autorizó elaborar esta etapa sin aprobar formalmente la anterior.
+**Antecedente:** [ETAPA 01](etapa-01.md), aprobada por el usuario el 2026-10-13.
 
 ## Objetivo
 
@@ -75,6 +75,6 @@ No incorporar sedes, repartidores, GPS, inventario de ingredientes, recetas, alm
 - [x] Pasar por preparación, atención/entrega, cobro y cierre.
 - [x] Excluir logística de delivery y funcionalidades ajenas al alcance.
 - [ ] Comprobar compilación/renderización real del archivo `.puml` con PlantUML.
-- [ ] Aprobación expresa del usuario de este flujo.
+- [x] Aprobación expresa del usuario de este flujo (2026-10-13).
 
-**Estado final: BORRADOR EN REVISIÓN / NO APROBADA.** No iniciar ETAPA 03 sin validar este flujo.
+**Estado final: APROBADA POR EL USUARIO (2026-10-13).** La comprobación de compilación/renderización real del archivo PlantUML sigue pendiente; la aprobación no se confunde con esa prueba técnica.

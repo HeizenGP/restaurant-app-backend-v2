@@ -1,9 +1,9 @@
 # ETAPA 03 — Ingeniería de requisitos
 
 **Proyecto:** Chifa ASIA — Restaurant App V2  
-**Estado:** EN ELABORACIÓN / NO APROBADA  
+**Estado:** APROBADA POR EL USUARIO (2026-10-13)  
 **Organización principal:** siete módulos existentes, no el orden del flujo principal.  
-**Referencia para consistencia:** [ETAPA 01](etapa-01.md) y [FL-01](etapa-02-flujo-principal.puml); sus documentos siguen pendientes de aprobación formal en el repositorio.
+**Referencia para consistencia:** [ETAPA 01](etapa-01.md) y [FL-01](etapa-02-flujo-principal.puml); sus documentos están aprobados por el usuario (2026-10-13).
 
 ## Objetivo y entregables
 
@@ -27,7 +27,7 @@ Definir requisitos funcionales (RF), no funcionales (RNF), reglas de negocio (RN
 
 **Criterios de aceptación redactados:** 48. Cada RF tiene por lo menos un CA específico.
 
-Las prioridades son propuestas académicas: el núcleo mínimo cubre solicitud, permisos, stock, aprobación, cocina, anticipo, entrega y cobro. Los RF de control de ocupación de mesas se proponen como Should; no implican quitar la asociación obligatoria entre mesa y pedido.
+Las prioridades quedan aprobadas como línea base académica: el núcleo mínimo cubre solicitud, permisos, stock, aprobación, cocina, anticipo, entrega y cobro. Los RF de control de ocupación de mesas se clasifican como Should; no implican quitar la asociación obligatoria entre mesa y pedido.
 
 ## 2. Requisitos no funcionales (RNF)
 
@@ -82,7 +82,7 @@ Las reglas confirmadas provienen de decisiones de negocio de esta conversación;
 - **Could Have:** ninguno propuesto por ahora; se evita inflar el proyecto.
 - **Won't Have en esta versión:** sedes múltiples, gestión de repartidores y rutas, ingredientes/recetas/almacenes, integración automática con WhatsApp o pasarelas de pago. Reservas, promociones, fidelización, reportes avanzados y facturación electrónica siguen como exclusiones **propuestas**, no confirmadas.
 
-Las prioridades deben revisarse según tiempo del curso y demostración esperada; no equivalen a compromiso de implementación.
+Las prioridades quedan aprobadas para el alcance documental de ETAPA 03. Podrán revisarse si cambia el tiempo del curso o la demostración esperada; no equivalen a funcionalidades ya implementadas.
 
 ## 5. Trazabilidad modular
 
@@ -100,12 +100,12 @@ Las prioridades deben revisarse según tiempo del curso y demostración esperada
 
 ## 6. Pendientes para validar, sin abrir funciones secundarias
 
-1. Aprobar las prioridades propuestas (Must/Should) y el alcance de esta primera versión.
+1. **Resuelto (2026-10-13):** el usuario aprobó los RF, criterios, prioridades Must/Should y el alcance documental de esta etapa.
 2. Definir si la política de **cierre con entrega registrada y saldo cero** (RN-21) se aprueba.
 3. Confirmar el objetivo de rendimiento RNF-08 o dejarlo como referencia de prueba académica.
 4. Ratificar las exclusiones aún propuestas en la ETAPA 01.
 
-No bloquean la **redacción** de esta etapa; sí su aprobación formal. La política de devoluciones se limita a decisión del Administrador, sin crear un módulo de reembolsos.
+Estos puntos de decisión específicos siguen documentados, pero no anulan la aprobación del documento de ETAPA 03. Su resolución requerirá confirmación cuando corresponda. La política de devoluciones se limita a decisión del Administrador, sin crear un módulo de reembolsos.
 
 ## 7. Validación
 
@@ -115,7 +115,7 @@ No bloquean la **redacción** de esta etapa; sí su aprobación formal. La polí
 - [x] Reglas críticas de roles, stock, pagos y comandas representadas.
 - [x] Prioridades iniciales justificadas por un proyecto académico de aplicaciones móviles.
 - [x] Sin módulos adicionales ni arquitectura o implementación.
-- [ ] Revisión y aprobación expresa del usuario.
-- [ ] Ratificar los estados de aprobación formal de ETAPA 01 y ETAPA 02.
+- [x] Revisión y aprobación expresa del usuario (2026-10-13).
+- [x] Estados de aprobación formal de ETAPA 01 y ETAPA 02 ratificados por el usuario (2026-10-13).
 
-**Estado final: ETAPA 03 EN REVISIÓN; NO APROBADA.** No comenzar ETAPA 04 automáticamente.
+**Estado final: ETAPA 03 APROBADA POR EL USUARIO (2026-10-13).** ETAPA 04 elaborada por autorización previa, pendiente de su propia aprobación. Los pendientes específicos no se dan por resueltos sin acuerdo expreso.

@@ -1,7 +1,7 @@
 # ETAPA 01 — Análisis del negocio y alcance
 
 **Proyecto:** Restaurant App V2 — Chifa ASIA  
-**Estado:** EN REVISIÓN / NO APROBADA  
+**Estado:** APROBADA POR EL USUARIO (2026-10-13)  
 **Referencia:** `docs/etapas/README.md`. La ETAPA 00 permanece aprobada.
 
 ## 1. Negocio, problemática y objetivo
@@ -91,8 +91,8 @@ Estos son módulos **funcionales del negocio**; no fijan módulos de código, ap
 
 **Confirmado:** los seis actores, las tres modalidades y sus canales, los permisos principales, los anticipos, la gestión del stock y los siete módulos funcionales están definidos.
 
-**Para aprobación del usuario:** validar la redacción de la problemática y del objetivo, así como las exclusiones propuestas. No abrir preguntas sobre aspectos secundarios que no bloqueen el flujo principal.
+**Registro de aprobación:** el usuario aprobó la ETAPA 01 como línea base documental el 2026-10-13, incluida la redacción de problemática y objetivos. Las exclusiones marcadas expresamente como «propuestas» se mantienen pendientes de ratificación específica; no agregar funcionalidades al alcance sin trazabilidad.
 
 **Siguientes etapas:** en ETAPA 02 se diseñará un único flujo principal con ramificaciones y los subflujos indispensables; ETAPA 03 especificará requisitos y criterios de aceptación; ETAPA 04 modelará UML; ETAPA 05 definirá arquitectura.
 
-**Estado final: EN REVISIÓN / NO APROBADA.** No avanzar a la ETAPA 02 sin aprobación expresa. Mantener idéntica esta documentación en `develop` de backend y frontend.
+**Estado final: APROBADA POR EL USUARIO (2026-10-13).** Aprobación del documento de negocio, sin convertir exclusiones todavía propuestas en decisiones confirmadas. Mantener idéntica esta documentación en `develop` de backend y frontend.

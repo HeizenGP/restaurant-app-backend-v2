@@ -1,5 +1,7 @@
 # Plan maestro de desarrollo — Restaurant App V2
 
+**Estado a 2026-10-13:** **ETAPAS 00, 01, 02 y 03 APROBADAS POR EL USUARIO.** ETAPA 04 elaborada y **pendiente de aprobación**; ETAPAS 05–11 aún no aprobadas. Los acuerdos explícitamente marcados como pendientes no se convierten por ello en decisiones ratificadas.
+
 ## ETAPA 00 — Configuración de agentes de IA
 
 **Empezamos aquí.**

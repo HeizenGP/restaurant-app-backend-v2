@@ -42,4 +42,4 @@ No instalar dependencias o frameworks, no generar apps, no crear API ni base de 
 - Evidencia documental: `AGENTS.md`, `docs/agentes/README.md`, este archivo y el plan maestro.
 - Verificación GitHub: se completa al revisar los archivos publicados en ambos repositorios.
 - El usuario aprueba la validación de ambos repositorios; no se adjuntaron registros locales de ejecución. La conexión real de MCP se comprobará según necesidad.
-- **Siguiente: ETAPA 01 — POR INICIAR / NO APROBADA.**
+- **Actualización 2026-10-13:** las ETAPAS 01, 02 y 03 fueron aprobadas posteriormente por el usuario. ETAPA 04 permanece en revisión.

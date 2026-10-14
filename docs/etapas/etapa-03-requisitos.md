@@ -1,12 +1,12 @@
 # ETAPA 03 — Ingeniería de requisitos
 
 **Proyecto:** Restaurant App V2 — Chifa ASIA.  
-**Estado:** BORRADOR EN REVISIÓN, NO APROBADA.  
+**Estado:** APROBADA POR EL USUARIO COMO ESPECIFICACIÓN DOCUMENTAL (2026-10-13).  
 **Criterio de organización:** los **siete módulos funcionales M01–M07** son la fuente principal para redactar requisitos; la ETAPA 01 y FL-01 se usan **únicamente para validar coherencia**, no para reorganizar el catálogo por pasos del flujo.
 
 ## 1. Catálogo modular
 
-Para cada RF se ofrece un identificador estable, comportamiento, prioridad **propuesta** y criterio de aceptación **Dado–Cuando–Entonces**. Los criterios de excepción se agregan solo donde afectan el funcionamiento principal. Prioridad M = Must Have y S = Should Have; las prioridades siguen pendientes de aprobación.
+Para cada RF se ofrece un identificador estable, comportamiento, prioridad **aprobada para la línea base documental** y criterio de aceptación **Dado–Cuando–Entonces**. Los criterios de excepción se agregan solo donde afectan el funcionamiento principal. Prioridad M = Must Have y S = Should Have; las prioridades quedaron aprobadas como línea base académica el 2026-10-13.
 
 ### M01 — Usuarios y accesos
 
@@ -86,7 +86,7 @@ Para cada RF se ofrece un identificador estable, comportamiento, prioridad **pro
 ## 2. Convenciones y criterios de revisión
 
 - Cada RF pertenece a **un módulo** y puede relacionarse con otros. Los permisos definidos prevalecen sobre cualquier pantalla o interfaz.
-- Los RF y CA son **propuestas de especificación**; no constituyen funciones implementadas ni aprobadas.
+- Los RF y CA son una **especificación documental aprobada por el usuario (2026-10-13)**; no constituyen funcionalidades implementadas ni pruebas de software ejecutadas.
 - No se incorporan integración automática de WhatsApp, logística de repartidores, inventario de ingredientes, sedes, reservas ni facturación electrónica.
 - Las aprobaciones por modalidad, el descuento de stock y el anticipo son comprobaciones indispensables.
 - Para simulaciones académicas, verificar manualmente el anticipo no equivale a integración con bancos ni pasarelas de pago.
