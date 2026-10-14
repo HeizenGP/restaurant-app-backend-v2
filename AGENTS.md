@@ -1,7 +1,7 @@
 # Restaurant App V2 — Instrucciones
 
-- Etapa actual: **01**, sin aprobación.
-- Consulta `docs/etapas/etapa-01.md`.
+- Etapa actual: **00**, sin aprobación.
+- Consulta `docs/etapas/README.md`.
 - No heredar como vigentes reglas, requisitos ni diagramas del ciclo anterior.
 - Documentar solo decisiones confirmadas, de manera breve en `docs/`.
 - No implementar código, API o BD ni avanzar de etapa sin indicación.

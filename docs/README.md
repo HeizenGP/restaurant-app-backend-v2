@@ -1,5 +1,5 @@
 # Documentación — Restaurant App V2
 
-Reinicio desde cero. **Solo la ETAPA 01 está abierta, sin decisiones aprobadas.**
+Reinicio desde cero. **La ETAPA 00 es el punto de inicio; todavía no hay etapas aprobadas.**
 
-[Etapa 01](etapas/etapa-01.md)
+[Plan maestro de etapas 00–11](etapas/README.md)
