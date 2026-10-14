@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Entornos virtuales
+.venv/
+venv/
+env/
+ENV/
+
+# Herramientas de calidad y cobertura
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+
+# Secretos y configuración local
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+*.local
+*.pem
+*.key
+*.p12
+*.pfx
+
+# IDE y sistema operativo
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Registros y temporales
+*.log
+*.tmp
+*.bak
