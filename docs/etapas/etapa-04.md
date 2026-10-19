@@ -7,7 +7,7 @@
 
 ## 1. Objetivo y límites
 
-Modelar **casos de uso, actividades y secuencias** desde los módulos M01–M07 y sus **40 RF** para mostrar interacción actor–sistema, condiciones de autorización, excepciones y trazabilidad. Los diagramas no definen arquitectura técnica, entidades SQL, APIs, pantallas ni despliegues; esas decisiones corresponden a etapas posteriores.
+Modelar **exclusivamente diagramas de casos de uso (CU)** para los módulos M01–M07 y sus **40 RF**, mostrando actores, funcionalidades, autorizaciones, restricciones y trazabilidad. Los diagramas no definen arquitectura técnica, entidades SQL, APIs, pantallas ni despliegues; esas decisiones corresponden a etapas posteriores.
 
 ### Actores y reglas de autorización
 
@@ -30,7 +30,7 @@ Los nombres «Personal autorizado» (CU-01) y «Mozo o Administrador» (SD-02) s
 - **Facturación/SUNAT:** cualquier comprobante de demostración carecerá de validez tributaria. **No se modela todavía como caso de uso**, porque no figura en los 40 RF y en ETAPA 01/03 la exclusión sigue por decidir; si se incluye, primero actualizar RF/CA y alcance.
 - **No incluir:** sedes, ingredientes, recetas, almacenes, reservas o promociones no aprobadas.
 
-## 2. Catálogo de diagramas (fuente PlantUML)
+## 2. Catálogo de casos de uso (fuentes PlantUML)
 
 **Carpeta dedicada:** [diagramas/etapa-04/](diagramas/etapa-04/).
 
@@ -44,33 +44,30 @@ Los nombres «Personal autorizado» (CU-01) y «Mozo o Administrador» (SD-02) s
 | **CU-05** | M05: cocina y comandas | [etapa-04-cu-m05.puml](diagramas/etapa-04/etapa-04-cu-m05.puml) |
 | **CU-06** | M06: caja y anticipo simulado | [etapa-04-cu-m06.puml](diagramas/etapa-04/etapa-04-cu-m06.puml) |
 | **CU-07** | M07: atención y cierre | [etapa-04-cu-m07.puml](diagramas/etapa-04/etapa-04-cu-m07.puml) |
-| **AD-01** | Actividad: condiciones, errores y cierre | [etapa-04-ad-confirmacion.puml](diagramas/etapa-04/etapa-04-ad-confirmacion.puml) |
-| **SD-01** | Secuencia: local por mozo | [etapa-04-sd-local-mozo.puml](diagramas/etapa-04/etapa-04-sd-local-mozo.puml) |
-| **SD-02** | Secuencia: local por app | [etapa-04-sd-local-app.puml](diagramas/etapa-04/etapa-04-sd-local-app.puml) |
-| **SD-03** | Secuencia: recojo/delivery por app | [etapa-04-sd-app-recojo-delivery.puml](diagramas/etapa-04/etapa-04-sd-app-recojo-delivery.puml) |
-| **SD-04** | Secuencia: recojo/delivery por llamada o WhatsApp | [etapa-04-sd-externo-recojo-delivery.puml](diagramas/etapa-04/etapa-04-sd-externo-recojo-delivery.puml) |
 
-**Criterio UML:** los CU modulares identifican trazas de RF, no implican que cada RF sea una función de interfaz. Las relaciones «include» expresan una dependencia obligatoria modelada; «extend» se reserva a los casos de rechazo condicionados. Las secuencias usan un único participante «Sistema» para no fijar una arquitectura antes de ETAPA 05.
+**Criterio UML:** los CU modulares identifican trazas de RF, pero no implican que cada RF sea un caso de uso independiente. Los casos de uso deben expresar objetivos de actores externos al sistema; las validaciones automáticas pueden representarse como condiciones o dependencias de los CU, cuando corresponda. Usar relaciones «include» y «extend» solo cuando su semántica esté justificada.
+
+**Alcance académico aprobado para esta etapa:** únicamente **CU-00 a CU-07**. No se exigen ni se conservan aquí diagramas de secuencia (SD) o actividades (AD). Los demás tipos de UML no forman parte del entregable de ETAPA 04.
 
 ## 3. Matriz de trazabilidad RF → caso de uso UML
 
-Cada RF de la ETAPA 03 debe aparecer **exactamente una vez en su diagrama CU modular de origen**. Los diagramas transversales pueden volver a referenciarlo sin crear RF nuevos.
+Cada RF de la ETAPA 03 debe tener correspondencia identificable con **al menos un caso de uso** del módulo respectivo y registrarse en la matriz. Un caso de uso puede satisfacer varios RF; no es obligatorio dibujar un óvalo por cada RF. Los CU generales pueden resumir funcionalidades sin duplicar requisitos.
 
-| Módulo | RF incluidos | CU fuente | Apoyo de actividades/secuencias |
+| Módulo | RF incluidos | Diagrama CU responsable |
 |---|---|---|---|
-| **M01** | RF-M01-01, RF-M01-02, RF-M01-03, RF-M01-04, RF-M01-05 | CU-01 | — |
-| **M02** | RF-M02-01, RF-M02-02, RF-M02-03, RF-M02-04, RF-M02-05, RF-M02-06 | CU-02 | AD-01 |
-| **M03** | RF-M03-01, RF-M03-02, RF-M03-03, RF-M03-04 | CU-03 | — |
-| **M04** | RF-M04-01, RF-M04-02, RF-M04-03, RF-M04-04, RF-M04-05, RF-M04-06, RF-M04-07, RF-M04-08, RF-M04-09, RF-M04-10, RF-M04-11 | CU-04 | AD-01, SD-01, SD-02, SD-03, SD-04 |
-| **M05** | RF-M05-01, RF-M05-02, RF-M05-03, RF-M05-04 | CU-05 | AD-01, SD-01, SD-02, SD-03, SD-04 |
-| **M06** | RF-M06-01, RF-M06-02, RF-M06-03, RF-M06-04, RF-M06-05, RF-M06-06 | CU-06 | AD-01, SD-01, SD-02, SD-03, SD-04 |
-| **M07** | RF-M07-01, RF-M07-02, RF-M07-03, RF-M07-04 | CU-07 | AD-01, SD-01, SD-02, SD-03, SD-04 |
+| **M01** | RF-M01-01, RF-M01-02, RF-M01-03, RF-M01-04, RF-M01-05 | CU-01 |
+| **M02** | RF-M02-01, RF-M02-02, RF-M02-03, RF-M02-04, RF-M02-05, RF-M02-06 | CU-02 |
+| **M03** | RF-M03-01, RF-M03-02, RF-M03-03, RF-M03-04 | CU-03 |
+| **M04** | RF-M04-01, RF-M04-02, RF-M04-03, RF-M04-04, RF-M04-05, RF-M04-06, RF-M04-07, RF-M04-08, RF-M04-09, RF-M04-10, RF-M04-11 | CU-04 |
+| **M05** | RF-M05-01, RF-M05-02, RF-M05-03, RF-M05-04 | CU-05 |
+| **M06** | RF-M06-01, RF-M06-02, RF-M06-03, RF-M06-04, RF-M06-05, RF-M06-06 | CU-06 |
+| **M07** | RF-M07-01, RF-M07-02, RF-M07-03, RF-M07-04 | CU-07 |
 
-**Cobertura esperada:** 40/40 RF (5 + 6 + 4 + 11 + 4 + 6 + 4); 7 CU modulares + 1 CU general + 1 actividad + 4 secuencias = **13 fuentes UML**.
+**Cobertura documental esperada:** 40/40 RF (5 + 6 + 4 + 11 + 4 + 6 + 4), distribuidos en **7 CU modulares + 1 CU general = 8 fuentes PlantUML**. La validez semántica de las asociaciones y la cobertura gráfica de condiciones deben verificarse aparte.
 
 ## 4. Excepciones y decisiones
 
-| Caso | Comportamiento modelado | Trazas |
+| Caso | Condición que debe respetar el modelado de CU | Trazas |
 |---|---|---|
 | Solicitud de app rechazada | Informar rechazo; sin confirmación, sin descuento y sin comanda. | RF-M04-06/07/08; RN-06/07/15 |
 | Sin disponibilidad o stock insuficiente | No confirmar, no descontar y no enviar a cocina. | RF-M02-05/06, RF-M04-09; RN-09/10 |
@@ -90,11 +87,11 @@ Cada RF de la ETAPA 03 debe aparecer **exactamente una vez en su diagrama CU mod
 
 - [x] Se identificaron 6 actores y 7 módulos sin arquitectura nueva.
 - [x] Se documentó traza uno a uno de los 40 RF a 7 CU modulares.
-- [x] Los 4 canales operativos están representados en secuencias; local por mozo y local app diferenciados.
-- [x] Se modelaron rechazo, falta de stock, anticipo pendiente y cierre incompleto.
+- [x] Las variantes local por mozo, local por app y recojo/delivery por app o canal externo están identificadas en los RF y el CU-04.
+- [ ] Revisar que los CU y sus descripciones representen correctamente rechazo, falta de stock, anticipo pendiente y cierre incompleto.
 - [x] Se explicitó la simulación académica y se evitó inventar facturación integrada.
-- [ ] Ejecutar compilación y renderización REAL de los 13 diagramas PlantUML de la [carpeta de etapa 04](diagramas/etapa-04/) (no basta inspeccionar el texto).
-- [ ] Verificar igualdad de archivos compartidos en docs/ de backend/frontend tras integrarlos.
+- [ ] Ejecutar compilación, renderización e inspección visual REALES de los **8 diagramas CU** de la [carpeta de etapa 04](diagramas/etapa-04/) (no basta inspeccionar el código).
+- [x] Sincronizar el alcance documental a solo 8 CU en docs/ de backend y frontend (pendiente comprobar igualdad tras los cambios).
 - [ ] Revisar actores propuestos en M07 y ratificar pendientes.
 - [ ] Aprobación expresa de ETAPA 04 por el usuario.
 
