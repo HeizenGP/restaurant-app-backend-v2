@@ -28,7 +28,7 @@ Desarrollar progresivamente un ecosistema para clientes, mozos, caja, cocina y a
 | **01** | Análisis del negocio y alcance | **Aprobada** | [Análisis del negocio](etapa-01.md) |
 | **02** | Flujo principal y subflujos | **Aprobada** | [Flujos](etapa-02.md) y [FL-01](etapa-02-flujo-principal.puml) |
 | **03** | Ingeniería de requisitos | **Aprobada** | [Reglas/RNF](etapa-03.md) y [40 RF/CA](etapa-03-requisitos.md) |
-| **04** | Modelado del sistema | **Elaborada; pendiente de validación/aprobación** | [Modelado UML](etapa-04.md) y [13 diagramas](diagramas/etapa-04/) |
+| **04** | Modelado del sistema | **Elaborada; pendiente de validación/aprobación** | [Casos de uso UML](etapa-04.md) y [8 diagramas CU](diagramas/etapa-04/) |
 | **05** | Arquitectura de software | **Documentada; pendiente de validación/aprobación** | [Arquitectura](etapa-05.md), [diagramas](diagramas/etapa-05/) y Skills técnicas |
 | **06** | Diseño de base de datos | **Siguiente etapa** | Modelo lógico/físico PostgreSQL por definir |
 | **07** | Configuración técnica | Por iniciar | Proyectos ejecutables, infraestructura y migraciones iniciales |
@@ -83,10 +83,10 @@ La elaboración de una etapa no equivale a su aprobación, ni una casilla de doc
 
 ### ETAPA 04 — Modelado del sistema · ELABORADA / PENDIENTE DE APROBACIÓN
 
-**Objetivo:** expresar comportamiento e interacción actor–sistema con UML, sin fijar arquitectura ni tablas.
+**Objetivo:** expresar las funcionalidades e interacciones entre actores y sistema mediante **diagramas de casos de uso UML**, sin fijar arquitectura ni tablas.
 
-- Modelar casos de uso por actor/módulo, actividad principal y secuencias por canal.
-- Mantener **13 fuentes PlantUML** y trazabilidad **40/40 RF → casos de uso**, incluyendo excepciones de rechazo, stock, anticipo y cierre.
+- Mantener un **CU general (CU-00)** y **7 CU modulares (CU-01 a CU-07)**. Esta etapa no requiere diagramas de secuencia ni de actividades.
+- Mantener **8 fuentes PlantUML** y trazabilidad **40/40 RF → casos de uso**, verificando permisos, rechazo, stock, anticipo y cierre sin agregar funciones.
 - Revisar asociaciones de roles y decisiones pendientes; **compilar y renderizar** realmente los diagramas.
 
 **Entregable:** [modelo y matriz de trazabilidad](etapa-04.md), [diagramas](diagramas/etapa-04/).  
