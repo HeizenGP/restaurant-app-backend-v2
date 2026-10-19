@@ -1,51 +1,55 @@
+
 @startuml
+title CU-00 — Casos de uso generales | Chifa ASIA
+
 left to right direction
-title CU-00 — Capacidades generales de Chifa ASIA
 skinparam shadowing false
-actor "Cliente" as Cliente
-actor "Mozo" as Mozo
-actor "Cajero" as Cajero
-actor "Administrador" as Admin
-actor "Personal de cocina" as Cocina
-actor "Super Administrador" as Super
-rectangle "Restaurant App V2 — Chifa ASIA" {
-  usecase "Gestionar acceso\n(M01)" as M01
-  usecase "Consultar y gestionar\ncatálogo y stock (M02)" as M02
-  usecase "Gestionar mesas\n(M03)" as M03
-  usecase "Registrar y gestionar\npedidos (M04)" as M04
-  usecase "Gestionar comandas\n(M05)" as M05
-  usecase "Registrar cobros y\nanticipos (M06)" as M06
-  usecase "Registrar atención y\ncierre (M07)" as M07
+skinparam linetype ortho
+skinparam packageStyle rectangle
+
+actor Cliente as C
+actor Mozo as M
+actor "Personal de cocina" as K
+actor Cajero as J
+actor Administrador as A
+actor "Superadministrador" as S
+
+rectangle "Sistema Chifa ASIA" {
+
+  package "Atención del restaurante" {
+    usecase "Acceder o continuar\ncomo invitado (M01)" as UC1
+    usecase "Consultar catálogo y\nsolicitar pedidos (M02/M04)" as UC2
+    usecase "Atender pedidos en\nmesa (M03/M04/M07)" as UC3
+    usecase "Preparar comandas\nconfirmadas (M05)" as UC4
+  }
+
+  package "Administración y caja" {
+    usecase "Administrar usuarios,\nproductos y mesas (M01-M03)" as UC5
+    usecase "Revisar pedidos y\nverificar anticipos (M04/M06)" as UC6
+    usecase "Registrar cobros\n(M06)" as UC7
+  }
 }
-Cliente -- M01
-Cliente -- M02
-Cliente -- M03
-Cliente -- M04
-Mozo -- M03
-Mozo -- M04
-Mozo -- M07
-Cajero -- M06
-Admin -- M01
-Admin -- M02
-Admin -- M03
-Admin -- M04
-Admin -- M06
-Cocina -- M05
-Admin -- M07
-Super -- M01
-Super -- M02
-Super -- M03
-Super -- M04
-Super -- M05
-Super -- M06
-Super -- M07
-note bottom of Super
-  Acceso a todos los módulos.
-  Los permisos por roles son acumulativos;
-  no se heredan por jerarquía implícita.
-end note
-note bottom of M07
-  Asignación de registro de entrega
-  y cierre: pendiente de ratificar.
-end note
+
+C -- UC1
+C -- UC2
+
+M -- UC3
+K -- UC4
+
+A -- UC5
+A -- UC6
+
+J -- UC7
+
+S -- UC5
+
+legend bottom
+  El Superadministrador tiene acceso a todas las funciones.
+  Se muestra una asociación representativa para evitar
+  conexiones redundantes.
+
+  La verificación de anticipos no concede acceso a Caja.
+  Responsables de recojo, delivery y cierre: por ratificar.
+endlegend
+
 @enduml
