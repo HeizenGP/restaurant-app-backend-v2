@@ -2,9 +2,9 @@
 
 ## Estado y autoridad
 
-- **ETAPAS 00–03 aprobadas (2026-10-13). ETAPA 04 en revisión y no aprobada. ETAPA 05 autorizada para elaboración, documentada como propuesta y no aprobada.** No aprobar etapas por inferencia.
+- **ETAPAS 00–03 aprobadas (2026-10-13) y ETAPA 04 aprobada expresamente por el usuario (2026-10-20), con comprobaciones técnicas pendientes. ETAPA 05 autorizada para elaboración, documentada como propuesta y no aprobada.** No aprobar etapas por inferencia.
 - Índice oficial: `docs/etapas/README.md`. Trabajo actual: `docs/etapas/etapa-05.md`.
-- Las ETAPAS 01–03 prevalecen como línea base de negocio y requisitos. ETAPA 04 es referencia UML provisional: no usarla para resolver RN-20/RN-21, RNF-08, responsables de M07 ni comprobantes.
+- Las ETAPAS 01–03 prevalecen como línea base de negocio y requisitos. ETAPA 04 es línea base documental de casos de uso aprobada, pero no resuelve por sí sola RN-20/RN-21, RNF-08, responsables de M07 ni comprobantes.
 
 ## Carga selectiva
 
