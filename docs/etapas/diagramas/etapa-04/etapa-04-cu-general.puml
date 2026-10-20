@@ -1,55 +1,54 @@
-
 @startuml
-title CU-00 — Casos de uso generales | Chifa ASIA
-
+title CU-00 — Visión general de casos de uso | Chifa ASIA
 left to right direction
 skinparam shadowing false
 skinparam linetype ortho
 skinparam packageStyle rectangle
 
-actor Cliente as C
-actor Mozo as M
+actor "Cliente" as C
+actor "Mozo" as M
 actor "Personal de cocina" as K
-actor Cajero as J
-actor Administrador as A
-actor "Superadministrador" as S
+actor "Cajero" as J
+actor "Administrador" as A
+actor "Super Administrador" as S
 
-rectangle "Sistema Chifa ASIA" {
-
-  package "Atención del restaurante" {
-    usecase "Acceder o continuar\ncomo invitado (M01)" as UC1
-    usecase "Consultar catálogo y\nsolicitar pedidos (M02/M04)" as UC2
-    usecase "Atender pedidos en\nmesa (M03/M04/M07)" as UC3
-    usecase "Preparar comandas\nconfirmadas (M05)" as UC4
+rectangle "Chifa ASIA — Sistema de pedidos" {
+  package "Atención al cliente" {
+    usecase "Consultar catálogo\n(M02)" as U1
+    usecase "Solicitar y consultar\npedidos (M03/M04)" as U2
+    usecase "Atender pedidos\nen mesa (M03/M04/M07)" as U3
   }
-
-  package "Administración y caja" {
-    usecase "Administrar usuarios,\nproductos y mesas (M01-M03)" as UC5
-    usecase "Revisar pedidos y\nverificar anticipos (M04/M06)" as UC6
-    usecase "Registrar cobros\n(M06)" as UC7
+  package "Operaciones del restaurante" {
+    usecase "Gestionar comandas\nconfirmadas (M05)" as U4
+    usecase "Registrar cobros\n(M06)" as U5
+    usecase "Administrar usuarios,\nproductos y mesas (M01-M03)" as U6
+    usecase "Registrar y revisar\npedidos (M04)" as U7
+    usecase "Verificar anticipos\n(M06)" as U8
   }
 }
+C -- U1
+C -- U2
+M -- U3
+M -- U7
+K -- U4
+J -- U5
+A -- U6
+A -- U7
+A -- U8
 
-C -- UC1
-C -- UC2
-
-M -- UC3
-K -- UC4
-
-A -- UC5
-A -- UC6
-
-J -- UC7
-
-S -- UC5
-
-legend bottom
-  El Superadministrador tiene acceso a todas las funciones.
-  Se muestra una asociación representativa para evitar
-  conexiones redundantes.
-
-  La verificación de anticipos no concede acceso a Caja.
-  Responsables de recojo, delivery y cierre: por ratificar.
-endlegend
-
+S -|> A
+S -|> M
+S -|> J
+S -|> K
+S -|> C
+note bottom of S
+  RN-03: Super Administrador tiene todos los permisos.
+  Esta generalización expresa acceso global, no
+  una jerarquía entre los demás roles.
+end note
+note bottom of U3
+  M07: servicio en mesa por Mozo.
+  Responsables de recojo, delivery y cierre
+  aún requieren ratificación.
+end note
 @enduml
