@@ -21,8 +21,8 @@ Las decisiones de esta etapa se clasifican así:
 |---|---|---|
 | **A05-01** | Backend como **monolito modular FastAPI** con los siete módulos M01–M07. | Una sola operación académica, invariantes transversales y despliegue simple; no se justifican microservicios. |
 | **A05-02** | Arquitectura hexagonal dentro de cada módulo y **Vertical Slicing por caso de uso**. | Aísla negocio y adaptadores, mantiene trazabilidad con RF/CA y permite pruebas por operación. |
-| **A05-03** | Comunicación interna en proceso, síncrona para invariantes; eventos internos solo para efectos posteriores. **CQRS liviano**, sin event sourcing ni broker. | Evita infraestructura innecesaria y permite una única transacción para confirmar pedidos. |
-| **A05-04** | Un workspace Flutter con dos aplicaciones: `customer_app` y `staff_app`; administración es un espacio adaptativo de `staff_app`. | Separa la experiencia pública de la operativa y conserva roles acumulativos sin mantener tres aplicaciones duplicadas. |
+| **A05-03** | Comunicación interna mediante contratos públicos en proceso; **una UoW transaccional compartida** para confirmar pedido, descontar stock y habilitar comanda. Eventos internos solo después del commit; CQRS liviano, sin broker ni event sourcing. | Evita transacciones parciales, infraestructura innecesaria y duplicaciones. |
+| **A05-04** | Un workspace Flutter con **dos aplicaciones**: `customer_app` para clientes y `staff_app` para personal; **el panel administrativo es Flutter Web construido desde `staff_app`**, sin tercera aplicación. | Reutiliza sesión, navegación y capacidades del personal; separa la experiencia pública de la operativa. |
 | **A05-05** | Una API REST JSON versionada bajo `/api/v1`; el backend es la autoridad de negocio. | Contrato único para ambos clientes y autorización centralizada. |
 | **A05-06** | Sesiones de cliente, invitado y personal con tokens; autorización por permisos acumulados, comprobada en HTTP y en cada caso de uso. | Cumple RNF-01 y evita confiar en rutas o botones de Flutter. |
 | **A05-07** | Servicios externos ausentes o simulados mediante adaptadores explícitos; sin llamadas reales a WhatsApp, pagos, mapas o SUNAT. | Respeta el alcance académico y evita fingir integraciones no aprobadas. |
@@ -76,22 +76,22 @@ Cada operación se localiza por intención, por ejemplo `m04_orders/application/
 
 La comunicación entre módulos sigue estas reglas:
 
-- **Síncrona y en proceso** cuando una respuesta decide la misma operación: validar mesa, revalidar/descontar stock, comprobar anticipo, crear comanda o evaluar saldo.
+- **Síncrona y en proceso** para validar mesa, stock y anticipo y para crear comanda. Los puertos públicos aceptan el contexto de la misma UoW cuando hay escrituras del flujo crítico, sin que los módulos importen repositorios o sesiones ajenos.
 - **Evento interno posterior al commit** para actualizar una proyección o auditoría que no determina el éxito de la transacción. No hay broker en esta versión.
 - **Nunca HTTP entre módulos** del mismo proceso y nunca acceso directo a tablas ajenas.
 - Los ciclos se evitan haciendo que el caso de uso consumidor defina el puerto requerido; `bootstrap` conecta su adaptador con la API pública del módulo proveedor.
 
-`ConfirmOrder` de M04 es el coordinador del flujo crítico. Una única unidad de trabajo debe:
+`ConfirmOrder` de M04 **coordina una sola UoW y una sola transacción de escritura** sobre la persistencia compartida (PostgreSQL), gestionada por la capa de aplicación/infraestructura y no por cada repositorio por separado:
 
-1. comprobar autorización y estado vigente del pedido;
-2. revalidar disponibilidad y stock mediante M02;
-3. comprobar en M06 el anticipo verificado cuando la modalidad lo exige;
-4. aplicar una sola transición de confirmación y un solo descuento de stock;
-5. habilitar una sola comanda mediante M05;
-6. registrar actor, momento e identificador de la operación;
-7. confirmar todos los cambios o ninguno.
+1. validar permiso, modalidad, aprobación aplicable y estado actual;
+2. verificar que la operación no se haya confirmado antes (identidad/idempotencia);
+3. revalidar disponibilidad y stock con M02 dentro del alcance transaccional;
+4. leer de M06 el **anticipo ya verificado y registrado previamente** cuando aplique: confirmar el pedido **no genera otro pago**;
+5. aplicar una única transición de M04, descontar stock exactamente una vez mediante M02 y crear una sola comanda mediante M05;
+6. registrar actor, momento y referencia de operación en el mismo commit para la auditoría indispensable;
+7. **commit único** si todo es válido o **rollback completo** si cualquier paso falla. La reejecución devuelve un resultado consistente sin repetir descuento ni comanda.
 
-El mecanismo concreto de concurrencia y persistencia se decide en ETAPA 06. La arquitectura exige atomicidad, control de versión y deduplicación para satisfacer RNF-04/05/10; no ratifica por sí sola RN-20 ni RN-21.
+La UoW coordina adaptadores de distintos módulos con **un mismo contexto transaccional**; ningún módulo accede directamente a las tablas internas de otro. Las notificaciones o proyecciones prescindibles suceden **después** del commit. El bloqueo, el aislamiento, las claves de idempotencia persistidas y el mecanismo ORM concreto se diseñarán en ETAPA 06/07. Esto implementa arquitectónicamente RNF-04/05/10 sin aprobar por inferencia RN-20 ni RN-21.
 
 ### 3.3 Límites de los siete módulos
 
@@ -102,7 +102,7 @@ El mecanismo concreto de concurrencia y persistencia se decide en ETAPA 06. La a
 | **M03 `m03_tables`** | Mesas, distribución y ocupación. | Consultar/gestionar mesas y validar una referencia de mesa. | La asociación seleccionada se guarda con el pedido en M04; M03 no aprueba solicitudes. | RF-M03-01..04; RN-01/06. |
 | **M04 `m04_orders`** | Solicitud y snapshot comercial del pedido, modalidad, canal, líneas/cantidades/precios, total, decisiones y estado comercial (solicitado/aprobado/rechazado/confirmado/cerrado). | Crear/consultar, aprobar/rechazar y confirmar; componer la vista integrada del pedido mediante contratos públicos. | No copia como propios stock, pago, preparación o entrega ni accede a repositorios ajenos. | RF-M04-01..11; RN-05..10/12/14/15; RNF-04/09/10. |
 | **M05 `m05_kitchen`** | Comanda vinculada a pedido confirmado y estado canónico de cocina: Recibida/En preparación/Listo. | Crear una sola comanda por confirmación; listar detalle/estado; cambiar estado autorizado. | No aprueba ni confirma pedidos, no registra cobros y no escribe directamente el estado comercial de M04. | RF-M05-01..04; RN-15/16. |
-| **M06 `m06_payments`** | Cálculo de anticipo, verificación manual/simulada, cobros, deduplicación y saldo. | Verificar anticipo; registrar cobro; consultar estado/saldo. | No procesa dinero externo. Verificar anticipo no otorga permiso general de Caja. | RF-M06-01..06; RN-04/12/13/14/17/19; RNF-05/09. |
+| **M06 `m06_payments`** | Anticipo calculado, verificación administrativa y **registro único del abono simulado**, cobros posteriores, deduplicación y saldo derivado de importes registrados. | Calcular/verificar/registrar anticipo mediante permiso administrativo; registrar cobros generales mediante permiso de Caja; consultar saldo. | No procesa dinero externo. La verificación de anticipo **no** concede acceso a Caja ni vuelve a registrar el abono al confirmar. | RF-M06-01..06; RN-04/12/13/14/17/19; RNF-05/09. |
 | **M07 `m07_fulfillment`** | Registro de servicio en mesa, recojo o entrega comercial y solicitud de cierre. | Registrar atención/entrega; evaluar cierre con estado de M04 y saldo de M06. | No administra repartidores, rutas o GPS. Actores de recojo/delivery/cierre siguen pendientes. | RF-M07-01..04; RN-17/18; RN-21 pendiente. |
 
 Las referencias cruzadas no cambian la propiedad. Por ejemplo, M04 conserva el identificador de mesa y consulta M03; no duplica la mesa. M07 registra el hecho de atención y solicita la transición final a M04; la asignación de quién ejecuta recojo, delivery y cierre no se habilita hasta su ratificación.
@@ -115,7 +115,7 @@ El “estado del pedido” que ve el cliente es una **vista compuesta**, no un �
 
 - Base `/api/v1`, JSON UTF-8 y fechas en ISO 8601 con zona horaria.
 - `GET` no cambia estado; `POST` crea recursos o registra comandos de negocio; `PATCH` actualiza campos o una transición cuando el contrato lo haga inequívoco.
-- Los comandos críticos aceptan `Idempotency-Key`: confirmar, verificar anticipo, registrar cobro, registrar atención/entrega y cerrar. Su alcance mínimo es principal + operación + recurso.
+- Los comandos críticos aceptan `Idempotency-Key`: confirmar, verificar y registrar anticipo, registrar cobro, registrar atención/entrega y cerrar. Su alcance mínimo es principal + operación + recurso. Reintentar la misma verificación no crea un segundo abono.
 - Mutaciones concurrentes usan una versión esperada o precondición equivalente. Los conflictos de estado, stock o versión responden `409` con un código de dominio estable.
 - Errores uniformes: `type`, `title`, `status`, `code`, `detail`, `instance`, `trace_id` y errores de campos cuando correspondan. No se exponen trazas internas.
 - Códigos base: `400` solicitud mal formada, `401` sin sesión válida, `403` sin permiso, `404` recurso no visible, `409` conflicto de negocio/concurrencia, `422` datos semánticamente inválidos.
@@ -132,7 +132,7 @@ Son fronteras de contrato, no APIs implementadas ni payloads definitivos.
 | M02 | `/catalog/categories`, `/catalog/products`, `/stock-adjustments` |
 | M03 | `/tables`, `/table-occupancy` |
 | M04 | `/orders`, `/orders/{id}/decisions`, `/orders/{id}/confirmations` |
-| M05 | `/kitchen/commands`, `/kitchen/commands/{id}/transitions` |
+| M05 | `/kitchen/tickets`, `/kitchen/tickets/{id}/transitions` |
 | M06 | `/orders/{id}/advance-verifications`, `/orders/{id}/payments`, `/orders/{id}/payment-summary` |
 | M07 | `/orders/{id}/fulfillments`, `/orders/{id}/closures` |
 
@@ -147,7 +147,7 @@ Las consultas de estado de un pedido permanecen en M04 aunque su vista combine p
 - **Personal:** la misma forma de sesión, con uno o varios roles. Los permisos efectivos son la unión explícita de sus roles; Super Administrador obtiene el conjunto total.
 - Contraseñas mediante un puerto de hash adaptativo; nunca se guardan o devuelven en claro. La biblioteca concreta se selecciona en ETAPA 07.
 - Las credenciales de renovación se almacenarán revocables y protegidas; el detalle de persistencia pertenece a ETAPA 06.
-- HTTPS es obligatorio para cualquier despliegue accesible por Internet. En móvil, Flutter guarda la credencial renovable en almacenamiento seguro y mantiene el acceso corto en memoria. Si se aprueba Flutter Web, la renovación usará cookie `HttpOnly`, `Secure` y `SameSite`, con origen permitido y protección CSRF; no `localStorage`.
+- HTTPS es obligatorio para cualquier despliegue accesible por Internet. En móvil, Flutter guarda la credencial renovable en almacenamiento seguro y mantiene el acceso corto en memoria. En el **panel Flutter Web de `staff_app`**, la renovación usará cookie `HttpOnly`, `Secure` y `SameSite`, con origen permitido y protección CSRF; no `localStorage`.
 
 ### 5.2 Autorización
 
@@ -176,11 +176,13 @@ El último permiso no se concede al Administrador por esta tabla: se conserva co
 | Caso | Decisión de ETAPA 05 | Evidencia/seguridad |
 |---|---|---|
 | Llamada y WhatsApp | Son valores de canal y entrada manual por Administrador; no existe cliente HTTP ni webhook. | Guardar canal y actor que registró. |
-| Anticipo/pago | Adaptador `manual_simulated`: el Administrador verifica anticipo y Caja registra cobros. No se captura dinero ni se consulta un banco. | Marcar origen manual/simulado, actor, fecha e idempotency key. |
+| Anticipo/pago | Adaptador `manual_simulated`: al **verificar administrativamente** el anticipo válido del 50 %, M06 deja constancia del **abono simulado una sola vez** y lo incluye en el saldo; Caja registra cobros posteriores mediante su permiso independiente. No se captura dinero ni se consulta un banco. | Un único evento económico de anticipo por verificación válida, importe y referencia del pedido, actor, fecha e idempotency key; saldo = total menos abonos/cobros válidos, sin doble contabilización. |
 | Cancelación con anticipo | El Administrador decide manualmente si corresponde devolverlo, fuera de un flujo automatizado. | RN-19 no crea endpoint, puerto de reembolso ni movimiento de dinero; añadirlos exigiría un RF autorizado. |
 | Delivery | Registro comercial manual de entrega. | Sin repartidor, asignación, ruta, mapa o GPS. |
 | Facturación/SUNAT | Sin puerto, adaptador, endpoint ni pantalla. | No existe RF aprobado; cualquier incorporación exige volver a requisitos. |
 | Pruebas | Fakes deterministas de reloj, IDs, repositorios y puertos externos. | Sin red ni secretos; resultados repetibles y rotulados como simulados. |
+
+La verificación administrativa **no equivale a un segundo cobro de Caja**: crea o reconoce el abono simulado del anticipo del pedido, de forma idempotente, y deja el saldo pendiente. En recojo/delivery el cobro del 50 % restante corresponde a Caja en la entrega (RF-M06-05, RN-17). La confirmación de M04 solo **consulta** el anticipo ya acreditado. No se modelan pasarelas, movimientos bancarios ni devoluciones automáticas.
 
 Los adaptadores se seleccionan por composición/configuración y nunca por condicionales dentro del dominio. Una futura integración real debe implementar el mismo puerto, tener autorización explícita y abrir su propia decisión arquitectónica.
 
@@ -195,7 +197,7 @@ Los adaptadores se seleccionan por composición/configuración y nunca por condi
 | Tres apps: cliente + personal + administración | Aísla administración, pero duplica sesión, API, diseño y módulos; fragmenta a Administrador + Cajero sin una necesidad actual. |
 
 - `customer_app`: Android móvil para Cliente registrado o Invitado; consume M01–M04 y consulta el estado integrado del pedido.
-- `staff_app`: Android/adaptativa para Mozo, Cajero, Cocina, Administrador y Super Administrador; habilita espacios según capacidades. Las vistas administrativas se adaptan a tablet/web/escritorio desde el mismo código. El destino de despliegue inicial del panel se confirma en ETAPA 07.
+- `staff_app`: **una sola aplicación Flutter** para Mozo, Cajero, Cocina, Administrador y Super Administrador. Proporciona interfaz móvil/adaptativa para personal y **panel administrativo Flutter Web** compilado del mismo código, habilitado por capacidades. En ETAPA 07 se definirán hosting, compilación y configuración de despliegue, **no** una tercera aplicación.
 
 Estructura objetivo, aún sin inicializar Flutter:
 
@@ -264,10 +266,10 @@ MCP se usa por necesidad demostrada: archivos y Git locales para este trabajo; G
 | RNF-01 | Principal y permisos en adaptador HTTP y handler; matriz de capacidades. |
 | RNF-02 | Puerto de hash adaptativo y credenciales nunca expuestas. |
 | RNF-03 | HTTPS obligatorio en despliegue público. |
-| RNF-04 | UoW de confirmación, control de concurrencia e idempotencia. |
-| RNF-05 | Registro de cobro idempotente y saldo propiedad de M06. |
+| RNF-04 | UoW única de M04/M02/M05 sobre una transacción; validación y descuento de stock una vez, rollback global e idempotencia. |
+| RNF-05 | Verificación/abono simulado idempotente, cobros separados y saldo único calculado por M06. |
 | RNF-06 | Contrato uniforme de error y traducción tipada en Flutter. |
-| RNF-07 | `customer_app` Android móvil y `staff_app` adaptativa. |
+| RNF-07 | `customer_app` Android y `staff_app` móvil/adaptativa con panel administrativo Flutter Web del mismo código. |
 | RNF-08 | La métrica p95 <= 3 s / 20 usuarios permanece propuesta; no se usa como aprobación. |
 | RNF-09 | Auditoría de actor, instante e identificador para aprobación, stock, anticipo y cobro. |
 | RNF-10 | Éxito solo tras respuesta del servidor y reintentos con la misma clave. |
@@ -293,6 +295,6 @@ Criterios de validación de esta propuesta:
 4. Ratificar o reemplazar la métrica propuesta RNF-08.
 5. Ratificar exclusiones aún propuestas, incluida facturación electrónica; hasta entonces permanecen fuera de implementación.
 6. En ETAPA 06: modelo de datos, límites transaccionales físicos, bloqueo/control de versión e idempotencia persistida.
-7. En ETAPA 07: versiones y librerías concretas, algoritmo/configuración de tokens, framework de estado/navegación/DI y primer destino del panel adaptativo.
+7. En ETAPA 07: versiones y librerías concretas, algoritmo/configuración de tokens, framework de estado/navegación/DI y configuración de despliegue Flutter Web del panel administrativo.
 
 **Estado final: ETAPA 05 DOCUMENTADA Y PENDIENTE DE APROBACIÓN.** No instalar ni implementar esta arquitectura hasta que la etapa correspondiente lo autorice.
