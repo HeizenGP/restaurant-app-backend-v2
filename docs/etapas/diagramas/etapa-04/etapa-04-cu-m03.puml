@@ -1,15 +1,16 @@
 @startuml
+title CU-03 — M03 | Gestión de mesas
 left to right direction
-title CU-03 — M03 Gestión de mesas
 skinparam shadowing false
+skinparam linetype ortho
 actor "Cliente" as C
 actor "Mozo" as M
 actor "Administrador" as A
-rectangle "M03 — Gestión de mesas" {
-  usecase "RF-M03-01\nRegistrar/actualizar mesas y distribución" as U1
-  usecase "RF-M03-02\nConsultar mesas desde app" as U2
-  usecase "RF-M03-03\nAsociar mesa a pedido local" as U3
-  usecase "RF-M03-04\nConsultar/actualizar ocupación" as U4
+rectangle "M03 — Mesas" {
+  usecase "Registrar y actualizar\nmesas/distribución\n(RF-M03-01)" as U1
+  usecase "Consultar mesas\ndisponibles en app\n(RF-M03-02)" as U2
+  usecase "Asociar mesa al pedido\nde consumo en local\n(RF-M03-03)" as U3
+  usecase "Consultar/actualizar\nocupación de mesas\n(RF-M03-04)" as U4
 }
 A -- U1
 C -- U2
@@ -18,6 +19,10 @@ M -- U3
 M -- U4
 A -- U4
 note bottom of U4
-  Should Have, prioridad propuesta.
+  Prioridad RF-M03-04: SHOULD (aprobada).
+  Actualizar ocupación no implica por sí solo
+  permiso para liberar mesas.
+  Los permisos específicos de liberación
+  deben constar en la línea base de negocio.
 end note
 @enduml
