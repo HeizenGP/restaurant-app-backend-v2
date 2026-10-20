@@ -20,7 +20,7 @@ Modelar **exclusivamente diagramas de casos de uso (CU)** para los módulos M01�
 | Personal de cocina | Consulta comandas confirmadas y marca En preparación/Listo. |
 | Super Administrador | Acceso absoluto. Los roles de una cuenta son acumulativos; el privilegio Super no se representa como una nueva operación. |
 
-Los nombres «Personal autorizado» (CU-01) y «Mozo o Administrador» (SD-02) son **agrupaciones de presentación**, no roles nuevos.
+«Personal del restaurante» (CU-01) es una agrupación de presentación de los roles existentes, no un séptimo rol. CU-00 representa el acceso global de Super Administrador mediante generalización UML hacia los actores autorizados; los permisos de los demás roles no forman una jerarquía.
 
 ### Simulaciones y exclusiones
 
@@ -51,10 +51,10 @@ Los nombres «Personal autorizado» (CU-01) y «Mozo o Administrador» (SD-02) s
 
 ## 3. Matriz de trazabilidad RF → caso de uso UML
 
-Cada RF de la ETAPA 03 debe tener correspondencia identificable con **al menos un caso de uso** del módulo respectivo y registrarse en la matriz. Un caso de uso puede satisfacer varios RF; no es obligatorio dibujar un óvalo por cada RF. Los CU generales pueden resumir funcionalidades sin duplicar requisitos.
+Cada RF de la ETAPA 03 debe tener correspondencia identificable con **un caso de uso o una restricción explícita asociada a este** y registrarse en la matriz. Un caso de uso puede satisfacer varios RF; no es obligatorio dibujar un óvalo por cada RF. Los CU generales pueden resumir funcionalidades sin duplicar requisitos.
 
 | Módulo | RF incluidos | Diagrama CU responsable |
-|---|---|---|---|
+|---|---|---|
 | **M01** | RF-M01-01, RF-M01-02, RF-M01-03, RF-M01-04, RF-M01-05 | CU-01 |
 | **M02** | RF-M02-01, RF-M02-02, RF-M02-03, RF-M02-04, RF-M02-05, RF-M02-06 | CU-02 |
 | **M03** | RF-M03-01, RF-M03-02, RF-M03-03, RF-M03-04 | CU-03 |
@@ -74,7 +74,7 @@ Cada RF de la ETAPA 03 debe tener correspondencia identificable con **al menos u
 | Sin anticipo confirmado en recojo/delivery | Mantener pendiente, bloquear confirmación/comanda. | RF-M06-02/03/04, RF-M04-09; RN-12/13 |
 | Reintento concurrente de confirmación o cobro | Consistencia e idempotencia se requieren en pruebas; no se define mecanismo técnico en UML. | RNF-04/05/10; RN-20 propuesta |
 | Saldo pendiente o entrega sin registrar | Bloquear cierre según RN-21 (propuesta, pendiente de validar). | RF-M06-06, RF-M07-04; RN-21 propuesta |
-| Cancelación con anticipo | Administrador decide sobre posible devolución; no crear un servicio automatizado de reembolsos. | RN-19 |
+| Cancelación con anticipo | CU-06 incorpora «Evaluar devolución de anticipo cancelado», decisión del Administrador, sin reembolso automatizado. Sigue pendiente armonizar su trazabilidad con un criterio de aceptación aprobado. | RN-19 |
 
 ## 5. Pendientes que no se deben convertir en supuestos
 
@@ -86,14 +86,15 @@ Cada RF de la ETAPA 03 debe tener correspondencia identificable con **al menos u
 ## 6. Validación y criterios de aceptación
 
 - [x] Se identificaron 6 actores y 7 módulos sin arquitectura nueva.
-- [x] Se documentó traza uno a uno de los 40 RF a 7 CU modulares.
+- [x] Los 40 RF están referenciados en los 7 CU modulares, como casos de uso o como restricciones expresas; verificar en revisión funcional que los escenarios sean correctos.
 - [x] Las variantes local por mozo, local por app y recojo/delivery por app o canal externo están identificadas en los RF y el CU-04.
-- [ ] Revisar que los CU y sus descripciones representen correctamente rechazo, falta de stock, anticipo pendiente y cierre incompleto.
+- [x] Se documentaron condiciones para rechazo, falta de stock, anticipo pendiente y cierre incompleto; pendiente validación funcional y visual de su representación.
 - [x] Se explicitó la simulación académica y se evitó inventar facturación integrada.
 - [ ] Ejecutar compilación, renderización e inspección visual REALES de los **8 diagramas CU** de la [carpeta de etapa 04](diagramas/etapa-04/) (no basta inspeccionar el código).
 - [x] Verificar igualdad de los 8 diagramas CU y de los documentos de alcance en ambos repositorios.
 - [x] Eliminar los diagramas de secuencia y actividades en ambos repositorios; quedan únicamente los ocho CU.
+- [ ] Ratificar los responsables provisionales de CU-07 y armonizar RN-19, RN-20 y RN-21 con los requisitos aprobados.
 - [ ] Revisar actores propuestos en M07 y ratificar pendientes.
 - [ ] Aprobación expresa de ETAPA 04 por el usuario.
 
-**Estado final: ETAPA 04 — EN REVISIÓN / NO APROBADA.** La autorización para elaborarla no sustituye los criterios de aceptación.
+**Estado final: ETAPA 04 — CU REVISADOS Y MEJORADOS / PENDIENTE DE RENDERIZACIÓN, DECISIONES Y APROBACIÓN.** La autorización para elaborarla no sustituye los criterios de aceptación.
