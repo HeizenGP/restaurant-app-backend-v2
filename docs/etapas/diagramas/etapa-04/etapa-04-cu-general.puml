@@ -1,9 +1,13 @@
 @startuml
-title CU-00 — Visión general de casos de uso | Chifa ASIA
+title CU-00 — Casos de uso generales | Chifa ASIA
 left to right direction
+
 skinparam shadowing false
 skinparam linetype ortho
 skinparam packageStyle rectangle
+skinparam nodesep 18
+skinparam ranksep 26
+skinparam defaultFontSize 12
 
 actor "Cliente" as C
 actor "Mozo" as M
@@ -12,43 +16,60 @@ actor "Cajero" as J
 actor "Administrador" as A
 actor "Super Administrador" as S
 
-rectangle "Chifa ASIA — Sistema de pedidos" {
-  package "Atención al cliente" {
-    usecase "Consultar catálogo\n(M02)" as U1
-    usecase "Solicitar y consultar\npedidos (M03/M04)" as U2
-    usecase "Atender pedidos\nen mesa (M03/M04/M07)" as U3
+rectangle "Sistema de gestión de pedidos — Chifa ASIA" {
+
+  package "Cliente" {
+    usecase "Acceder a la aplicación\n(M01)" as C1
+    usecase "Consultar catálogo\n(M02)" as C2
+    usecase "Realizar pedido\n(M03/M04)" as C3
+    usecase "Consultar estado\ndel pedido (M04)" as C4
   }
-  package "Operaciones del restaurante" {
-    usecase "Gestionar comandas\nconfirmadas (M05)" as U4
-    usecase "Registrar cobros\n(M06)" as U5
-    usecase "Administrar usuarios,\nproductos y mesas (M01-M03)" as U6
-    usecase "Registrar y revisar\npedidos (M04)" as U7
-    usecase "Verificar anticipos\n(M06)" as U8
+
+  package "Atención y operación" {
+    usecase "Registrar pedido\npresencial (M04)" as M1
+    usecase "Verificar mesa y aprobar\nsolicitud local (M03/M04)" as M2
+    usecase "Registrar servicio\nen mesa (M07)" as M3
+    usecase "Preparar comandas\nconfirmadas (M05)" as K1
+    usecase "Registrar cobros\n(M06)" as J1
+  }
+
+  package "Administración" {
+    usecase "Gestionar usuarios\ny roles (M01)" as A1
+    usecase "Gestionar catálogo\ny stock (M02)" as A2
+    usecase "Gestionar mesas\n(M03)" as A3
+    usecase "Registrar pedidos\npor canal externo (M04)" as A4
+    usecase "Aprobar solicitudes\nde recojo/delivery (M04)" as A5
+    usecase "Verificar anticipos\n(M06)" as A6
   }
 }
-C -- U1
-C -- U2
-M -- U3
-M -- U7
-K -- U4
-J -- U5
-A -- U6
-A -- U7
-A -- U8
+
+C -right- C1
+C -right- C2
+C -right- C3
+C -right- C4
+
+M -right- M1
+M -right- M2
+M -right- M3
+A -right- M2
+
+K1 -right- K
+J1 -right- J
+
+A -right- A1
+A -right- A2
+A -right- A3
+A -right- A4
+A -right- A5
+A -right- A6
 
 S -|> A
-S -|> M
-S -|> J
-S -|> K
-S -|> C
-note bottom of S
-  RN-03: Super Administrador tiene todos los permisos.
-  Esta generalización expresa acceso global, no
-  una jerarquía entre los demás roles.
-end note
-note bottom of U3
-  M07: servicio en mesa por Mozo.
-  Responsables de recojo, delivery y cierre
-  aún requieren ratificación.
-end note
+
+legend bottom
+  RN-03: Super Administrador tiene acceso a todas las funciones.
+  La generalización con Administrador resume permisos comunes;
+  los restantes permisos globales no se repiten en este CU general.
+  M07: responsables de recojo, entrega delivery y cierre por ratificar
+  (véase CU-07). No se asignan permisos pendientes en este diagrama.
+endlegend
 @enduml
