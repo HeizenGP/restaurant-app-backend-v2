@@ -7,7 +7,7 @@
 
 ## 1. Fuentes y criterio de decisión
 
-La línea base obligatoria son las ETAPAS 01–03 aprobadas: seis actores, roles acumulativos, tres modalidades, 40 RF, 11 RNF y RN confirmadas. La [ETAPA 04](etapa-04.md) y sus diagramas se usan como referencia de comportamiento **provisional**; esta propuesta no la aprueba ni resuelve sus pendientes.
+La línea base de negocio y requisitos son las ETAPAS 01–03 aprobadas: seis actores, roles acumulativos, tres modalidades, 40 RF, 11 RNF y RN confirmadas. La [ETAPA 04](etapa-04.md) y sus ocho casos de uso están **aprobados expresamente como entregable documental (2026-10-20)**. Continúan pendientes las verificaciones técnicas y decisiones de permisos señaladas; esta propuesta de arquitectura no las resuelve.
 
 Las decisiones de esta etapa se clasifican así:
 
@@ -251,7 +251,7 @@ Carga mínima recomendada:
 
 1. Siempre: `AGENTS.md`, `docs/etapas/README.md` y el documento de la etapa vigente.
 2. Tarea técnica: una sola Skill pertinente y las secciones/RF concretos que afecte.
-3. Flujo transversal: únicamente los diagramas de ETAPA 04 relacionados; recordar su estado provisional.
+3. Flujo transversal: únicamente los diagramas de ETAPA 04 relacionados; recordar sus observaciones técnicas pendientes.
 4. Leer ETAPAS 01–02 solo si una duda de negocio no queda resuelta por RF/RN.
 5. Leer los archivos compartidos en un repositorio y comprobar igualdad en el otro; no cargar ambas copias al contexto.
 
@@ -282,12 +282,12 @@ Criterios de validación de esta propuesta:
 - [x] Simulaciones/exclusiones no se presentan como integraciones reales.
 - [x] Las Skills enlazan una fuente arquitectónica única y evitan repetir reglas.
 - [ ] Renderizar los diagramas de ETAPA 05 cuando PlantUML esté disponible.
-- [ ] Aprobar expresamente ETAPA 04 y luego revisar cualquier impacto sobre esta arquitectura.
+- [x] ETAPA 04 aprobada expresamente como entregable documental (2026-10-20); revisar impacto de sus observaciones aún pendientes en la arquitectura.
 - [ ] Aprobar expresamente ETAPA 05; este documento no la autoaprueba.
 
 ## 10. Pendientes conservados
 
-1. Aprobación y correcciones de la ETAPA 04.
+1. Verificaciones técnicas y observaciones abiertas de la ETAPA 04 (aprobada documentalmente).
 2. Responsable de registrar recojo, entrega delivery y cierre en M07; no se asigna al Administrador por defecto.
 3. Estado formal de RN-20 y RN-21. Sus resultados coinciden parcialmente con RF/RNF aprobados, pero esta etapa no cambia su etiqueta pendiente.
 4. Ratificar o reemplazar la métrica propuesta RNF-08.
