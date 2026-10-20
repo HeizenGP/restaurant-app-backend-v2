@@ -1,75 +1,66 @@
 @startuml
-title ARQ-BE-01 — Monolito modular FastAPI
+title ARQ-BE-01 — FastAPI modular y transacción compartida
+left to right direction
 skinparam shadowing false
 skinparam componentStyle rectangle
+skinparam linetype ortho
 
-actor "Apps Flutter" as Apps
-component "FastAPI\nadaptador HTTP" as Http
-component "Bootstrap\nconfiguración y composición" as Boot
+actor "Apps Flutter" as Client
+component "FastAPI / REST\n/api/v1" as API
+component "Bootstrap / DI\ny UoW compartida" as Boot
 
-package "Módulos hexagonales" {
-  component "M01\nAcceso" as M01
-  component "M02\nCatálogo y stock" as M02
-  component "M03\nMesas" as M03
-  component "M04\nPedidos" as M04
-  component "M05\nCocina" as M05
-  component "M06\nPagos" as M06
-  component "M07\nAtención y cierre" as M07
-  component "M04 query\nvista integrada del pedido" as OrderView
+package "Módulos hexagonales (puertos propios)" {
+ component "M01 Accesos" as M01
+ component "M02 Catálogo / stock" as M02
+ component "M03 Mesas" as M03
+ component "M04 Pedidos\nConfirmOrder" as M04
+ component "M05 Cocina" as M05
+ component "M06 Pagos / anticipos" as M06
+ component "M07 Entrega / cierre" as M07
 }
-
-interface "Puertos de persistencia\n(propios por módulo)" as PersistencePorts
-interface "Puerto manual / simulado\n(M06)" as SimulationPort
-component "Adaptadores de persistencia\n(ETAPAS 06–07)" as Persistence
-database "PostgreSQL\n(futuro)" as DB
-component "Adaptadores manuales / simulados" as Sim
-
-Apps --> Http : REST /api/v1
-Http --> M01
-Http --> M02
-Http --> M03
-Http --> M04
-Http --> M05
-Http --> M06
-Http --> M07
-Boot ..> Http : compone
-Boot ..> Persistence : conecta puertos
-Boot ..> Sim : selecciona adaptadores
-
-M04 --> M02 : verificar y descontar stock
-M04 --> M03 : validar mesa
-M04 --> M06 : comprobar anticipo
-M04 --> M05 : habilitar comanda
-M07 --> M04 : consultar estado / solicitar cierre
-M07 --> M06 : comprobar saldo
-Http --> OrderView : GET /orders/{id}
-OrderView --> M04 : estado comercial
-OrderView --> M05 : estado de cocina
-OrderView --> M06 : pago y saldo
-OrderView --> M07 : atención / entrega
-M06 --> SimulationPort : requiere registro manual
-Sim ..|> SimulationPort : implementa
-
-M01 --> PersistencePorts : requiere
-M02 --> PersistencePorts : requiere
-M03 --> PersistencePorts : requiere
-M04 --> PersistencePorts : requiere
-M05 --> PersistencePorts : requiere
-M06 --> PersistencePorts : requiere
-M07 --> PersistencePorts : requiere
-Persistence ..|> PersistencePorts : implementa
-Persistence --> DB
-
-note right of M04
-  ConfirmOrder coordina una UoW:
-  autorización + stock + anticipo
-  + confirmación + comanda + auditoría.
+package "Persistencia (adaptadores separados)" {
+ component "Repositorio M01" as R01
+ component "Repositorio M02" as R02
+ component "Repositorio M03" as R03
+ component "Repositorio M04" as R04
+ component "Repositorio M05" as R05
+ component "Repositorio M06" as R06
+ component "Repositorio M07" as R07
+}
+database "PostgreSQL\ntransacción única" as DB
+component "Adaptador manual\nde anticipo simulado" as Manual
+Client --> API
+API --> M01
+API --> M04
+API --> M07
+API --> M06
+Boot ..> API : compone
+Boot ..> M04 : UoW
+M04 --> M02 : puerto stock
+M04 --> M03 : puerto mesa
+M04 --> M06 : puerto anticipo
+M04 --> M05 : puerto comanda
+M07 --> M04 : puerto estado/cierre
+M07 --> M06 : puerto saldo
+M06 --> Manual : verificación y abono único
+M01 ..> R01 : puerto M01
+M02 ..> R02 : puerto M02
+M03 ..> R03 : puerto M03
+M04 ..> R04 : puerto M04
+M05 ..> R05 : puerto M05
+M06 ..> R06 : puerto M06
+M07 ..> R07 : puerto M07
+R01 --> DB
+R02 --> DB
+R03 --> DB
+R04 --> DB
+R05 --> DB
+R06 --> DB
+R07 --> DB
+note bottom of M04
+  Una UoW: autorización, stock, anticipo
+  ya registrado, pedido y comanda.
+  Commit único o rollback completo.
+  Puertos sin acceder a tablas ajenas.
 end note
-
-note as InternalContracts
-  Las flechas entre módulos representan contratos públicos en proceso.
-  Los adaptadores implementan puertos definidos hacia adentro.
-  No hay HTTP interno, broker, microservicios ni acceso a tablas ajenas.
-end note
-InternalContracts .. M04
 @enduml
