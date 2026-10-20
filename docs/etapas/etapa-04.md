@@ -36,7 +36,7 @@ Modelar **exclusivamente diagramas de casos de uso (CU)** para los módulos M01�
 
 | ID | Diagrama | Archivo |
 |---|---|---|
-| **CU-00** | Visión general: 6 actores y 15 objetivos principales, con permisos pendientes de M07 remitidos a CU-07 | [etapa-04-cu-general.puml](diagramas/etapa-04/etapa-04-cu-general.puml) |
+| **CU-00** | Visión general simplificada: 6 actores y 10 capacidades representativas en dos columnas; detalles en CU-01 a CU-07 | [etapa-04-cu-general.puml](diagramas/etapa-04/etapa-04-cu-general.puml) |
 | **CU-01** | M01: acceso, roles y permisos | [etapa-04-cu-m01.puml](diagramas/etapa-04/etapa-04-cu-m01.puml) |
 | **CU-02** | M02: catálogo y stock | [etapa-04-cu-m02.puml](diagramas/etapa-04/etapa-04-cu-m02.puml) |
 | **CU-03** | M03: mesas | [etapa-04-cu-m03.puml](diagramas/etapa-04/etapa-04-cu-m03.puml) |
