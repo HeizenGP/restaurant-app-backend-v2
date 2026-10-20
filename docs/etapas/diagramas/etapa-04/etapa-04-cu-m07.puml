@@ -1,27 +1,30 @@
 @startuml
+title CU-07 — M07 | Atención, entregas y cierre
 left to right direction
-title CU-07 — M07 Atención, entregas y cierre
 skinparam shadowing false
+skinparam linetype ortho
 actor "Mozo" as M
 actor "Administrador" as A
 rectangle "M07 — Atención y cierre" {
-  usecase "RF-M07-01\nRegistrar pedido servido en mesa" as U1
-  usecase "RF-M07-02\nRegistrar recojo en el local" as U2
-  usecase "RF-M07-03\nRegistrar entrega de delivery" as U3
-  usecase "RF-M07-04\nCerrar pedido según entrega y saldo" as U4
+  usecase "Registrar servicio\nen mesa (RF-M07-01)" as U1
+  usecase "Registrar recojo\nen restaurante (RF-M07-02)" as U2
+  usecase "Registrar entrega\nde delivery (RF-M07-03)" as U3
+  usecase "Cerrar pedido\n(RF-M07-04)" as U4
 }
 M -- U1
-A -- U2
-A -- U3
-A -- U4
-note right of U2
-  Actor asignado como propuesta.
-  El responsable final del registro
-  de recojo/delivery está pendiente.
-end note
+A -- U2 : provisional
+A -- U3 : provisional
+A -- U4 : provisional
 note bottom of U4
-  Regla RN-21 pendiente de validación.
-  No gestionar repartidores ni rutas.
-  Responsable de cierre por ratificar.
+  Para cerrar: servicio/entrega registrado
+  y saldo cero (RF-M07-04, RF-M06-06).
+  RN-21 sigue pendiente de ratificación
+  formal como regla de negocio.
+end note
+note right of A
+  Las tres asociaciones «provisional»
+  NO aprueban ni asignan permisos.
+  Responsable final de recojo, entrega
+  y cierre pendiente de ratificación.
 end note
 @enduml
