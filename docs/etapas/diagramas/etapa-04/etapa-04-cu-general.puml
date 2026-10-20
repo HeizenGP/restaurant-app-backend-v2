@@ -3,73 +3,72 @@ title CU-00 — Casos de uso generales | Chifa ASIA
 left to right direction
 
 skinparam shadowing false
-skinparam linetype ortho
+skinparam linetype polyline
 skinparam packageStyle rectangle
-skinparam nodesep 18
-skinparam ranksep 26
+skinparam nodesep 12
+skinparam ranksep 18
 skinparam defaultFontSize 12
 
 actor "Cliente" as C
 actor "Mozo" as M
+
+rectangle "Chifa ASIA — Sistema de gestión de pedidos" {
+  usecase "Consultar catálogo\n(M02)" as U1
+  usecase "Realizar pedido\n(M03/M04)" as U2
+  usecase "Consultar estado\ndel pedido (M04)" as U3
+  usecase "Atender pedidos\nen mesa (M03/M04/M07)" as U4
+  usecase "Aprobar solicitudes\nlocales de la app (M04)" as U5
+
+  usecase "Gestionar comandas\n(M05)" as U6
+  usecase "Registrar cobros\n(M06)" as U7
+  usecase "Administrar restaurante\n(M01-M03)" as U8
+  usecase "Aprobar pedidos\nde recojo/delivery (M04)" as U9
+  usecase "Verificar anticipos\n(M06)" as U10
+
+  ' Dos columnas de cinco objetivos: solo restricciones visuales.
+  U1 -[hidden]down- U2
+  U2 -[hidden]down- U3
+  U3 -[hidden]down- U4
+  U4 -[hidden]down- U5
+
+  U6 -[hidden]down- U7
+  U7 -[hidden]down- U8
+  U8 -[hidden]down- U9
+  U9 -[hidden]down- U10
+
+  U1 -[hidden]right- U6
+  U2 -[hidden]right- U7
+  U3 -[hidden]right- U8
+  U4 -[hidden]right- U9
+  U5 -[hidden]right- U10
+}
+
 actor "Personal de cocina" as K
 actor "Cajero" as J
 actor "Administrador" as A
 actor "Super Administrador" as S
 
-rectangle "Sistema de gestión de pedidos — Chifa ASIA" {
+C -right- U1
+C -right- U2
+C -right- U3
 
-  package "Cliente" {
-    usecase "Acceder a la aplicación\n(M01)" as C1
-    usecase "Consultar catálogo\n(M02)" as C2
-    usecase "Realizar pedido\n(M03/M04)" as C3
-    usecase "Consultar estado\ndel pedido (M04)" as C4
-  }
+M -right- U4
+M -right- U5
+A -- U5
 
-  package "Atención y operación" {
-    usecase "Registrar pedido\npresencial (M04)" as M1
-    usecase "Verificar mesa y aprobar\nsolicitud local (M03/M04)" as M2
-    usecase "Registrar servicio\nen mesa (M07)" as M3
-    usecase "Preparar comandas\nconfirmadas (M05)" as K1
-    usecase "Registrar cobros\n(M06)" as J1
-  }
+U6 -right- K
+U7 -right- J
+U8 -right- A
+U9 -right- A
+U10 -right- A
+U8 -right- S
 
-  package "Administración" {
-    usecase "Gestionar usuarios\ny roles (M01)" as A1
-    usecase "Gestionar catálogo\ny stock (M02)" as A2
-    usecase "Gestionar mesas\n(M03)" as A3
-    usecase "Registrar pedidos\npor canal externo (M04)" as A4
-    usecase "Aprobar solicitudes\nde recojo/delivery (M04)" as A5
-    usecase "Verificar anticipos\n(M06)" as A6
-  }
-}
-
-C -right- C1
-C -right- C2
-C -right- C3
-C -right- C4
-
-M -right- M1
-M -right- M2
-M -right- M3
-A -right- M2
-
-K1 -right- K
-J1 -right- J
-
-A -right- A1
-A -right- A2
-A -right- A3
-A -right- A4
-A -right- A5
-A -right- A6
-
-S -|> A
+note right of S
+  RN-03: acceso global.
+end note
 
 legend bottom
-  RN-03: Super Administrador tiene acceso a todas las funciones.
-  La generalización con Administrador resume permisos comunes;
-  los restantes permisos globales no se repiten en este CU general.
-  M07: responsables de recojo, entrega delivery y cierre por ratificar
-  (véase CU-07). No se asignan permisos pendientes en este diagrama.
+  Vista general: los casos específicos se detallan en CU-01 a CU-07.
+  M07: responsables de recojo, delivery y cierre aún por ratificar.
 endlegend
 @enduml
