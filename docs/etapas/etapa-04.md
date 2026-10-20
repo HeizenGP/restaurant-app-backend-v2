@@ -20,7 +20,7 @@ Modelar **exclusivamente diagramas de casos de uso (CU)** para los módulos M01�
 | Personal de cocina | Consulta comandas confirmadas y marca En preparación/Listo. |
 | Super Administrador | Acceso absoluto. Los roles de una cuenta son acumulativos; el privilegio Super no se representa como una nueva operación. |
 
-«Personal del restaurante» (CU-01) es una agrupación de presentación de los roles existentes, no un séptimo rol. CU-00 representa el acceso global de Super Administrador mediante generalización UML hacia los actores autorizados; los permisos de los demás roles no forman una jerarquía.
+«Personal del restaurante» (CU-01) es una agrupación de presentación de los roles existentes, no un séptimo rol. CU-00 resume los objetivos de los seis actores y representa únicamente una generalización del Super Administrador hacia Administrador para permisos compartidos. RN-03 garantiza su acceso global, incluso a las funciones no repetidas gráficamente; no existe una jerarquía entre los demás roles.
 
 ### Simulaciones y exclusiones
 
@@ -36,7 +36,7 @@ Modelar **exclusivamente diagramas de casos de uso (CU)** para los módulos M01�
 
 | ID | Diagrama | Archivo |
 |---|---|---|
-| **CU-00** | Casos de uso general por actor y módulo | [etapa-04-cu-general.puml](diagramas/etapa-04/etapa-04-cu-general.puml) |
+| **CU-00** | Visión general: 6 actores y 15 objetivos principales, con permisos pendientes de M07 remitidos a CU-07 | [etapa-04-cu-general.puml](diagramas/etapa-04/etapa-04-cu-general.puml) |
 | **CU-01** | M01: acceso, roles y permisos | [etapa-04-cu-m01.puml](diagramas/etapa-04/etapa-04-cu-m01.puml) |
 | **CU-02** | M02: catálogo y stock | [etapa-04-cu-m02.puml](diagramas/etapa-04/etapa-04-cu-m02.puml) |
 | **CU-03** | M03: mesas | [etapa-04-cu-m03.puml](diagramas/etapa-04/etapa-04-cu-m03.puml) |
