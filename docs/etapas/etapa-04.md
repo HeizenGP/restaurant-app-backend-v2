@@ -92,7 +92,7 @@ Cada RF de la ETAPA 03 debe tener correspondencia identificable con **al menos u
 - [x] Se explicitó la simulación académica y se evitó inventar facturación integrada.
 - [ ] Ejecutar compilación, renderización e inspección visual REALES de los **8 diagramas CU** de la [carpeta de etapa 04](diagramas/etapa-04/) (no basta inspeccionar el código).
 - [x] Verificar igualdad de los 8 diagramas CU y de los documentos de alcance en ambos repositorios.
-- [ ] Retirar el archivo residual `etapa-04-sd-app-recojo-delivery.puml` en ambos repositorios: su eliminación fue bloqueada por controles de seguridad. **No forma parte del alcance ni de los entregables de esta etapa**.
+- [x] Eliminar los diagramas de secuencia y actividades en ambos repositorios; quedan únicamente los ocho CU.
 - [ ] Revisar actores propuestos en M07 y ratificar pendientes.
 - [ ] Aprobación expresa de ETAPA 04 por el usuario.
 
