@@ -1,27 +1,26 @@
 @startuml
+title CU-02 — M02 | Catálogo y stock
 left to right direction
-title CU-02 — M02 Catálogo y stock de productos
 skinparam shadowing false
+skinparam linetype ortho
 actor "Cliente" as C
 actor "Administrador" as A
-rectangle "M02 — Catálogo y stock" {
-  usecase "RF-M02-01\nConsultar catálogo y disponibilidad" as U1
-  usecase "RF-M02-02\nGestionar categorías, productos y precios" as U2
-  usecase "RF-M02-03\nModificar cantidad de stock" as U3
-  usecase "RF-M02-04\nCambiar disponibilidad manual" as U4
-  usecase "RF-M02-05\nVerificar disponibilidad y stock" as U5
-  usecase "RF-M02-06\nDescontar stock al confirmar" as U6
-  usecase "Confirmar pedido\n(M04, punto de enlace)" as CONF
+rectangle "M02 — Catálogo de productos" {
+  usecase "Consultar catálogo, precios\ny disponibilidad\n(RF-M02-01)" as U1
+  usecase "Gestionar categorías,\nproductos y precios\n(RF-M02-02)" as U2
+  usecase "Actualizar stock\n(RF-M02-03)" as U3
+  usecase "Habilitar o deshabilitar\nproductos\n(RF-M02-04)" as U4
 }
 C -- U1
 A -- U2
 A -- U3
 A -- U4
-CONF .> U5 : <<include>>
-CONF .> U6 : <<include>>
-note bottom of CONF
-  Verificar antes de confirmar;
-  descontar una sola vez al confirmar.
-  Enlace lógico con M04, no endpoint.
+note bottom of U4
+  Reglas en «Confirmar pedido» de CU-04:
+  RF-M02-05: validar disponibilidad y stock
+  antes de confirmar cualquier modalidad.
+  RF-M02-06: descontar exactamente una vez
+  SOLO tras confirmación exitosa.
+  Una solicitud pendiente no descuenta stock.
 end note
 @enduml
