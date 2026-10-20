@@ -1,55 +1,42 @@
 @startuml
-title ARQ-FE-01 — Workspace Flutter con dos aplicaciones
+title ARQ-FE-01 — Dos aplicaciones Flutter
+left to right direction
 skinparam shadowing false
 skinparam componentStyle rectangle
+skinparam linetype ortho
 
-node "customer_app\nAndroid móvil" as Customer {
-  component "M01 Acceso" as C1
-  component "M02 Catálogo" as C2
-  component "M03 Mesas" as C3
-  component "M04 Pedidos / estado" as C4
+node "customer_app\nAndroid" as Customer {
+ component "Cliente e invitado\nM01–M04" as CustomerUI
 }
-
-node "staff_app\nAndroid + interfaz adaptativa" as Staff {
-  component "Shell por capacidades" as Shell
-  component "Espacio Mozo" as Waiter
-  component "Espacio Cocina" as Kitchen
-  component "Espacio Caja" as Cashier
-  component "Espacio Administración" as Admin
-  Shell --> Waiter
-  Shell --> Kitchen
-  Shell --> Cashier
-  Shell --> Admin
+node "staff_app\nAndroid + Flutter Web" as Staff {
+ component "Shell por capacidades" as Shell
+ component "Mozo" as Waiter
+ component "Cocina" as Kitchen
+ component "Caja" as Cashier
+ component "Panel administrativo\nFlutter Web" as Admin
+ Shell --> Waiter
+ Shell --> Kitchen
+ Shell --> Cashier
+ Shell --> Admin
 }
-
-package "Paquetes compartidos mínimos" {
-  component foundation
-  component rest_api
-  component auth_session
-  component design_system
+package "Paquetes compartidos" {
+ component "foundation" as Foundation
+ component "rest_api" as Rest
+ component "auth_session" as Auth
+ component "design_system" as Design
 }
-
-cloud "API REST\n/api/v1" as Api
-
-Customer --> foundation
-Customer --> rest_api
-Customer --> auth_session
-Customer --> design_system
-Staff --> foundation
-Staff --> rest_api
-Staff --> auth_session
-Staff --> design_system
-rest_api --> Api : HTTPS JSON
-
-note right of Shell
-  Una cuenta puede acumular roles.
-  Las rutas se muestran por capacidades;
-  el backend vuelve a autorizarlas.
-end note
-
+cloud "FastAPI REST\n/api/v1" as API
+Customer --> Rest
+Staff --> Rest
+Customer ..> Foundation
+Staff ..> Foundation
+Customer ..> Auth
+Staff ..> Auth
+Customer ..> Design
+Staff ..> Design
+Rest --> API : HTTPS / JSON
 note bottom of Admin
-  Administración comparte sesión y módulos
-  con personal. El destino web/escritorio
-  inicial se decide en ETAPA 07.
+  Es una vista de staff_app, no una tercera aplicación.
+  Los permisos se revalidan en FastAPI.
 end note
 @enduml
