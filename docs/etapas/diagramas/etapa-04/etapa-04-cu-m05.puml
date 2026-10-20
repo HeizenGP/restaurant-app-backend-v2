@@ -1,19 +1,25 @@
 @startuml
+title CU-05 — M05 | Cocina y comandas
 left to right direction
-title CU-05 — M05 Cocina y comandas
 skinparam shadowing false
+skinparam linetype ortho
 actor "Personal de cocina" as K
 rectangle "M05 — Cocina y comandas" {
-  usecase "RF-M05-01\nHabilitar comanda tras confirmación" as U1
-  usecase "RF-M05-02\nConsultar detalle de comanda" as U2
-  usecase "RF-M05-03\nMarcar En preparación" as U3
-  usecase "RF-M05-04\nMarcar Listo" as U4
+  usecase "Consultar comandas\nconfirmadas y su detalle\n(RF-M05-02)" as U2
+  usecase "Marcar En preparación\n(RF-M05-03)" as U3
+  usecase "Marcar Listo\n(RF-M05-04)" as U4
 }
 K -- U2
 K -- U3
 K -- U4
-note bottom of U1
-  Condición automática del sistema:
-  comanda solo para pedido confirmado.
+note bottom of U2
+  RF-M05-01: solo una confirmación
+  exitosa del pedido habilita la comanda.
+  Solicitudes pendientes o rechazadas
+  nunca se muestran para preparación.
+end note
+note bottom of U4
+  Marcar Listo únicamente cuando
+  todos los productos estén preparados.
 end note
 @enduml
