@@ -1,8 +1,8 @@
 # ETAPA 04 — Modelado del sistema
 
 **Proyecto:** Restaurant App V2 — Chifa ASIA.  
-**Estado:** BORRADOR TÉCNICO / PENDIENTE DE REVISIÓN Y APROBACIÓN.  
-**Antecedentes:** ETAPAS 01–03 aprobadas expresamente por el usuario el 2026-10-13. La ETAPA 04 fue autorizada para elaboración, pero **no está aprobada**.  
+**Estado:** APROBADA POR EL USUARIO EL 2026-10-20 (entregable documental de 8 casos de uso; verificaciones técnicas pendientes).  
+**Antecedentes:** ETAPAS 01–03 aprobadas expresamente el 2026-10-13. La **ETAPA 04 fue aprobada expresamente por el usuario el 2026-10-20**, sin ratificar reglas de negocio aún pendientes ni afirmar pruebas de compilación no ejecutadas.  
 **Fuentes:** [ETAPA 01](etapa-01.md), [ETAPA 02](etapa-02.md), [ETAPA 03 — RN/RNF](etapa-03.md) y [ETAPA 03 — 40 RF](etapa-03-requisitos.md).
 
 ## 1. Objetivo y límites
@@ -79,7 +79,7 @@ Cada RF de la ETAPA 03 debe tener correspondencia identificable con **un caso de
 ## 5. Pendientes que no se deben convertir en supuestos
 
 1. **RN-20 y RN-21:** confirmar formalmente integridad de stock y política de cierre propuesta; la representación UML no implica aprobación.
-2. **Responsable de recojo, entrega delivery y cierre:** M07 no asigna expresamente todos los roles; CU-07 y SD-03/04 muestran Administrador como **propuesta**, pendiente de ratificación. No crear un rol de repartidor.
+2. **Responsable de recojo, entrega delivery y cierre:** M07 no asigna expresamente todos los roles; CU-07 muestra al Administrador como **propuesta**, pendiente de ratificación. No crear un rol de repartidor.
 3. **Simulación de comprobantes:** el usuario quiere simular servicios académicos, pero la facturación no tiene RF vigente; formalizar alcance antes de modelarla.
 4. **Etapas 01–03:** aprobadas por el usuario el 2026-10-13; las prioridades MoSCoW también quedan aprobadas como línea base documental. La métrica propuesta de RNF-08 sigue pendiente de ratificación específica.
 
@@ -95,6 +95,7 @@ Cada RF de la ETAPA 03 debe tener correspondencia identificable con **un caso de
 - [x] Eliminar los diagramas de secuencia y actividades en ambos repositorios; quedan únicamente los ocho CU.
 - [ ] Ratificar los responsables provisionales de CU-07 y armonizar RN-19, RN-20 y RN-21 con los requisitos aprobados.
 - [ ] Revisar actores propuestos en M07 y ratificar pendientes.
-- [ ] Aprobación expresa de ETAPA 04 por el usuario.
+- [x] Aprobación expresa de la ETAPA 04 por el usuario (2026-10-20), limitada a los 8 CU documentados.
+- [ ] Cotejar el archivo CU-00 en `develop` con la captura final elegida por el usuario; su igualdad visual no se ha confirmado.
 
-**Estado final: ETAPA 04 — CU REVISADOS Y MEJORADOS / PENDIENTE DE RENDERIZACIÓN, DECISIONES Y APROBACIÓN.** La autorización para elaborarla no sustituye los criterios de aceptación.
+**Estado final: ETAPA 04 APROBADA POR EL USUARIO (2026-10-20) COMO ENTREGABLE DOCUMENTAL DE CASOS DE USO.** La compilación/renderización, el cotejo de CU-00 con la captura elegida y las decisiones pendientes (M07, RN-20/RN-21) se mantienen abiertos y no se consideran validados por la aprobación.
