@@ -98,7 +98,7 @@ La elaboración de una etapa no equivale a su aprobación, ni una casilla de doc
 
 - Documentar **monolito modular FastAPI**, arquitectura hexagonal y **Vertical Slicing** para M01–M07; interfaces internas, transacciones e idempotencia.
 - Definir **API REST JSON**, autenticación y permisos, seguridad, errores y puertos/adaptadores para simulaciones.
-- Definir organización Flutter propuesta: **customer_app** y **staff_app** (mozos, cocina, caja y administración adaptativa), con responsabilidades compartidas sin duplicar funcionalidades.
+- Definir organización Flutter propuesta: **customer_app** y **staff_app** (mozos, cocina y caja; panel administrativo **Flutter Web dentro de staff_app**), con responsabilidades compartidas sin tercera aplicación.
 - Preparar Skills **restaurant-fastapi-slice** (backend) y **restaurant-flutter-slice** (frontend); mantener **AGENTS.md** breve, cargar solo el contexto/Skill pertinente y usar MCP bajo demanda.
 - Evitar instalar FastAPI/Flutter, programar endpoints, crear tablas o migraciones durante esta etapa.
 
