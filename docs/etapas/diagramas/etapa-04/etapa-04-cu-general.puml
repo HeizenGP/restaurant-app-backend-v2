@@ -1,5 +1,9 @@
 @startuml
 title CU-00 — Casos de uso generales | Chifa ASIA
+<<<<<<< HEAD
+=======
+
+>>>>>>> 934d354 (ajuste cu-genral)
 left to right direction
 
 skinparam shadowing false
@@ -9,13 +13,14 @@ skinparam nodesep 18
 skinparam ranksep 26
 skinparam defaultFontSize 12
 
-actor "Cliente" as C
-actor "Mozo" as M
+actor Cliente as C
+actor Mozo as M
 actor "Personal de cocina" as K
-actor "Cajero" as J
-actor "Administrador" as A
+actor Cajero as J
+actor Administrador as A
 actor "Super Administrador" as S
 
+<<<<<<< HEAD
 rectangle "Sistema de gestión de pedidos — Chifa ASIA" {
 
   package "Cliente" {
@@ -73,3 +78,61 @@ legend bottom
   (véase CU-07). No se asignan permisos pendientes en este diagrama.
 endlegend
 @enduml
+=======
+rectangle "Restaurant App V2 — Chifa ASIA" {
+
+  package "Interacción del cliente" {
+    usecase "Autenticarse o\ncontinuar como invitado\n(M01)" as UC1
+    usecase "Consultar catálogo\n(M02)" as UC2
+    usecase "Solicitar pedido y\nconsultar estado\n(M03/M04)" as UC3
+  }
+
+  package "Operación del restaurante" {
+    usecase "Registrar pedido presencial\ny atender mesa\n(M03/M04/M07)" as UC4
+    usecase "Preparar comandas\nconfirmadas\n(M05)" as UC5
+    usecase "Registrar cobros y\nconsultar pagos\n(M06)" as UC6
+  }
+
+  package "Administración" {
+    usecase "Gestionar usuarios y roles\n(M01)" as UC7
+    usecase "Gestionar productos,\nstock y mesas\n(M02/M03)" as UC8
+    usecase "Revisar pedidos y\nverificar anticipos\n(M04/M06)" as UC9
+    usecase "Registrar recojo, entrega\ny cierre\n(M07)" as UC10
+  }
+}
+
+C -- UC1
+C -- UC2
+C -- UC3
+
+M -- UC4
+K -- UC5
+J -- UC6
+
+A -- UC7
+A -- UC8
+A -- UC9
+A -- UC10
+
+S -- UC7
+S -- UC8
+S -- UC9
+S -- UC10
+
+note right of S
+  RN-03: el Super Administrador
+  tiene acceso global a todas las
+  funciones del sistema.
+  En este CU-00 se muestran sus
+  capacidades administrativas para
+  evitar redundancia visual.
+end note
+
+note bottom of UC10
+  Responsables finales de recojo,
+  entrega delivery y cierre:
+  pendiente de ratificación.
+end note
+
+@enduml
+>>>>>>> 934d354 (ajuste cu-genral)
