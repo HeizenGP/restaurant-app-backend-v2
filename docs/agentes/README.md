@@ -7,7 +7,7 @@
 | Tipo de tarea | Leer | Añadir solo si hace falta |
 |---|---|---|
 | Cualquier tarea | `AGENTS.md`, índice y etapa vigente | Nada más por defecto. |
-| Arquitectura/revisión transversal | Secciones afectadas de `etapa-05.md` | RF/RN/RNF concretos; UML relacionado como referencia provisional. |
+| Arquitectura/revisión transversal | Secciones afectadas de `etapa-05.md` | RF/RN/RNF concretos; casos de uso de ETAPA 04 aprobados documentalmente, con observaciones técnicas pendientes. |
 | Slice FastAPI | Skill `restaurant-fastapi-slice` y sección backend de ETAPA 05 | CA del módulo y flujo puntual. |
 | Slice Flutter | Skill `restaurant-flutter-slice` y sección Flutter/REST de ETAPA 05 | CA del módulo y pantalla/flujo puntual. |
 | Duda de negocio | ETAPA 03 primero | ETAPAS 01–02 solo si la duda no queda resuelta. |
