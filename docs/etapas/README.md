@@ -1,8 +1,8 @@
 # Plan maestro de desarrollo — Restaurant App V2
 
 **Proyecto:** Chifa ASIA — sistema académico para un solo restaurante.  
-**Actualización:** 2026-10-14. **Rama de trabajo:** develop.  
-**Estado:** ETAPAS 00–03 **aprobadas**; ETAPAS 04–05 **elaboradas/documentadas**, con validaciones y aprobación formal pendientes; ETAPAS 06–11 **por desarrollar**. La ETAPA 05 incluye dos Skills preparadas. No confundir diseño/documentación con software implementado.
+**Actualización:** 2026-10-20. **Rama de trabajo:** develop.  
+**Estado:** ETAPAS 00–04 **aprobadas expresamente por el usuario** (ETAPA 04: aprobación documental el 2026-10-20); ETAPA 05 **documentada y pendiente de aprobación**; ETAPAS 06–11 **por desarrollar**. La ETAPA 05 incluye dos Skills preparadas. No confundir diseño/documentación con software implementado.
 
 ## 1. Propósito y reglas del plan
 
@@ -28,7 +28,7 @@ Desarrollar progresivamente un ecosistema para clientes, mozos, caja, cocina y a
 | **01** | Análisis del negocio y alcance | **Aprobada** | [Análisis del negocio](etapa-01.md) |
 | **02** | Flujo principal y subflujos | **Aprobada** | [Flujos](etapa-02.md) y [FL-01](etapa-02-flujo-principal.puml) |
 | **03** | Ingeniería de requisitos | **Aprobada** | [Reglas/RNF](etapa-03.md) y [40 RF/CA](etapa-03-requisitos.md) |
-| **04** | Modelado del sistema | **Elaborada; pendiente de validación/aprobación** | [Casos de uso UML](etapa-04.md) y [8 diagramas CU](diagramas/etapa-04/) |
+| **04** | Modelado del sistema | **Aprobada por el usuario (2026-10-20), con verificaciones técnicas pendientes** | [Casos de uso UML](etapa-04.md) y [8 diagramas CU](diagramas/etapa-04/) |
 | **05** | Arquitectura de software | **Documentada; pendiente de validación/aprobación** | [Arquitectura](etapa-05.md), [diagramas](diagramas/etapa-05/) y Skills técnicas |
 | **06** | Diseño de base de datos | **Siguiente etapa** | Modelo lógico/físico PostgreSQL por definir |
 | **07** | Configuración técnica | Por iniciar | Proyectos ejecutables, infraestructura y migraciones iniciales |
@@ -81,7 +81,7 @@ La elaboración de una etapa no equivale a su aprobación, ni una casilla de doc
 
 **Entregable/cierre:** [RN/RNF y prioridades](etapa-03.md) y [catálogo de RF/CA](etapa-03-requisitos.md) aprobados como línea base documental.
 
-### ETAPA 04 — Modelado del sistema · ELABORADA / PENDIENTE DE APROBACIÓN
+### ETAPA 04 — Modelado del sistema · APROBADA POR EL USUARIO (2026-10-20)
 
 **Objetivo:** expresar las funcionalidades e interacciones entre actores y sistema mediante **diagramas de casos de uso UML**, sin fijar arquitectura ni tablas.
 
@@ -90,7 +90,7 @@ La elaboración de una etapa no equivale a su aprobación, ni una casilla de doc
 - Revisar asociaciones de roles y decisiones pendientes; **compilar y renderizar** realmente los diagramas.
 
 **Entregable:** [modelo y matriz de trazabilidad](etapa-04.md), [diagramas](diagramas/etapa-04/).  
-**Cierre pendiente:** evidencia de compilación/renderización, resolución de observaciones y aprobación del usuario.
+**Aprobación expresa:** registrada el 2026-10-20 para los 8 CU. **Verificaciones pendientes:** compilación/renderización de PlantUML, cotejo de la versión visual elegida de CU-00 y ratificación de responsables de M07; estos pendientes no implican su aprobación tácita.
 
 ### ETAPA 05 — Arquitectura de software · DOCUMENTADA / PENDIENTE DE APROBACIÓN
 
@@ -103,7 +103,7 @@ La elaboración de una etapa no equivale a su aprobación, ni una casilla de doc
 - Evitar instalar FastAPI/Flutter, programar endpoints, crear tablas o migraciones durante esta etapa.
 
 **Entregable:** [decisiones y contratos arquitectónicos](etapa-05.md), [diagramas](diagramas/etapa-05/) y Skills en **.agents/skills/** de su respectivo repositorio.  
-**Cierre pendiente:** revisar impactos de ETAPA 04, validar diagramas/Skills y aprobar decisiones de ETAPA 05.
+**Cierre pendiente:** revisar observaciones técnicas heredadas de la ETAPA 04, validar diagramas/Skills de arquitectura y aprobar expresamente ETAPA 05.
 
 ### ETAPA 06 — Diseño de base de datos desde cero · SIGUIENTE
 
