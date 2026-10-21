@@ -2,7 +2,7 @@
 
 **Proyecto:** Chifa ASIA — sistema académico para un solo restaurante.  
 **Actualización:** 2026-10-20. **Rama de trabajo:** develop.  
-**Estado:** ETAPAS 00–05 **aprobadas expresamente por el usuario** (ETAPAS 04–05: aprobación documental el 2026-10-20); ETAPA 06 **iniciada, en diseño y pendiente de aprobación**; ETAPAS 07–11 **por desarrollar**. La ETAPA 05 incluye dos Skills preparadas. No confundir diseño/documentación con software implementado.
+**Estado:** ETAPAS 00–05 **aprobadas expresamente por el usuario** (ETAPAS 04–05: aprobación documental el 2026-10-20); ETAPA 06 **iniciada, en diseño y pendiente de aprobación**; ETAPAS 07–11 **por desarrollar**. La ETAPA 05 incluye dos Skills configuradas y verificadas estructuralmente (sin prueba de ejecución en IDE). No confundir diseño/documentación con software implementado.
 
 ## 1. Propósito y reglas del plan
 
@@ -103,7 +103,7 @@ La elaboración de una etapa no equivale a su aprobación, ni una casilla de doc
 - Evitar instalar FastAPI/Flutter, programar endpoints, crear tablas o migraciones durante esta etapa.
 
 **Entregable:** [arquitectura y tecnologías de backend/frontend](etapa-05.md), más Skills en **.agents/skills/** de su respectivo repositorio. No se mantienen diagramas de arquitectura de ETAPA 05.  
-**Aprobación expresa:** registrada el 2026-10-20. Las comprobaciones automatizadas de las Skills y decisiones funcionales abiertas se mantienen pendientes, sin invalidar la aprobación documental.
+**Aprobación expresa:** registrada el 2026-10-20. Las dos Skills pasaron validación estructural (2026-10-20); su invocación real en los IDE no se comprobó. Se conservan pendientes las decisiones funcionales abiertas.
 
 ### ETAPA 06 — Diseño de base de datos desde cero · INICIADA / PENDIENTE DE APROBACIÓN
 
