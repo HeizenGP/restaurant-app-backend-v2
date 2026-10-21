@@ -108,8 +108,6 @@ API REST `/api/v1` con JSON. Los comandos críticos usan `Idempotency-Key` y err
 
 **Recursos orientativos:** `/orders`, `/catalog/products`, `/tables`, `/kitchen/tickets`, `/orders/{id}/payments`. Son ejemplos de familias de rutas, no endpoints ya creados.
 
-[Diagrama del backend](diagramas/etapa-05/etapa-05-backend-componentes.puml)
-
 ## 4. Frontend
 
 **Tecnología:** Flutter + Dart. Ambas aplicaciones consumen la **misma API**; el backend es la fuente de verdad.
@@ -142,8 +140,6 @@ Cada slice separa presentación, caso de uso y adaptador REST cuando sean necesa
 
 **UI:** tema claro predominante, modo oscuro opcional, diseño definido en Figma y iconos Lucide. La elección de librerías de estado y navegación se realizará en ETAPA 07, evitando dependencias anticipadas.
 
-[Diagrama del frontend](diagramas/etapa-05/etapa-05-frontend-componentes.puml)
-
 ## 5. Límites y herramientas de desarrollo
 
 - Pagos, anticipos y comprobantes: **simulados**. Sin pasarela real ni integración SUNAT.
@@ -152,13 +148,53 @@ Cada slice separa presentación, caso de uso y adaptador REST cuando sean necesa
 - Dos Skills: `restaurant-fastapi-slice` (backend) y `restaurant-flutter-slice` (frontend). Ambos agentes usan `AGENTS.md`; la documentación compartida está en `docs/`.
 - Los RF/criterios de aceptación siguen siendo la referencia oficial en [ETAPA 03](etapa-03.md); los casos de uso aprobados están en [ETAPA 04](etapa-04.md). **No se alteran aquí.**
 
-## 6. Validación y pendientes
+## 6. Hoja de ruta de desarrollo de los módulos (M01–M07)
+
+**Alcance:** plan de implementación, no código. La fuente obligatoria es [ETAPA 03: 40 RF y criterios de aceptación](etapa-03-requisitos.md), validada con el [flujo de ETAPA 02](etapa-02.md) y los [8 casos de uso aprobados en ETAPA 04](etapa-04.md). Cada RF conserva su identificador y módulo propietario.
+
+### 6.1 Orden técnico recomendado
+
+| Orden | Módulo y RF | Backend FastAPI | Interfaz Flutter y comprobación de salida |
+|---|---|---|---|
+| **1** | **M01 · Usuarios y accesos** · RF-M01-01 a 05 | Registro/login, acceso invitado, sesiones, roles múltiples y autorización. | `customer_app`: registro, ingreso, invitado. `staff_app`: acceso por permisos. **Comprobar** bloqueo de acciones no autorizadas y acceso total del Superadministrador. |
+| **2** | **M02 · Catálogo y stock** · RF-M02-01 a 06 | Categorías, productos, precios, disponibilidad, stock y contratos para validar/descontar una sola vez al confirmar. | Catálogo del cliente y gestión administrativa. **Comprobar** producto deshabilitado, stock insuficiente y ausencia de descuento en solicitudes pendientes. |
+| **3** | **M03 · Mesas** · RF-M03-01 a 04 | Registro/distribución, ocupación, consulta y asociación de mesa al pedido local. | Selección de mesa en `customer_app` y vista para Mozo/Administrador en `staff_app`. **Comprobar** autorización y mesa asociada. |
+| **4** | **M06-A · Anticipo** · RF-M06-02 a 04 | Cálculo del 50 %, verificación por Administrador y un único abono simulado por operación válida. | Verificación administrativa en `staff_app`. **Comprobar** bloqueo sin anticipo en recojo/delivery y ausencia de duplicación; sin conceder rol Cajero. |
+| **5** | **M04 · Pedidos** · RF-M04-01 a 11 | Registro por modalidad/canal, total, revisión por rol, rechazo y `ConfirmOrder` con una transacción que valida M02/M06 y habilita M05. | Creación/seguimiento en `customer_app`; registro y aprobación en `staff_app`. **Comprobar** pedido presencial sin segunda aprobación, verificación presencial de mesa en app local y aprobación administrativa en recojo/delivery. |
+| **6** | **M05 · Cocina y comandas** · RF-M05-01 a 04 | Una comanda por pedido confirmado, detalle/cantidades y estados En preparación/Listo. Integración transaccional con M04. | Vista de cocina en `staff_app`. **Comprobar** que una solicitud pendiente/rechazada no aparece y que Listo exige preparación completa. |
+| **7** | **M06-B · Caja y pagos** · RF-M06-01, 05 y 06 | Registro de cobros por Cajero, saldo y cobro del 50 % restante al entregar recojo/delivery. Reutiliza M06-A, sin doble contabilización. | Caja en `staff_app`. **Comprobar** pagos registrados, saldo correcto y bloqueo de cierre con deuda. |
+| **8** | **M07 · Atención, entregas y cierre** · RF-M07-01 a 04 | Registro de servicio en mesa, recojo o delivery; verificación de atención/entrega y saldo antes del cierre. | Mozo registra servicio local; otras acciones se habilitarán **solo tras ratificar responsables**. **Comprobar** bloqueo de cierre sin entrega o con saldo pendiente. |
+
+**Nota:** M06-A y M06-B son **dos incrementos del mismo módulo M06**, no dos módulos nuevos. M04 se completa integrando los contratos de M02, M06 y M05; no se duplica su lógica. Las interfaces se implementan en ETAPA 10, una vez definidos sus diseños en ETAPA 09.
+
+### 6.2 Cuándo se ejecuta la hoja de ruta
+
+| Etapa oficial | Trabajo previsto |
+|---|---|
+| **06 · Base de datos** | Modelar PostgreSQL para los siete módulos, integridad de pedidos/stock/cobros y soporte físico de transacciones e idempotencia. **Solo diseño.** |
+| **07 · Configuración técnica** | Inicializar FastAPI, SQLAlchemy Async, Alembic, PostgreSQL/Docker y el workspace Flutter; preparar entornos y migraciones iniciales autorizadas. |
+| **08 · Backend** | Implementar **en el orden 1–8 anterior** los casos de uso, API y pruebas de los 40 RF. Validar transacción única M04–M02–M05 y anticipo M06 antes de integrar todo. |
+| **09 · Diseño UX/UI** | Diseñar en Figma pantallas de `customer_app`, `staff_app` y panel Flutter Web según RF/CU. Puede avanzar en paralelo a ETAPA 08 con contratos estables. |
+| **10 · Frontend** | Implementar slices Flutter por módulos, según las capacidades de cada rol, conectados a la API validada; no crear una tercera app. |
+| **11 · Integración y entrega** | Probar los tres recorridos (local, recojo y delivery), autorizaciones, rechazo, stock, anticipo, cocina, cobro y cierre frente a los CA aprobados. |
+
+**Criterio de finalización de cada módulo:** sus RF y CA pertinentes están implementados, las restricciones de rol se prueban en backend, los errores son manejados y los flujos funcionan con los módulos de los que depende. No afirmar funcionalidades ni pruebas ejecutadas durante la presente ETAPA 05.
+
+### 6.3 Decisiones pendientes que no deben inventarse
+
+- **M07:** responsable de registrar recojo, entrega delivery y cierre; antes de desarrollar esas acciones, ratificar permisos.
+- **RN-20 y RN-21:** mantener su estado formal pendiente, sin presentarlas como reglas ratificadas por esta hoja de ruta.
+- **RNF-08:** métrica de rendimiento aún propuesta.
+- **Alcance:** sin sedes, inventario de ingredientes, repartidores/GPS, integración con WhatsApp, pasarelas ni SUNAT. Las exclusiones aún propuestas no se convierten en aprobaciones.
+
+## 7. Validación y pendientes
 
 - [x] Dos aplicaciones Flutter y una API FastAPI.
 - [x] Monolito modular con Hexagonal + Vertical Slicing, sin carpeta de arranque adicional.
 - [x] Stack técnico, módulos y estructura objetivo documentados.
 - [x] Confirmación atómica, anticipo simulado y separación de permisos descritos.
-- [ ] Validar compilación/renderización de los dos diagramas PlantUML.
+- [x] Hoja de ruta M01–M07 trazada a los 40 RF de ETAPA 03 y a las ETAPAS 06–11.
+- [x] La ETAPA 05 no conserva diagramas de arquitectura: la estructura y la secuencia de desarrollo se documentan en este archivo.
 - [ ] Validar automáticamente las Skills.
 - [ ] **Aprobación expresa del usuario de la ETAPA 05.**
 
