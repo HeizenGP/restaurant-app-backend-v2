@@ -10,7 +10,7 @@
 
 1. Leer este archivo, el índice y el documento de la etapa vigente.
 2. Abrir solo los RF/RN/RNF y diagramas que afecten la tarea; no releer etapas completas si una referencia puntual basta.
-3. Para un slice backend, cargar `.agents/skills/restaurant-fastapi-slice/SKILL.md` en el repositorio backend. Para Flutter, cargar `.agents/skills/restaurant-flutter-slice/SKILL.md` en el repositorio frontend. No cargar ambas Skills salvo trabajo transversal.
+3. **Skills técnicas bajo demanda:** activar `restaurant-fastapi-slice` solo para diseñar/revisar un caso de uso del backend (implementación desde ETAPA 08), y `restaurant-flutter-slice` solo para una funcionalidad Flutter (implementación desde ETAPA 10). Durante ETAPA 06, diseñar la BD sin activar Skills de implementación; en ETAPA 07, configurar herramientas sin adelantar funcionalidades. Cada Skill vive en `.agents/skills/<nombre>/SKILL.md` de su respectivo repositorio. No cargar ambas salvo revisión transversal.
 4. Los documentos compartidos se leen en un repositorio y se comparan por hash/diff con el otro; no cargar dos copias idénticas al contexto.
 
 ## Alcance seguro
