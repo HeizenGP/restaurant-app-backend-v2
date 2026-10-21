@@ -1,6 +1,6 @@
 # ETAPA 05 — Arquitectura de software | Chifa ASIA
 
-**Estado:** DOCUMENTADA / PENDIENTE DE APROBACIÓN  
+**Estado:** APROBADA POR EL USUARIO (2026-10-20) · Arquitectura documental  
 **Revisión:** 2026-10-20 · **Rama:** `develop`  
 **Base:** ETAPAS 01–04 aprobadas (40 RF, 11 RNF, 7 módulos y 6 actores). Esta etapa define la arquitectura; **no implementa código ni base de datos**.
 
@@ -152,8 +152,8 @@ Cada slice separa presentación, caso de uso y adaptador REST cuando sean necesa
 - [x] Confirmación atómica, anticipo simulado y separación de permisos descritos.
 - [x] La arquitectura y estructura de backend/frontend están descritas aquí, sin diagramas ni paquetes Flutter prematuros.
 - [ ] Validar automáticamente las Skills.
-- [ ] **Aprobación expresa del usuario de la ETAPA 05.**
+- [x] **Aprobación expresa del usuario de la ETAPA 05 (2026-10-20).**
 
 **Pendientes que no se deciden en esta etapa:** responsables de recojo/delivery/cierre de M07, estado formal de RN-20/RN-21, métrica RNF-08 y exclusiones aún propuestas. ETAPA 06 definirá modelo de datos, concurrencia e idempotencia persistida. ETAPA 07 concretará versiones, librerías y despliegue.
 
-**Estado final: ETAPA 05 DOCUMENTADA / PENDIENTE DE APROBACIÓN.**
+**Estado final: ETAPA 05 APROBADA POR EL USUARIO (2026-10-20).** La aprobación corresponde a las decisiones y estructura arquitectónica; no equivale a software implementado ni a validación automatizada de las Skills.
