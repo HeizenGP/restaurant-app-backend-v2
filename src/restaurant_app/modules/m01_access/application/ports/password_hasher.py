@@ -15,3 +15,7 @@ class PasswordHasher(Protocol):
     def verify(self, password: str, hash_: str) -> bool:
         """Return *True* when *password* matches the stored *hash_*."""
         ...
+
+    def verify_dummy(self, password: str) -> None:
+        """Spend one normal verification when no account hash exists."""
+        ...

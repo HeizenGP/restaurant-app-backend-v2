@@ -29,10 +29,6 @@ class UserRepository(Protocol):
         """Create a new user with the CUSTOMER role and return it."""
         ...
 
-    async def assign_role(self, user_id: UUID, role_code: RoleCode) -> None:
-        """Add *role_code* to the user's role set."""
-        ...
-
-    async def has_role(self, user_id: UUID, role_code: RoleCode) -> bool:
-        """Check if the user has a specific role assignment."""
+    async def assign_role(self, user_id: UUID, role_code: RoleCode) -> User:
+        """Add *role_code* and return the user with the cumulative role set."""
         ...

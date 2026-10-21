@@ -87,3 +87,24 @@ class TokenPayload:
     session_id: UUID
     roles: frozenset[RoleCode]
     kind: SessionKind
+
+
+@dataclass(frozen=True, slots=True)
+class Principal:
+    """Authenticated request actor resolved against current database state."""
+
+    user_id: UUID | None
+    session_id: UUID
+    roles: frozenset[RoleCode]
+    kind: SessionKind
+
+    @property
+    def is_super_admin(self) -> bool:
+        """Super Admin bypasses role restrictions (RF-M01-05 / RN-03)."""
+
+        return RoleCode.SUPER_ADMIN in self.roles
+
+    def has_any_role(self, *required: RoleCode) -> bool:
+        """Roles accumulate; a matching role or Super Admin authorizes the actor."""
+
+        return self.is_super_admin or bool(self.roles & frozenset(required))

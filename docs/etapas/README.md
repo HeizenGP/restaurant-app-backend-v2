@@ -3,7 +3,7 @@
 **Proyecto:** Chifa ASIA — sistema académico para un solo restaurante.  
 **Actualización:** 2026-10-21. **Rama de trabajo:** develop.
 
-**Estado:** ETAPAS 00–07 **aprobadas expresamente por el usuario** (ETAPAS 04–05: aprobación documental el 2026-10-20; ETAPAS 06 y 07: aprobación el 2026-10-21); ETAPA 08 **autorizada y planificada, sin bloques funcionales verificados**, con trabajo exclusivo en el backend; ETAPAS 09–11 **por desarrollar**. La ETAPA 05 incluye dos Skills configuradas y verificadas estructuralmente (sin prueba de ejecución en IDE). No confundir implementación verificada con aprobación del usuario.
+**Estado:** ETAPAS 00–07 **aprobadas expresamente por el usuario** (ETAPAS 04–05: aprobación documental el 2026-10-20; ETAPAS 06 y 07: aprobación el 2026-10-21); ETAPA 08 **en desarrollo, con 08.00 y 08.01 verificados técnicamente y 08.02 pendiente**, con trabajo exclusivo en el backend; ETAPAS 09–11 **por desarrollar**. La ETAPA 05 incluye dos Skills configuradas y verificadas estructuralmente (sin prueba de ejecución en IDE). No confundir implementación verificada con aprobación del usuario.
 
 ## 1. Propósito y reglas del plan
 
@@ -33,7 +33,7 @@ Desarrollar progresivamente un ecosistema para clientes, mozos, caja, cocina y a
 | **05** | Arquitectura de software | **Aprobada (2026-10-20)** | [Arquitectura y tecnologías](etapa-05.md) y Skills técnicas |
 | **06** | Diseño de base de datos | **Aprobada (2026-10-21)** | [Modelo PostgreSQL y trazabilidad](etapa-06.md), [DER editable](diagramas/etapa-06/etapa-06-der.drawio) |
 | **07** | Configuración técnica | **APROBADA por el usuario (2026-10-21)** | [Implementación y evidencia](etapa-07.md), infraestructura y migraciones iniciales |
-| **08** | Desarrollo del backend | **Autorizada / planificada; 08.00 pendiente** | [Plan](etapa-08.md) y [bitácora](etapa-08-progreso.md), solo backend |
+| **08** | Desarrollo del backend | **En desarrollo; 08.00 y 08.01 verificados, 08.02 pendiente; etapa no aprobada** | [Plan](etapa-08.md) y [bitácora](etapa-08-progreso.md), solo backend |
 | **09** | Diseño UX/UI en Figma | Por iniciar | Interfaces y prototipos aprobados |
 | **10** | Desarrollo del frontend | Por iniciar | Apps Flutter conectadas al backend |
 | **11** | Integración, pruebas y entrega | Por iniciar | Validación extremo a extremo y demostración académica |
@@ -136,7 +136,7 @@ upgrade/downgrade Alembic hasta `20261021_0002`, API saludable, 26 pruebas backe
 guardas destructivas verificadas, análisis/pruebas Flutter y builds Android/Web
 correctos. **Aprobación expresa del usuario registrada el 2026-10-21**; no implica aprobación de funcionalidades de ETAPA 08.
 
-### ETAPA 08 — Desarrollo del backend · AUTORIZADA / PLANIFICADA
+### ETAPA 08 — Desarrollo del backend · EN DESARROLLO (08.00 y 08.01 verificados)
 
 **Workspace exclusivo de Codex y AGY:** `~/proyectos/restaurant-app-v2/restaurant-app-backend-v2` (rama `develop`). Ambos agentes alternan en un **único espacio local**, sin ediciones simultáneas. **Solo se modifica el repositorio backend**, incluidos `docs/etapas/etapa-08.md` y `etapa-08-progreso.md`; no sincronizar ni editar el frontend en esta etapa. Los bloques 08.00–08.10 se rigen por estos archivos y la Skill `restaurant-fastapi-slice`.
 

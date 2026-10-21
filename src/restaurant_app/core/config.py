@@ -53,6 +53,16 @@ class Settings(BaseSettings):
     database_pool_timeout_seconds: float = Field(default=30.0, gt=0, le=300)
     database_pool_recycle_seconds: int = Field(default=1800, ge=60)
 
+    jwt_secret: SecretStr = Field(
+        default=SecretStr("replace-this-local-jwt-secret-with-at-least-32-bytes"),
+        repr=False,
+    )
+    jwt_issuer: str = "restaurant-app-v2"
+    jwt_audience: str = "restaurant-app-v2-api"
+    jwt_access_ttl_minutes: int = Field(default=15, ge=1, le=1440)
+    jwt_refresh_ttl_days: int = Field(default=7, ge=1, le=90)
+    guest_session_ttl_hours: int = Field(default=24, ge=1, le=168)
+
     cors_origins: list[str] = Field(default_factory=list)
 
     @field_validator("api_v1_prefix")
@@ -86,6 +96,25 @@ class Settings(BaseSettings):
             raise ValueError("POSTGRES_PASSWORD must not be blank")
         return value
 
+    @field_validator("jwt_secret")
+    @classmethod
+    def validate_jwt_secret(cls, value: SecretStr) -> SecretStr:
+        """Require enough entropy space for the configured HMAC signing key."""
+
+        if len(value.get_secret_value()) < 32:
+            raise ValueError("RESTAURANT_JWT_SECRET must contain at least 32 characters")
+        return value
+
+    @field_validator("jwt_issuer", "jwt_audience")
+    @classmethod
+    def reject_blank_jwt_identifiers(cls, value: str) -> str:
+        """Keep issuer and audience checks explicit and non-empty."""
+
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("JWT issuer and audience must not be blank")
+        return normalized
+
     @field_validator("cors_origins")
     @classmethod
     def validate_cors_origins(cls, origins: list[str]) -> list[str]:
@@ -118,6 +147,12 @@ class Settings(BaseSettings):
             and self.postgres_password.get_secret_value() == "replace-this-local-password"
         ):
             raise ValueError("replace the local PostgreSQL password outside local/test")
+        if (
+            self.environment in {AppEnvironment.STAGING, AppEnvironment.PRODUCTION}
+            and self.jwt_secret.get_secret_value()
+            == "replace-this-local-jwt-secret-with-at-least-32-bytes"
+        ):
+            raise ValueError("replace the local JWT secret outside local/test")
         return self
 
     @property

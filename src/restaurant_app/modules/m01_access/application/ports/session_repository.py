@@ -15,14 +15,22 @@ class SessionRepository(Protocol):
     async def create_user_session(
         self,
         *,
+        session_id: UUID,
         user_id: UUID,
         renewal_token_hash: str,
+        created_at: datetime,
         expires_at: datetime,
     ) -> AuthSession:
         """Persist a new USER session and return the domain entity."""
         ...
 
-    async def create_guest_session(self, *, expires_at: datetime) -> AuthSession:
+    async def create_guest_session(
+        self,
+        *,
+        session_id: UUID,
+        created_at: datetime,
+        expires_at: datetime,
+    ) -> AuthSession:
         """Persist a new GUEST session and return the domain entity."""
         ...
 
@@ -30,6 +38,16 @@ class SessionRepository(Protocol):
         """Return session regardless of active/revoked status, or *None*."""
         ...
 
-    async def revoke(self, session_id: UUID) -> bool:
+    async def rotate_renewal_token(
+        self,
+        *,
+        session_id: UUID,
+        expected_hash: str,
+        replacement_hash: str,
+    ) -> bool:
+        """Atomically replace a refresh digest once; reject concurrent replay."""
+        ...
+
+    async def revoke(self, session_id: UUID, *, revoked_at: datetime) -> bool:
         """Revoke session. Return *True* if revoked, *False* if not found."""
         ...

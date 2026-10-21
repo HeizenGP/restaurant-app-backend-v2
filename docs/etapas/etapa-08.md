@@ -1,6 +1,7 @@
 # ETAPA 08 — Plan de implementación backend | Chifa ASIA
 
-**Estado:** AUTORIZADA / PLANIFICADA; ejecución empieza solo al iniciar 08.00 · **Aprobación final:** exclusiva del usuario.  
+**Estado:** EN DESARROLLO; 08.00 y 08.01 verificados técnicamente, 08.02 pendiente · **Aprobación final:** exclusiva del usuario.
+
 **Rama:** `develop` · **Único repositorio editable:** `restaurant-app-backend-v2` · **Workspace compartido Codex/AGY:** `~/proyectos/restaurant-app-v2/restaurant-app-backend-v2` (`/home/heizen27/proyectos/restaurant-app-v2/restaurant-app-backend-v2`). **Frontend intocable en ETAPA 08.**  
 **Fuentes de verdad:** `AGENTS.md`, `docs/etapas/README.md`, `docs/etapas/etapa-03-requisitos.md` (40 RF / 48 CA), `etapa-03.md` (RN/RNF), `etapa-04.md` (CU), `etapa-05.md` (arquitectura), `etapa-06.md` (BD), `etapa-07.md` (infraestructura). Consultar solo fragmentos pertinentes.  
 **Progreso vivo / punto de reanudación:** [`etapa-08-progreso.md`](etapa-08-progreso.md). **No confundir este plan con evidencia de funcionalidades terminadas.**

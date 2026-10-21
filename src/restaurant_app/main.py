@@ -12,6 +12,12 @@ from pydantic import BaseModel, ConfigDict
 from restaurant_app.core.config import AppEnvironment, Settings, get_settings
 from restaurant_app.core.database import DatabaseResources, create_database_resources
 from restaurant_app.core.dependencies import DatabaseReady
+from restaurant_app.modules.m01_access.adapters.inbound.http import (
+    install_access_error_handlers,
+)
+from restaurant_app.modules.m01_access.adapters.inbound.http import (
+    router as access_router,
+)
 
 
 class HealthChecks(BaseModel):
@@ -44,7 +50,7 @@ async def lifespan(application: FastAPI) -> AsyncIterator[None]:
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
-    """Build the ASGI application without registering functional slices."""
+    """Build the ASGI application and register completed functional slices."""
 
     app_settings = settings or get_settings()
     logging.basicConfig(
@@ -60,6 +66,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     application.state.settings = app_settings
     application.state.database = create_database_resources(app_settings)
+    install_access_error_handlers(application)
+    application.include_router(access_router, prefix=app_settings.api_v1_prefix)
 
     if app_settings.cors_origins:
         application.add_middleware(

@@ -41,3 +41,7 @@ class TokenProvider(Protocol):
     def hash_token(self, token: str) -> str:
         """Return a one-way hash of *token* for storage comparison."""
         ...
+
+    def token_matches_hash(self, token: str, token_hash: str) -> bool:
+        """Compare a presented token with its stored digest in constant time."""
+        ...

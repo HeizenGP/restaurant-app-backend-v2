@@ -54,6 +54,6 @@ async def database_is_ready(resources: DatabaseResourcesDependency) -> bool:
     return True
 
 
-DatabaseSession = Annotated[AsyncSession, Depends(get_db_session)]
+DatabaseSession = Annotated[AsyncSession, Depends(get_db_session, scope="function")]
 DatabaseReady = Annotated[bool, Depends(database_is_ready)]
 AppSettings = Annotated[Settings, Depends(get_app_settings)]
