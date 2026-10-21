@@ -151,9 +151,9 @@ Cada slice separa presentación, caso de uso y adaptador REST cuando sean necesa
 - [x] Stack técnico, módulos y estructura objetivo documentados.
 - [x] Confirmación atómica, anticipo simulado y separación de permisos descritos.
 - [x] La arquitectura y estructura de backend/frontend están descritas aquí, sin diagramas ni paquetes Flutter prematuros.
-- [ ] Validar automáticamente las Skills.
+- [x] Validación estructural automatizada de las dos Skills (2026-10-20): nombres, frontmatter, rutas, activación por etapa y referencias. No se ha probado su invocación real en Codex/Antigravity locales.
 - [x] **Aprobación expresa del usuario de la ETAPA 05 (2026-10-20).**
 
 **Pendientes que no se deciden en esta etapa:** responsables de recojo/delivery/cierre de M07, estado formal de RN-20/RN-21, métrica RNF-08 y exclusiones aún propuestas. ETAPA 06 definirá modelo de datos, concurrencia e idempotencia persistida. ETAPA 07 concretará versiones, librerías y despliegue.
 
-**Estado final: ETAPA 05 APROBADA POR EL USUARIO (2026-10-20).** La aprobación corresponde a las decisiones y estructura arquitectónica; no equivale a software implementado ni a validación automatizada de las Skills.
+**Estado final: ETAPA 05 APROBADA POR EL USUARIO (2026-10-20).** La aprobación corresponde a las decisiones y estructura arquitectónica; no equivale a software implementado ni a prueba de funcionamiento de agentes en el IDE.
