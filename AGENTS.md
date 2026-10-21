@@ -2,8 +2,8 @@
 
 ## Estado y autoridad
 
-- **ETAPAS 00–03 aprobadas (2026-10-13) y ETAPA 04 aprobada expresamente por el usuario (2026-10-20), con comprobaciones técnicas pendientes. ETAPA 05 aprobada expresamente (2026-10-20). ETAPA 06 aprobada expresamente como diseño documental (2026-10-21), con decisiones de negocio abiertas. ETAPA 07 implementada técnicamente y pendiente de revisión/aprobación; ETAPA 08 no iniciada.** No aprobar etapas por inferencia.
-- Índice oficial: `docs/etapas/README.md`. Trabajo actual: `docs/etapas/etapa-07.md`.
+- **ETAPAS 00–03 aprobadas (2026-10-13) y ETAPA 04 aprobada expresamente por el usuario (2026-10-20), con comprobaciones técnicas pendientes. ETAPA 05 aprobada expresamente (2026-10-20). ETAPA 06 aprobada expresamente como diseño documental (2026-10-21), con decisiones de negocio abiertas. ETAPA 07 APROBADA expresamente por el usuario (2026-10-21); ETAPA 08 AUTORIZADA / PLANIFICADA, sin bloques funcionales verificados.** No aprobar etapas por inferencia.
+- Índice oficial: `docs/etapas/README.md`. Trabajo actual: `docs/etapas/etapa-08.md`; continuidad: `docs/etapas/etapa-08-progreso.md`.
 - Las ETAPAS 01–03 prevalecen como línea base de negocio y requisitos. ETAPA 04 es línea base documental de casos de uso aprobada, pero no resuelve por sí sola RN-20/RN-21, RNF-08, responsables de M07 ni comprobantes.
 
 ## Carga selectiva
@@ -16,14 +16,14 @@
 ## Alcance seguro
 
 - Mantener los siete módulos M01–M07 y las decisiones aprobadas. Distinguir siempre heredado, propuesto y pendiente.
-- Durante ETAPA 07: configurar stack, proyectos, entorno Docker/PostgreSQL, SQLAlchemy Async y migraciones iniciales **solo desde el diseño aprobado de ETAPA 06**. Dar prioridad al backend; preparar Flutter sin desarrollar funcionalidades. No inventar permisos/estados de negocio pendientes ni implementar los 40 RF (ETAPA 08). No marcar pruebas o migraciones como ejecutadas sin evidencia.
+- **ETAPA 07 APROBADA:** su infraestructura es la línea base; no reconstruirla. **ETAPA 08: desarrollar exclusivamente backend** (M01–M07, 40 RF/48 CA) por bloques del plan oficial, sin tocar Flutter, Figma ni el repositorio frontend. No inventar permisos ni decisiones pendientes; pruebas ejecutadas solo con evidencia.
 - Hacer cambios mínimos dentro de la etapa. No sobrescribir trabajo ajeno, registrar secretos, ejecutar commits/push/merge ni usar conectores externos sin necesidad.
-- Mantener idénticos `docs/` compartidos entre backend y frontend. Las Skills específicas viven solo en su repositorio; ambos agentes usan el mismo `SKILL.md`.
-- Usar archivos y Git locales primero. GitHub se reserva para operaciones remotas solicitadas; Figma para ETAPA 09; otros MCP requieren una necesidad vigente.
+- **Excepción explícita de ETAPA 08:** editar únicamente `restaurant-app-backend-v2`, incluida su documentación `docs/` y este `AGENTS.md`; no editar ni sincronizar el frontend en esta etapa. La sincronización general de documentos compartidos se retoma en otra etapa con autorización. Activar solo `.agents/skills/restaurant-fastapi-slice/SKILL.md` cuando corresponda.
+- **Workspace único para Codex y AGY:** `/home/heizen27/proyectos/restaurant-app-v2/restaurant-app-backend-v2` (`~/proyectos/restaurant-app-v2/restaurant-app-backend-v2`), rama `develop`. Ambos comparten los mismos archivos locales, alternan el turno (un solo escritor activo) y registran el traspaso en `docs/etapas/etapa-08-progreso.md`; nunca asumir que se han publicado cambios locales. Usar Git local primero; GitHub solo por solicitud explícita. Figma queda para ETAPA 09.
 
 ## Verificación y cierre
 
-- Confirmar repositorio y rama `develop`, revisar cambios existentes y validar enlaces, trazabilidad y diferencias entre repositorios.
+- En ETAPA 08 confirmar el único workspace backend y rama `develop`, ejecutar `git status` antes de editar, revisar cambios locales y el bloque activo. No comprobar ni modificar el frontend salvo instrucción nueva.
 - Reportar archivos modificados, comprobaciones reales, riesgos y pendientes. No presentar inspección documental como prueba de ejecución.
 - La aprobación de una etapa corresponde exclusivamente al usuario.
 
