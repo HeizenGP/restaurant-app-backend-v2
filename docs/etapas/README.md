@@ -2,7 +2,7 @@
 
 **Proyecto:** Chifa ASIA — sistema académico para un solo restaurante.  
 **Actualización:** 2026-10-20. **Rama de trabajo:** develop.  
-**Estado:** ETAPAS 00–05 **aprobadas expresamente por el usuario** (ETAPAS 04–05: aprobación documental el 2026-10-20); ETAPA 06 **iniciada, en diseño y pendiente de aprobación**; ETAPAS 07–11 **por desarrollar**. La ETAPA 05 incluye dos Skills configuradas y verificadas estructuralmente (sin prueba de ejecución en IDE). No confundir diseño/documentación con software implementado.
+**Estado:** ETAPAS 00–06 **aprobadas expresamente por el usuario** (ETAPAS 04–05: aprobación documental el 2026-10-20; ETAPA 06: aprobación documental el 2026-10-21); ETAPA 07 **iniciada y pendiente de implementación/revisión/aprobación**; ETAPAS 08–11 **por desarrollar**. La ETAPA 05 incluye dos Skills configuradas y verificadas estructuralmente (sin prueba de ejecución en IDE). No confundir diseño/documentación con software implementado.
 
 ## 1. Propósito y reglas del plan
 
@@ -30,8 +30,8 @@ Desarrollar progresivamente un ecosistema para clientes, mozos, caja, cocina y a
 | **03** | Ingeniería de requisitos | **Aprobada** | [Reglas/RNF](etapa-03.md) y [40 RF/CA](etapa-03-requisitos.md) |
 | **04** | Modelado del sistema | **Aprobada por el usuario (2026-10-20), con verificaciones técnicas pendientes** | [Casos de uso UML](etapa-04.md) y [8 diagramas CU](diagramas/etapa-04/) |
 | **05** | Arquitectura de software | **Aprobada (2026-10-20)** | [Arquitectura y tecnologías](etapa-05.md) y Skills técnicas |
-| **06** | Diseño de base de datos | **Iniciada; pendiente de diseño y aprobación** | [Definición de etapa](etapa-06.md); modelo PostgreSQL por diseñar |
-| **07** | Configuración técnica | Por iniciar | Proyectos ejecutables, infraestructura y migraciones iniciales |
+| **06** | Diseño de base de datos | **Aprobada (2026-10-21)** | [Modelo PostgreSQL y trazabilidad](etapa-06.md), [DER editable](diagramas/etapa-06/etapa-06-der.drawio) |
+| **07** | Configuración técnica | **Iniciada; pendiente de implementación/aprobación** | [Definición de etapa](etapa-07.md), infraestructura y migraciones iniciales |
 | **08** | Desarrollo del backend | Por iniciar | API REST y pruebas de los siete módulos |
 | **09** | Diseño UX/UI en Figma | Por iniciar | Interfaces y prototipos aprobados |
 | **10** | Desarrollo del frontend | Por iniciar | Apps Flutter conectadas al backend |
@@ -105,7 +105,7 @@ La elaboración de una etapa no equivale a su aprobación, ni una casilla de doc
 **Entregable:** [arquitectura y tecnologías de backend/frontend](etapa-05.md), más Skills en **.agents/skills/** de su respectivo repositorio. No se mantienen diagramas de arquitectura de ETAPA 05.  
 **Aprobación expresa:** registrada el 2026-10-20. Las dos Skills pasaron validación estructural (2026-10-20); su invocación real en los IDE no se comprobó. Se conservan pendientes las decisiones funcionales abiertas.
 
-### ETAPA 06 — Diseño de base de datos desde cero · INICIADA / PENDIENTE DE APROBACIÓN
+### ETAPA 06 — Diseño de base de datos desde cero · APROBADA (2026-10-21)
 
 **Objetivo:** convertir requisitos y contratos aprobados en un modelo PostgreSQL consistente; **aún sin crear la base de datos ejecutable**.
 
@@ -115,10 +115,10 @@ La elaboración de una etapa no equivale a su aprobación, ni una casilla de doc
 - Especificar estrategia física para confirmación atómica, concurrencia de stock e idempotencia, respetando RNF-04/05/10.
 - Revisar trazabilidad **RF/RN → entidades y restricciones**, y documentar decisiones sin incorporar ingredientes, sedes, logística u otras exclusiones.
 
-**Entregable:** DER editable, diccionario de datos, esquema físico propuesto y documento de decisiones/validación en **docs/etapas/**.  
-**Cierre:** modelo revisado contra los 40 RF, reglas y arquitectura aprobada; conflictos y decisiones pendientes resueltos o explícitamente aislados antes de migraciones.
+**Entregable aprobado:** [diseño PostgreSQL y matriz RF 40/40](etapa-06.md), [DER editable](diagramas/etapa-06/etapa-06-der.drawio) y [vista SVG](diagramas/etapa-06/etapa-06-der.svg).  
+**Aprobación expresa:** registrada el 2026-10-21 para el diseño documental de 14 tablas; pendientes funcionales documentados se mantienen sin ratificación. Edición visual en diagrams.net y pruebas con PostgreSQL no ejecutadas.
 
-### ETAPA 07 — Configuración técnica
+### ETAPA 07 — Configuración técnica · INICIADA / PENDIENTE DE APROBACIÓN
 
 **Objetivo:** convertir la arquitectura aprobada en proyectos ejecutables con infraestructura mínima reproducible.
 
@@ -154,7 +154,7 @@ La elaboración de una etapa no equivale a su aprobación, ni una casilla de doc
 - Construir prototipos de recorridos principales y revisar cada pantalla frente a RF, actor, permisos y API disponible/propuesta.
 
 **Entregable:** archivo Figma organizado, componentes y prototipos validados, mapa **pantalla → RF/CA → API**.  
-**Cierre:** aprobación visual/funcional; no diseñar acciones que carezcan de respaldo en requisitos. **Puede trabajar en paralelo con ETAPA 08** cuando los flujos y contratos afectados estén estables.
+**Cierre:** aprobación visual/funcional; no diseñar acciones que carezcan de respaldo en requisitos. **Se abordará después de completar y verificar el backend en ETAPA 08**, siguiendo el orden backend primero y frontend después.
 
 ### ETAPA 10 — Desarrollo del frontend
 
@@ -192,4 +192,4 @@ La elaboración de una etapa no equivale a su aprobación, ni una casilla de doc
 6. **Validación honesta:** distinguir documento revisado, archivo verificado, compilación, ejecución de pruebas y aprobación; nunca marcar como hecha una comprobación no ejecutada.
 7. **Control de cambios:** cambios de alcance, roles, políticas o simulaciones regresan a los documentos afectados y actualizan trazabilidad. No introducir funcionalidades extra como solución a una etapa técnica.
 
-**Próximo hito:** desarrollar y revisar la [ETAPA 06 — Diseño de base de datos](etapa-06.md) contra los RF, reglas y arquitectura aprobados, sin crear tablas ejecutables ni migraciones todavía.
+**Próximo hito:** preparar y ejecutar la [ETAPA 07 — Configuración técnica](etapa-07.md) contra la arquitectura (ETAPA 05) y el modelo PostgreSQL aprobado (ETAPA 06), con verificación real antes de solicitar su aprobación.
