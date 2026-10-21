@@ -7,7 +7,7 @@ skinparam linetype ortho
 
 actor "Apps Flutter" as Client
 component "FastAPI / REST\n/api/v1" as API
-component "Bootstrap / DI\ny UoW compartida" as Boot
+component "main.py + core/\nDI y UoW" as Boot
 
 package "Módulos hexagonales (puertos propios)" {
  component "M01 Accesos" as M01
@@ -34,7 +34,7 @@ API --> M01
 API --> M04
 API --> M07
 API --> M06
-Boot ..> API : compone
+Boot ..> API : configura
 Boot ..> M04 : UoW
 M04 --> M02 : puerto stock
 M04 --> M03 : puerto mesa
