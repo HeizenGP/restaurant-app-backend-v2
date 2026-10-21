@@ -3,7 +3,7 @@
 **Proyecto:** Chifa ASIA — sistema académico para un solo restaurante.  
 **Actualización:** 2026-10-21. **Rama de trabajo:** develop.
 
-**Estado:** ETAPAS 00–06 **aprobadas expresamente por el usuario** (ETAPAS 04–05: aprobación documental el 2026-10-20; ETAPA 06: aprobación documental el 2026-10-21); ETAPA 07 **implementada y pendiente de revisión/aprobación**; ETAPAS 08–11 **por desarrollar**. La ETAPA 05 incluye dos Skills configuradas y verificadas estructuralmente (sin prueba de ejecución en IDE). No confundir implementación verificada con aprobación del usuario.
+**Estado:** ETAPAS 00–07 **aprobadas expresamente por el usuario** (ETAPAS 04–05: aprobación documental el 2026-10-20; ETAPAS 06 y 07: aprobación el 2026-10-21); ETAPA 08 **autorizada y planificada, sin bloques funcionales verificados**, con trabajo exclusivo en el backend; ETAPAS 09–11 **por desarrollar**. La ETAPA 05 incluye dos Skills configuradas y verificadas estructuralmente (sin prueba de ejecución en IDE). No confundir implementación verificada con aprobación del usuario.
 
 ## 1. Propósito y reglas del plan
 
@@ -32,8 +32,8 @@ Desarrollar progresivamente un ecosistema para clientes, mozos, caja, cocina y a
 | **04** | Modelado del sistema | **Aprobada por el usuario (2026-10-20), con verificaciones técnicas pendientes** | [Casos de uso UML](etapa-04.md) y [8 diagramas CU](diagramas/etapa-04/) |
 | **05** | Arquitectura de software | **Aprobada (2026-10-20)** | [Arquitectura y tecnologías](etapa-05.md) y Skills técnicas |
 | **06** | Diseño de base de datos | **Aprobada (2026-10-21)** | [Modelo PostgreSQL y trazabilidad](etapa-06.md), [DER editable](diagramas/etapa-06/etapa-06-der.drawio) |
-| **07** | Configuración técnica | **Implementada; pendiente de revisión/aprobación** | [Implementación y evidencia](etapa-07.md), infraestructura y migraciones iniciales |
-| **08** | Desarrollo del backend | Por iniciar | API REST y pruebas de los siete módulos |
+| **07** | Configuración técnica | **APROBADA por el usuario (2026-10-21)** | [Implementación y evidencia](etapa-07.md), infraestructura y migraciones iniciales |
+| **08** | Desarrollo del backend | **Autorizada / planificada; 08.00 pendiente** | [Plan](etapa-08.md) y [bitácora](etapa-08-progreso.md), solo backend |
 | **09** | Diseño UX/UI en Figma | Por iniciar | Interfaces y prototipos aprobados |
 | **10** | Desarrollo del frontend | Por iniciar | Apps Flutter conectadas al backend |
 | **11** | Integración, pruebas y entrega | Por iniciar | Validación extremo a extremo y demostración académica |
@@ -119,7 +119,7 @@ La elaboración de una etapa no equivale a su aprobación, ni una casilla de doc
 **Entregable aprobado:** [diseño PostgreSQL y matriz RF 40/40](etapa-06.md), [DER editable](diagramas/etapa-06/etapa-06-der.drawio) y [vista SVG](diagramas/etapa-06/etapa-06-der.svg).  
 **Aprobación expresa:** registrada el 2026-10-21 para el diseño documental de 14 tablas; pendientes funcionales documentados se mantienen sin ratificación. Edición visual en diagrams.net y pruebas con PostgreSQL no ejecutadas.
 
-### ETAPA 07 — Configuración técnica · IMPLEMENTADA / PENDIENTE DE APROBACIÓN
+### ETAPA 07 — Configuración técnica · APROBADA (2026-10-21)
 
 **Objetivo:** convertir la arquitectura aprobada en proyectos ejecutables con infraestructura mínima reproducible.
 
@@ -134,9 +134,11 @@ La elaboración de una etapa no equivale a su aprobación, ni una casilla de doc
 **Verificación:** PostgreSQL 17.11 en Docker Compose con healthcheck sano,
 upgrade/downgrade Alembic hasta `20261021_0002`, API saludable, 26 pruebas backend,
 guardas destructivas verificadas, análisis/pruebas Flutter y builds Android/Web
-correctos. La aprobación de la etapa sigue siendo exclusiva del usuario.
+correctos. **Aprobación expresa del usuario registrada el 2026-10-21**; no implica aprobación de funcionalidades de ETAPA 08.
 
-### ETAPA 08 — Desarrollo del backend
+### ETAPA 08 — Desarrollo del backend · AUTORIZADA / PLANIFICADA
+
+**Workspace exclusivo de Codex y AGY:** `~/proyectos/restaurant-app-v2/restaurant-app-backend-v2` (rama `develop`). Ambos agentes alternan en un **único espacio local**, sin ediciones simultáneas. **Solo se modifica el repositorio backend**, incluidos `docs/etapas/etapa-08.md` y `etapa-08-progreso.md`; no sincronizar ni editar el frontend en esta etapa. Los bloques 08.00–08.10 se rigen por estos archivos y la Skill `restaurant-fastapi-slice`.
 
 **Objetivo:** implementar los **40 RF** de M01–M07 como casos de uso y contratos REST, respetando el comportamiento aprobado.
 
@@ -195,9 +197,9 @@ correctos. La aprobación de la etapa sigue siendo exclusiva del usuario.
 1. **Aprobación:** el usuario aprueba cada etapa; avanzar para redactar un borrador no supone aprobación. Antes de implementar decisiones de ETAPAS 04–05, revisar su estado y los pendientes que afectan el trabajo.
 2. **Trazabilidad:** conservar la cadena **RN/RF/CA → UML → arquitectura → BD → API → interfaz → prueba**, con referencias específicas y sin cambiar identificadores por estética.
 3. **Sin adelantar etapas:** ETAPA 06 diseña; ETAPA 07 inicializa y migra; ETAPA 08 implementa backend; ETAPA 09 diseña UI; ETAPA 10 implementa Flutter; ETAPA 11 integra y certifica el recorrido académico.
-4. **Documentación:** usar **docs/** de ambos repositorios como fuente compartida y mantener iguales los documentos comunes. Cada etapa añade su documento y artefactos solo cuando aportan valor; conservar los archivos previamente aprobados.
+4. **Documentación:** los documentos de referencia de etapas anteriores conservan su validez. **Durante ETAPA 08 se editan únicamente archivos del backend**, incluida su documentación y reglas de agentes; no se exige ni se hace sincronización al frontend. Una sincronización global posterior se acordará por separado. Cada etapa añade artefactos solo cuando aportan valor.
 5. **Agentes/tokens:** cargar **AGENTS.md + este índice + documento de la etapa**, y únicamente Skills, RF/diagramas o código pertinentes. Evitar lecturas completas repetidas, Skills duplicadas, MCP innecesarios y logs extensos.
 6. **Validación honesta:** distinguir documento revisado, archivo verificado, compilación, ejecución de pruebas y aprobación; nunca marcar como hecha una comprobación no ejecutada.
 7. **Control de cambios:** cambios de alcance, roles, políticas o simulaciones regresan a los documentos afectados y actualizan trazabilidad. No introducir funcionalidades extra como solución a una etapa técnica.
 
-**Próximo hito:** revisar y, si corresponde, aprobar expresamente la [ETAPA 07 — Configuración técnica](etapa-07.md). No iniciar ETAPA 08 antes de esa decisión.
+**Próximo hito:** comenzar **08.00 — Línea base** en el backend aprobado para trabajo, desde [plan ETAPA 08](etapa-08.md) y [bitácora](etapa-08-progreso.md), y avanzar por bloques verificados. La aprobación final de ETAPA 08 sigue pendiente del usuario.
