@@ -129,20 +129,16 @@ apps/
     └── lib/
         ├── app/                  # Sesión y navegación por permisos
         └── features/             # Slices M01–M07
-packages/
-├── foundation/                   # Tipos/utilidades comunes
-├── rest_api/                     # Cliente HTTP y DTO
-├── auth_session/                 # Sesión y capacidades
-└── design_system/                # Tema y componentes compartidos
 ```
 
-Cada slice separa presentación, caso de uso y adaptador REST cuando sean necesarios. **No se duplican reglas del backend en Flutter**. El panel Web utiliza el mismo `staff_app`; se publica con configuración propia en ETAPA 07.
+Cada slice separa presentación, caso de uso y adaptador REST cuando sean necesarios. **No se duplican reglas del backend en Flutter**. Al inicio solo se organizan las dos apps; se crea `packages/` **únicamente cuando ambas necesiten reutilizar código real** (por ejemplo, cliente REST o componentes visuales), evitando paquetes vacíos. El panel Web utiliza el mismo `staff_app`; su despliegue se configura en ETAPA 07.
 
 **UI:** tema claro predominante, modo oscuro opcional, diseño definido en Figma y iconos Lucide. La elección de librerías de estado y navegación se realizará en ETAPA 07, evitando dependencias anticipadas.
 
 ## 5. Límites y herramientas de desarrollo
 
-- Pagos, anticipos y comprobantes: **simulados**. Sin pasarela real ni integración SUNAT.
+- **Comprobantes simulados:** decisión confirmada por el usuario. Son registros/documentos internos sin validez tributaria, sin firma ni envío a SUNAT. Antes de implementar su emisión, precisar y aprobar los RF/criterios de aceptación correspondientes; esta etapa no añade endpoints ni un módulo nuevo.
+- **Pagos y anticipos:** simulados, sin pasarela bancaria.
 - WhatsApp/llamadas: **registro manual**, sin integración externa.
 - Delivery: **registro comercial**, sin GPS, rutas o logística de repartidores.
 - Dos Skills: `restaurant-fastapi-slice` (backend) y `restaurant-flutter-slice` (frontend). Ambos agentes usan `AGENTS.md`; la documentación compartida está en `docs/`.
@@ -154,7 +150,7 @@ Cada slice separa presentación, caso de uso y adaptador REST cuando sean necesa
 - [x] Monolito modular con Hexagonal + Vertical Slicing, sin carpeta de arranque adicional.
 - [x] Stack técnico, módulos y estructura objetivo documentados.
 - [x] Confirmación atómica, anticipo simulado y separación de permisos descritos.
-- [x] La arquitectura y estructura de backend/frontend están descritas en este archivo, sin diagramas adicionales.
+- [x] La arquitectura y estructura de backend/frontend están descritas aquí, sin diagramas ni paquetes Flutter prematuros.
 - [ ] Validar automáticamente las Skills.
 - [ ] **Aprobación expresa del usuario de la ETAPA 05.**
 
