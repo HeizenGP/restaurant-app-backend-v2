@@ -1,6 +1,6 @@
 # ETAPA 07 — Configuración técnica | Chifa ASIA
 
-**Estado:** IMPLEMENTADA / PENDIENTE DE REVISIÓN Y APROBACIÓN
+**Estado:** APROBADA EXPRESAMENTE POR EL USUARIO (2026-10-21) · infraestructura ejecutable y verificación documentada; las decisiones de negocio pendientes permanecen abiertas.
 
 **Fecha de implementación y verificación:** 2026-10-21 · **Rama:** `develop`
 
@@ -309,8 +309,8 @@ de RNF-08 ni resuelven RN-20/RN-21.
 ## 9. Pendientes y cierre
 
 - RN-20, RN-21, RNF-08, permisos M07 y comprobantes simulados siguen pendientes.
-- No avanzar a ETAPA 08 ni aprobar automáticamente esta etapa.
+- **Aprobación expresa del usuario:** 2026-10-21. Se autoriza pasar a ETAPA 08, exclusivamente backend, sin resolver por inferencia los pendientes enumerados.
 
 **Cierre técnico:** FastAPI, Alembic y PostgreSQL fueron ejecutados mediante Docker
 Compose; ambos proyectos Flutter compilan y pasan sus verificaciones técnicas. ETAPA 07
-queda **IMPLEMENTADA / PENDIENTE DE REVISIÓN Y APROBACIÓN**.
+queda **APROBADA POR EL USUARIO (2026-10-21)**. ETAPA 08 está autorizada, pero sus bloques funcionales aún no tienen evidencia de implementación.
