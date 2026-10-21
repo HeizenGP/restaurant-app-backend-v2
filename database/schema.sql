@@ -8,11 +8,12 @@
 -- Ejemplo de ejecución MANUAL (NO realizada):
 --   psql -X -v ON_ERROR_STOP=1 -d NOMBRE_BD -f database/schema.sql
 -- No ejecutar de nuevo sobre una BD ya migrada por Alembic.
--- Se refuerzan en PostgreSQL: total = suma de líneas al COMMIT, cobros sin
--- sobrepago, pago financiero inmutable y estados de cocina coherentes.
--- Permisos, máquina de estados, anticipo autorizado, cierre y ConfirmOrder
--- (stock + pedido + comanda en una UoW) corresponden al backend (ETAPA 08).
--- Los triggers NO reemplazan transacciones ni autorizaciones del backend.
+-- Integridad adicional en PostgreSQL: los importes históricos son inmutables,
+-- las líneas se insertan en la misma transacción que la cabecera, su suma
+-- coincide con el total antes de COMMIT y no puede existir sobrepago.
+-- ConfirmOrder (autorización, stock + movimiento + comanda en una UoW),
+-- cambios de estado, permisos y cierres son casos de uso del backend (ETAPA 08).
+-- Los triggers no sustituyen la autorización ni las transacciones de backend.
 
 BEGIN;
 
@@ -181,39 +182,72 @@ CREATE TABLE public.order_items (
 );
 CREATE INDEX ix_order_items_product ON public.order_items (product_id);
 
--- Snapshot comercial: no se altera el importe de un pedido registrado ni
--- se editan/eliminan sus líneas. El backend tampoco añadirá líneas después
--- de registrar la solicitud: esa regla temporal se valida en la aplicación.
+-- El importe de un pedido ya registrado es inmutable.
 CREATE FUNCTION public.reject_order_total_change()
-RETURNS TRIGGER LANGUAGE plpgsql AS $
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
     IF NEW.total_amount IS DISTINCT FROM OLD.total_amount THEN
-        RAISE EXCEPTION 'El total de un pedido registrado es inmutable'
+        RAISE EXCEPTION 'El importe del pedido ya registrado es inmutable'
             USING ERRCODE = '23514';
     END IF;
     RETURN NEW;
 END;
-$;
+$$;
 CREATE TRIGGER trg_orders_total_immutable
     BEFORE UPDATE OF total_amount ON public.orders
     FOR EACH ROW EXECUTE FUNCTION public.reject_order_total_change();
 
-CREATE FUNCTION public.reject_order_item_change()
-RETURNS TRIGGER LANGUAGE plpgsql AS $
+-- El pedido se registra con todas sus líneas en UNA transacción.
+-- La comprobación de xmin asegura que una línea no se incorpore desde
+-- una transacción posterior; xmin es el ID interno de creación de la fila.
+-- Usar una transacción normal (no subtransacciones/nested SAVEPOINT para
+-- dividir cabecera y líneas). En ETAPA 07 comprobar en PostgreSQL real.
+CREATE FUNCTION public.enforce_order_item_creation_transaction()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE
+    v_creation_xid BIGINT;
+    v_order_status VARCHAR(16);
+    v_order_confirmed TIMESTAMPTZ;
 BEGIN
-    RAISE EXCEPTION 'Las líneas del pedido registrado son inmutables'
+    SELECT (o.xmin::TEXT)::BIGINT, o.status, o.confirmed_at
+      INTO v_creation_xid, v_order_status, v_order_confirmed
+      FROM public.orders AS o
+     WHERE o.id = NEW.order_id FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Pedido % inexistente', NEW.order_id
+            USING ERRCODE = '23503';
+    END IF;
+
+    -- xmin es XID de 32 bits, mientras txid_current() es 64 bits.
+    IF v_creation_xid <> (txid_current() % 4294967296)
+       OR v_order_status <> 'REQUESTED' OR v_order_confirmed IS NOT NULL THEN
+        RAISE EXCEPTION 'Las líneas deben registrarse junto con la cabecera'
+            USING ERRCODE = '23514';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trg_order_items_same_transaction
+    BEFORE INSERT ON public.order_items
+    FOR EACH ROW EXECUTE FUNCTION public.enforce_order_item_creation_transaction();
+
+-- Bloquea cualquier edición/eliminación de líneas una vez insertadas.
+CREATE FUNCTION public.reject_order_item_change()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+    RAISE EXCEPTION 'No se permite alterar ni eliminar líneas registradas'
         USING ERRCODE = '23514';
 END;
-$;
+$$;
 CREATE TRIGGER trg_order_items_immutable
     BEFORE UPDATE OR DELETE ON public.order_items
     FOR EACH ROW EXECUTE FUNCTION public.reject_order_item_change();
 
--- La cabecera y sus líneas se insertan dentro de UNA transacción.
--- Validación diferida: permite insertar orders primero y order_items después,
--- pero impide confirmar la transacción con total distinto de SUM(líneas).
+-- Constraints diferidos permiten crear cabecera + líneas antes de COMMIT,
+-- pero rechazan pedidos sin líneas y totales que no coinciden con su detalle.
 CREATE FUNCTION public.check_order_items_total()
-RETURNS TRIGGER LANGUAGE plpgsql AS $
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE
     v_order_id UUID;
     v_total NUMERIC;
@@ -240,13 +274,13 @@ BEGIN
 
     IF v_lines_total <= 0 OR v_total <> v_lines_total THEN
         RAISE EXCEPTION
-            'Total del pedido % no coincide con sus líneas (total %, líneas %)',
+            'Total del pedido % (%) distinto de sus líneas (%)',
             v_order_id, v_total, v_lines_total
             USING ERRCODE = '23514';
     END IF;
     RETURN NULL;
 END;
-$;
+$$;
 CREATE CONSTRAINT TRIGGER ctr_orders_items_total
     AFTER INSERT ON public.orders
     DEFERRABLE INITIALLY DEFERRED
@@ -276,11 +310,23 @@ CREATE UNIQUE INDEX ux_stock_movements_order_item ON public.stock_movements (ord
 CREATE INDEX ix_stock_movements_product_recorded
     ON public.stock_movements (product_id, recorded_at DESC);
 
--- El movimiento de tipo ORDER corresponde exactamente a su línea y a un
--- pedido confirmado. Se comprueba al COMMIT para admitir la UoW de M04.
--- El descuento físico de products.stock_qty sigue en la MISMA UoW backend.
+-- Auditoría de movimientos: una corrección genera otro movimiento;
+-- no se editan ni eliminan registros anteriores.
+CREATE FUNCTION public.reject_stock_movement_change()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+    RAISE EXCEPTION 'Los movimientos de stock históricos son inmutables'
+        USING ERRCODE = '23514';
+END;
+$$;
+CREATE TRIGGER trg_stock_movements_immutable
+    BEFORE UPDATE OR DELETE ON public.stock_movements
+    FOR EACH ROW EXECUTE FUNCTION public.reject_stock_movement_change();
+
+-- Compatibilidad de movimiento ORDER con la línea y el pedido confirmado.
+-- El descuento de products.stock_qty sigue siendo parte de ConfirmOrder.
 CREATE FUNCTION public.check_order_stock_movement()
-RETURNS TRIGGER LANGUAGE plpgsql AS $
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE
     v_product UUID;
     v_quantity INTEGER;
@@ -290,6 +336,7 @@ BEGIN
     IF NEW.kind <> 'ORDER' THEN
         RETURN NULL;
     END IF;
+
     SELECT oi.product_id, oi.quantity, o.status, o.confirmed_at
       INTO v_product, v_quantity, v_order_status, v_confirmed_at
       FROM public.order_items AS oi
@@ -305,7 +352,7 @@ BEGIN
     END IF;
     RETURN NULL;
 END;
-$;
+$$;
 CREATE CONSTRAINT TRIGGER ctr_stock_movement_confirmed
     AFTER INSERT ON public.stock_movements
     DEFERRABLE INITIALLY DEFERRED
@@ -400,20 +447,17 @@ CREATE TABLE public.payments (
             AND refund_decided_by_user_id IS NOT NULL AND refund_decided_at IS NOT NULL)
     )
 );
--- Un pago siempre se registra bajo bloqueo de la fila del pedido:
--- serializa pagos concurrentes y evita sobrepago aun con reintentos.
--- Solo recojo/delivery aceptan ADVANCE; importe EXACTO de 50 % con
--- redondeo al céntimo superior. No hay segundo cobro de S/ 0.00.
+-- Bloqueo de cabecera serializa pagos sobre el mismo pedido, garantiza
+-- ausencia de saldo negativo y exige anticipo exacto cuando corresponda.
 CREATE FUNCTION public.validate_payment_insert()
-RETURNS TRIGGER LANGUAGE plpgsql AS $
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE
     v_total NUMERIC(12,2);
     v_modality VARCHAR(12);
     v_paid NUMERIC;
     v_required NUMERIC;
 BEGIN
-    SELECT o.total_amount, o.modality
-      INTO v_total, v_modality
+    SELECT o.total_amount, o.modality INTO v_total, v_modality
       FROM public.orders AS o
      WHERE o.id = NEW.order_id FOR UPDATE;
 
@@ -424,39 +468,41 @@ BEGIN
 
     IF NEW.kind = 'ADVANCE' THEN
         IF v_modality NOT IN ('PICKUP', 'DELIVERY') THEN
-            RAISE EXCEPTION 'El consumo en local no admite anticipos'
+            RAISE EXCEPTION 'La modalidad LOCAL no admite anticipo'
                 USING ERRCODE = '23514';
         END IF;
         v_required := CEIL(v_total * 50) / 100;
         IF NEW.amount <> v_required THEN
-            RAISE EXCEPTION 'El anticipo debe ser %, se recibió %',
+            RAISE EXCEPTION 'El anticipo debe ser % y se recibió %',
                 v_required, NEW.amount USING ERRCODE = '23514';
         END IF;
     END IF;
 
     SELECT COALESCE(SUM(p.amount), 0) INTO v_paid
-      FROM public.payments AS p WHERE p.order_id = NEW.order_id;
+      FROM public.payments AS p
+     WHERE p.order_id = NEW.order_id;
+
     IF v_paid + NEW.amount > v_total THEN
-        RAISE EXCEPTION 'El cobro supera el saldo del pedido %', NEW.order_id
-            USING ERRCODE = '23514';
+        RAISE EXCEPTION 'El pago supera el saldo pendiente del pedido %',
+            NEW.order_id USING ERRCODE = '23514';
     END IF;
     RETURN NEW;
 END;
-$;
+$$;
 CREATE TRIGGER trg_payments_validate_insert
     BEFORE INSERT ON public.payments
     FOR EACH ROW EXECUTE FUNCTION public.validate_payment_insert();
 
--- El pago contabilizado no se edita ni elimina. Solo el bloque de decisión
--- administrativa del anticipo puede pasar UNA VEZ de NULL a valor completo.
--- Autorizar el rol y comprobar la cancelación compete al caso de uso.
+-- Los importes y demás datos financieros no se alteran ni eliminan.
+-- Única excepción: decisión administrativa sobre anticipo, una sola vez.
 CREATE FUNCTION public.protect_payment_history()
-RETURNS TRIGGER LANGUAGE plpgsql AS $
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
     IF TG_OP = 'DELETE' THEN
         RAISE EXCEPTION 'No se permite eliminar un pago registrado'
             USING ERRCODE = '23514';
     END IF;
+
     IF (NEW.id, NEW.order_id, NEW.kind, NEW.amount, NEW.method_code,
         NEW.recorded_by_user_id, NEW.recorded_at, NEW.operation_request_id)
        IS DISTINCT FROM
@@ -465,21 +511,22 @@ BEGIN
         RAISE EXCEPTION 'Los datos financieros del pago son inmutables'
             USING ERRCODE = '23514';
     END IF;
+
     IF (NEW.refund_decision, NEW.refund_decided_by_user_id, NEW.refund_decided_at)
        IS NOT DISTINCT FROM
        (OLD.refund_decision, OLD.refund_decided_by_user_id, OLD.refund_decided_at) THEN
         RETURN NEW;
     END IF;
+
     IF OLD.kind <> 'ADVANCE' OR OLD.refund_decision IS NOT NULL
-       OR NEW.refund_decision IS NULL
-       OR NEW.refund_decided_by_user_id IS NULL
+       OR NEW.refund_decision IS NULL OR NEW.refund_decided_by_user_id IS NULL
        OR NEW.refund_decided_at IS NULL THEN
         RAISE EXCEPTION 'La decisión del anticipo solo se registra una vez'
             USING ERRCODE = '23514';
     END IF;
     RETURN NEW;
 END;
-$;
+$$;
 CREATE TRIGGER trg_payments_protect_history
     BEFORE UPDATE OR DELETE ON public.payments
     FOR EACH ROW EXECUTE FUNCTION public.protect_payment_history();
@@ -530,11 +577,12 @@ COMMIT;
 -- NOTA PARA ETAPA 07/08:
 -- Esta definición se utilizará como referencia para los modelos SQLAlchemy Async
 -- y migraciones Alembic; evitar aplicarla junto con una migración inicial equivalente.
--- La autorización de M07, las reglas RN-20/RN-21 y el alcance específico de emisión
--- de comprobantes simulados permanecen según su estado documental.
--- ETAPA 08: ConfirmOrder deberá bloquear pedido y productos en orden estable,
--- comprobar permisos/stock/anticipo verificado y, en UNA transacción, confirmar,
--- descontar stock y registrar movimientos + comanda. Si falla, ROLLBACK total.
--- Las protecciones SQL (triggers + constraints) no ejecutan ConfirmOrder.
--- ETAPA 07: reflejar también funciones/triggers en migración Alembic; este SQL
--- manual y la migración equivalente NO deben aplicarse ambos sobre la misma BD.
+-- La autorización de M07, RN-20/RN-21 y requisitos de comprobantes
+-- simulados conservan su estado documental. La confirmación exige que
+-- M04 valide permisos, stock, anticipo previo y estado, y coordine en
+-- UNA transacción: pedido + descuento + movimientos + comanda; ante
+-- cualquier error se ejecuta ROLLBACK completo (ETAPA 08).
+-- Los controles de stock_qty vs movimientos y las transiciones entre
+-- módulos no se resuelven solo con CHECK/trigger: necesitan casos de uso.
+-- ETAPA 07: reproducir funciones y triggers en migración Alembic; no
+-- aplicar el script directo Y la migración inicial sobre la misma BD.
