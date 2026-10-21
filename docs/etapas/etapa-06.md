@@ -1,6 +1,6 @@
 # ETAPA 06 — Diseño de base de datos | Chifa ASIA
 
-**Estado:** DISEÑADA / PENDIENTE DE REVISIÓN Y APROBACIÓN  
+**Estado:** APROBADA POR EL USUARIO (2026-10-21) · Diseño documental  
 **Proyecto:** Restaurant App V2 · **Base prevista:** PostgreSQL · **Rama de referencia:** `develop`  
 **Fuentes:** [ETAPA 01](etapa-01.md), [ETAPA 02](etapa-02.md), [ETAPA 03 — RN/RNF](etapa-03.md), [ETAPA 03 — 40 RF/48 CA](etapa-03-requisitos.md), [ETAPA 04](etapa-04.md), [ETAPA 05](etapa-05.md) y `AGENTS.md`.
 
@@ -344,7 +344,7 @@ Los siguientes vínculos representan **soporte de datos**, no afirman implementa
 - [x] Diferenciadas garantías físicas (`CHECK`/FK/UQ/índices) y reglas del backend (roles, transiciones, importe, concurrencia).
 - [x] Comprobantes expresamente **simulados**, pero sin tablas/endpoints no autorizados por RF.
 - [ ] Verificación con PostgreSQL real y pruebas concurrentes: **no ejecutadas**, previstas para ETAPAS 07–08.
-- [ ] Aprobación expresa del usuario de la ETAPA 06.
+- [x] Aprobación expresa del usuario de la ETAPA 06 (2026-10-21).
 
 ### 6.2 Decisiones abiertas (no ratificadas por este documento)
 
@@ -360,4 +360,4 @@ Los siguientes vínculos representan **soporte de datos**, no afirman implementa
 
 Revisión funcional del **DER editable**, tablas, tipos, claves, normalización, trazabilidad 40/40, transacciones propuestas y pendientes sin ampliar el alcance. **No se han creado tablas ni migraciones**. La implementación de modelos SQLAlchemy Async y Alembic corresponde a ETAPA 07; la implementación de casos de uso y pruebas de concurrencia, a ETAPA 08.
 
-**Estado final: ETAPA 06 DISEÑADA / PENDIENTE DE REVISIÓN Y APROBACIÓN.**
+**Estado final: ETAPA 06 APROBADA POR EL USUARIO (2026-10-21) COMO DISEÑO DOCUMENTAL.** La aprobación no significa que el DER se haya probado visualmente en diagrams.net ni que se hayan ejecutado tablas, migraciones o pruebas con PostgreSQL. Las decisiones expresamente abiertas conservan su estado.
