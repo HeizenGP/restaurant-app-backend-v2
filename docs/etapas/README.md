@@ -96,8 +96,8 @@ La elaboración de una etapa no equivale a su aprobación, ni una casilla de doc
 
 **Objetivo:** establecer límites y contratos técnicos antes de crear código.
 
-- Documentar **monolito modular FastAPI**, arquitectura hexagonal y **Vertical Slicing** para M01–M07; interfaces internas, transacciones e idempotencia.
-- Definir **API REST JSON**, autenticación y permisos, seguridad, errores y puertos/adaptadores para simulaciones.
+- Documentar **Python + FastAPI**, **SQLAlchemy Async, asyncpg, Alembic, PostgreSQL y Docker**; monolito modular con **hexagonal + Vertical Slicing** y configuración sencilla en `main.py` + `core/`.
+- Definir **API REST JSON**, JWT/Argon2, transacciones, permisos y simulaciones, sin detalles de implementación innecesarios.
 - Definir organización Flutter propuesta: **customer_app** y **staff_app** (mozos, cocina y caja; panel administrativo **Flutter Web dentro de staff_app**), con responsabilidades compartidas sin tercera aplicación.
 - Preparar Skills **restaurant-fastapi-slice** (backend) y **restaurant-flutter-slice** (frontend); mantener **AGENTS.md** breve, cargar solo el contexto/Skill pertinente y usar MCP bajo demanda.
 - Evitar instalar FastAPI/Flutter, programar endpoints, crear tablas o migraciones durante esta etapa.
