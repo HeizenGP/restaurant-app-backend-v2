@@ -2,7 +2,7 @@
 
 **Proyecto:** Chifa ASIA — sistema académico para un solo restaurante.  
 **Actualización:** 2026-10-20. **Rama de trabajo:** develop.  
-**Estado:** ETAPAS 00–04 **aprobadas expresamente por el usuario** (ETAPA 04: aprobación documental el 2026-10-20); ETAPA 05 **documentada y pendiente de aprobación**; ETAPAS 06–11 **por desarrollar**. La ETAPA 05 incluye dos Skills preparadas. No confundir diseño/documentación con software implementado.
+**Estado:** ETAPAS 00–05 **aprobadas expresamente por el usuario** (ETAPAS 04–05: aprobación documental el 2026-10-20); ETAPA 06 **iniciada, en diseño y pendiente de aprobación**; ETAPAS 07–11 **por desarrollar**. La ETAPA 05 incluye dos Skills preparadas. No confundir diseño/documentación con software implementado.
 
 ## 1. Propósito y reglas del plan
 
@@ -29,8 +29,8 @@ Desarrollar progresivamente un ecosistema para clientes, mozos, caja, cocina y a
 | **02** | Flujo principal y subflujos | **Aprobada** | [Flujos](etapa-02.md) y [FL-01](etapa-02-flujo-principal.puml) |
 | **03** | Ingeniería de requisitos | **Aprobada** | [Reglas/RNF](etapa-03.md) y [40 RF/CA](etapa-03-requisitos.md) |
 | **04** | Modelado del sistema | **Aprobada por el usuario (2026-10-20), con verificaciones técnicas pendientes** | [Casos de uso UML](etapa-04.md) y [8 diagramas CU](diagramas/etapa-04/) |
-| **05** | Arquitectura de software | **Documentada; pendiente de aprobación** | [Arquitectura y tecnologías](etapa-05.md) y Skills técnicas |
-| **06** | Diseño de base de datos | **Siguiente etapa** | Modelo lógico/físico PostgreSQL por definir |
+| **05** | Arquitectura de software | **Aprobada (2026-10-20)** | [Arquitectura y tecnologías](etapa-05.md) y Skills técnicas |
+| **06** | Diseño de base de datos | **Iniciada; pendiente de diseño y aprobación** | [Definición de etapa](etapa-06.md); modelo PostgreSQL por diseñar |
 | **07** | Configuración técnica | Por iniciar | Proyectos ejecutables, infraestructura y migraciones iniciales |
 | **08** | Desarrollo del backend | Por iniciar | API REST y pruebas de los siete módulos |
 | **09** | Diseño UX/UI en Figma | Por iniciar | Interfaces y prototipos aprobados |
@@ -92,7 +92,7 @@ La elaboración de una etapa no equivale a su aprobación, ni una casilla de doc
 **Entregable:** [modelo y matriz de trazabilidad](etapa-04.md), [diagramas](diagramas/etapa-04/).  
 **Aprobación expresa:** registrada el 2026-10-20 para los 8 CU. **Verificaciones pendientes:** compilación/renderización de PlantUML, cotejo de la versión visual elegida de CU-00 y ratificación de responsables de M07; estos pendientes no implican su aprobación tácita.
 
-### ETAPA 05 — Arquitectura de software · DOCUMENTADA / PENDIENTE DE APROBACIÓN
+### ETAPA 05 — Arquitectura de software · APROBADA (2026-10-20)
 
 **Objetivo:** establecer límites y contratos técnicos antes de crear código.
 
@@ -103,9 +103,9 @@ La elaboración de una etapa no equivale a su aprobación, ni una casilla de doc
 - Evitar instalar FastAPI/Flutter, programar endpoints, crear tablas o migraciones durante esta etapa.
 
 **Entregable:** [arquitectura y tecnologías de backend/frontend](etapa-05.md), más Skills en **.agents/skills/** de su respectivo repositorio. No se mantienen diagramas de arquitectura de ETAPA 05.  
-**Cierre pendiente:** revisar observaciones heredadas de ETAPA 04, validar Skills y aprobar expresamente ETAPA 05.
+**Aprobación expresa:** registrada el 2026-10-20. Las comprobaciones automatizadas de las Skills y decisiones funcionales abiertas se mantienen pendientes, sin invalidar la aprobación documental.
 
-### ETAPA 06 — Diseño de base de datos desde cero · SIGUIENTE
+### ETAPA 06 — Diseño de base de datos desde cero · INICIADA / PENDIENTE DE APROBACIÓN
 
 **Objetivo:** convertir requisitos y contratos aprobados en un modelo PostgreSQL consistente; **aún sin crear la base de datos ejecutable**.
 
@@ -192,4 +192,4 @@ La elaboración de una etapa no equivale a su aprobación, ni una casilla de doc
 6. **Validación honesta:** distinguir documento revisado, archivo verificado, compilación, ejecución de pruebas y aprobación; nunca marcar como hecha una comprobación no ejecutada.
 7. **Control de cambios:** cambios de alcance, roles, políticas o simulaciones regresan a los documentos afectados y actualizan trazabilidad. No introducir funcionalidades extra como solución a una etapa técnica.
 
-**Próximo hito:** revisar/aprobar ETAPA 05; después abordar **ETAPA 06 — Diseño de base de datos desde cero** sin alterar la línea base del negocio.
+**Próximo hito:** desarrollar y revisar la [ETAPA 06 — Diseño de base de datos](etapa-06.md) contra los RF, reglas y arquitectura aprobados, sin crear tablas ejecutables ni migraciones todavía.
