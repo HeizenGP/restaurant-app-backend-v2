@@ -1,7 +1,7 @@
 # ETAPA 08 — Plan de implementación backend | Chifa ASIA
 
-**Estado:** PLANIFICADA / EN EJECUCIÓN SOLO AL INICIAR EL PRIMER BLOQUE · **Aprobación final:** exclusiva del usuario.  
-**Rama de trabajo:** `develop` · **Repositorios:** `restaurant-app-backend-v2` y `restaurant-app-frontend-v2`.  
+**Estado:** AUTORIZADA / PLANIFICADA; ejecución empieza solo al iniciar 08.00 · **Aprobación final:** exclusiva del usuario.  
+**Rama:** `develop` · **Único repositorio editable:** `restaurant-app-backend-v2` · **Workspace compartido Codex/AGY:** `~/proyectos/restaurant-app-v2/restaurant-app-backend-v2` (`/home/heizen27/proyectos/restaurant-app-v2/restaurant-app-backend-v2`). **Frontend intocable en ETAPA 08.**  
 **Fuentes de verdad:** `AGENTS.md`, `docs/etapas/README.md`, `docs/etapas/etapa-03-requisitos.md` (40 RF / 48 CA), `etapa-03.md` (RN/RNF), `etapa-04.md` (CU), `etapa-05.md` (arquitectura), `etapa-06.md` (BD), `etapa-07.md` (infraestructura). Consultar solo fragmentos pertinentes.  
 **Progreso vivo / punto de reanudación:** [`etapa-08-progreso.md`](etapa-08-progreso.md). **No confundir este plan con evidencia de funcionalidades terminadas.**
 
@@ -15,11 +15,11 @@ Implementar **40/40 RF** de los módulos M01–M07 como casos de uso, endpoints 
 
 ## 2. Coordinación Codex + Antigravity y ahorro de tokens
 
-- **Único escritor por bloque:** Codex o AGY desarrolla, el otro **revisa sin editar los mismos archivos**. Alternar agentes como sugiere la tabla. No trabajar simultáneamente sobre módulos/archivos compartidos, migraciones, `core/` o documentación de progreso. Para cambiar de agente, guardar primero el punto de control.
+- **Mismo workspace local, un escritor activo por bloque:** Codex y AGY operan sobre `/home/heizen27/proyectos/restaurant-app-v2/restaurant-app-backend-v2` en `develop`. Uno implementa y el otro revisa secuencialmente; no editar archivos simultáneamente. No hace falta transferir código entre máquinas: ambos ven los mismos archivos locales, incluidos cambios sin commit. Antes de ceder el turno, actualizar el checkpoint y asegurar que no queden comandos/procesos de escritura del agente anterior.
 - **Skill obligatoria para cada slice:** backend `.agents/skills/restaurant-fastapi-slice/SKILL.md`; respetar las reglas `AGENTS.md`. **No activar Skill Flutter** antes de ETAPA 10. Seleccionar RF/CA y CU puntuales, no cargar todos los documentos ni ambas copias de `docs/` en contexto.
-- **Inicio de sesión mínima:** leer `AGENTS.md` + **progreso** + bloque activo de **este plan** + RF/CA y Skill específicos. Revisar `git status` y código existente; no confiar en memoria conversacional ni asumir pruebas ejecutadas.
+- **Inicio de sesión mínima:** ubicarse en el workspace backend indicado, confirmar rama `develop` y `git status`; leer `AGENTS.md` + **progreso** + bloque activo de **este plan** + RF/CA y Skill específicos. Revisar archivos locales existentes; no confiar en memoria conversacional ni asumir pruebas ejecutadas.
 - **Fin de bloque:** actualizar *solo* `etapa-08-progreso.md` con RF/CA realmente validados, rutas/casos de uso, comandos y resultado, bloqueos, archivos tocados y próxima acción concreta. Marcar `HECHO` solo con evidencia; si se agotan tokens, registrar `EN CURSO` y cómo continuar.
-- **Control de versiones:** no hacer `commit`, `push` o `merge` sin autorización. Los archivos `docs/` compartidos y `AGENTS.md` deben conservarse iguales en ambos repositorios; al sincronizar, comprobar hash/diff. La implementación funcional se modifica **solo en backend**.
+- **Control de versiones y alcance:** no hacer `commit`, `push` ni `merge` sin autorización. Durante ETAPA 08 se edita **exclusivamente el backend**, incluidos `docs/` y `AGENTS.md`; no editar ni sincronizar archivos con el frontend. El estado del workspace local prevalece sobre una copia remota aún no publicada.
 - **Orden por dependencias**, no por apariencia de completitud. Un RF cruzado no se marca `HECHO` hasta probar su integración real. No prometer 40/40 si faltan decisiones aprobatorias.
 
 ## 3. Orden oficial de bloques y responsables sugeridos
@@ -64,4 +64,4 @@ Al iniciar **una nueva conversación** en Codex o AGY, usar **solo** este prompt
 
 > Continúa la ETAPA 08 de Chifa ASIA desde `docs/etapas/etapa-08-progreso.md`. Lee `AGENTS.md`, el bloque activo de `docs/etapas/etapa-08.md`, los RF/CA aplicables de `etapa-03-requisitos.md` y la Skill `.agents/skills/restaurant-fastapi-slice/SKILL.md`. Comprueba `git status` y archivos existentes. No repitas bloques HECHO, no inventes decisiones, no hagas commit/push. Implementa/verifica **solo el siguiente bloque permitido**, actualiza el registro de continuidad con evidencias reales y detente al terminar el bloque o ante una decisión bloqueante.
 
-**Regla de recuperación:** el nuevo agente debe leer primero el registro de progreso, no reconstruir lo ocurrido a partir de mensajes o logs extensos. Si trabajo local no está versionado, no asumir que existe en otra máquina o repositorio remoto. Si el registro discrepa del código, prevalece la **verificación del código y pruebas**, documentando la discrepancia.
+**Regla de recuperación:** el nuevo agente debe leer primero el registro de progreso, no reconstruir lo ocurrido a partir de mensajes o logs extensos. Codex y AGY comparten el mismo directorio local, pero **no** asumir que los cambios sin commit existen en GitHub u otra máquina. Si el registro discrepa del código, prevalece la **verificación del código y pruebas**, documentando la discrepancia.
