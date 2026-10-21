@@ -1,7 +1,7 @@
 # ETAPA 08 — Registro de continuidad Codex / AGY
 
 **Estado inicial:** SIN BLOQUES FUNCIONALES VERIFICADOS. Actualizar después de cada bloque o antes de agotar contexto.  
-**Plan estable:** [`etapa-08.md`](etapa-08.md) · **Rama:** `develop` · **RF oficiales:** `etapa-03-requisitos.md`.
+**Plan estable:** [`etapa-08.md`](etapa-08.md) · **Rama:** `develop` · **Repositorio único:** `restaurant-app-backend-v2` · **Workspace local compartido:** `~/proyectos/restaurant-app-v2/restaurant-app-backend-v2` · **RF oficiales:** `etapa-03-requisitos.md`. ETAPA 07 aprobada por el usuario (2026-10-21); ETAPA 08 autorizada sin bloques verificados.
 
 ## 1. Tablero de bloques
 
@@ -26,7 +26,7 @@ Estados permitidos: `PENDIENTE`, `EN CURSO`, `BLOQUEADO`, `IMPLEMENTADO SIN VERI
 - **Fecha / agente:** sin ejecución registrada.
 - **Bloque activo:** 08.00.
 - **Estado del bloque:** PENDIENTE.
-- **Directorio/repo y rama comprobados:** no comprobados en esta sesión.
+- **Directorio previsto:** `/home/heizen27/proyectos/restaurant-app-v2/restaurant-app-backend-v2` · **rama prevista:** `develop`; Codex/AGY deben comprobar ambos localmente al iniciar 08.00. Ningún estado de Git local ha sido verificado por este documento.
 - **Archivos afectados desde el último checkpoint:** ninguno documentado.
 - **RF/CA implementados y verificados:** ninguno documentado.
 - **API/slices terminados:** ninguno documentado.
@@ -34,7 +34,7 @@ Estados permitidos: `PENDIENTE`, `EN CURSO`, `BLOQUEADO`, `IMPLEMENTADO SIN VERI
 - **Pruebas ejecutadas (comando → resultado):** ninguna documentada en ETAPA 08.
 - **Fallos conocidos/bloqueos:** autorizaciones M07, RN-20/RN-21, RNF-08 y emisión de comprobantes conservan estatus documental pendiente; confirmar impacto solo en los RF que toquen.
 - **Revisión de otro agente:** pendiente.
-- **Siguiente acción exacta:** auditar estado local (`git status`, app, ORM, migraciones/pruebas 07), registrar baseline, iniciar 08.01 solo después del gate 08.00.
+- **Siguiente acción exacta:** abrir el **mismo workspace local del backend** desde Codex o AGY, comprobar `pwd`, `git branch --show-current` y `git status`; auditar app, ORM, migraciones/pruebas de ETAPA 07, registrar baseline e iniciar 08.01 solo después de verificar 08.00.
 - **Commit/push:** NO autorizado de forma automática; no inventar hash de trabajo sin commit.
 
 ## 3. Matriz de trazabilidad (actualizar por RF realmente verificado)
@@ -48,10 +48,10 @@ Estados permitidos: `PENDIENTE`, `EN CURSO`, `BLOQUEADO`, `IMPLEMENTADO SIN VERI
 ## 4. Reglas de traspaso de agentes
 
 1. Antes de dejar el trabajo por límite de tokens, escribir el punto de control con los archivos sin terminar, error/hipótesis comprobada y **una acción siguiente**; conservar `EN CURSO` si corresponde.
-2. El nuevo agente lee este documento primero, consulta plan **solo bloque activo**, Skill backend y RF/CA pertinentes. Verifica `git status`; si el código no coincide, corrige el registro antes de escribir nuevo código.
+2. El nuevo agente accede al **mismo directorio local del backend**, lee primero esta bitácora, el bloque activo, la Skill backend y RF/CA pertinentes. Verifica `pwd`, rama, `git status` y código existente; si no coincide con el registro, documenta la discrepancia antes de modificarlo. No necesita exportar/importar archivos entre Codex y AGY.
 3. El implementador es el único que modifica archivos de su bloque; el otro realiza revisión secuencial y registra riesgos. No mezclar cambios en el mismo directorio/archivo a la vez.
 4. Tras una verificación real, actualizar tabla de bloques y matriz RF/CA. Nunca reportar `HECHO` por compilación incompleta o prueba no ejecutada.
-5. Mantener esta bitácora y `etapa-08.md` idénticas en `docs/etapas/` de **ambos repositorios**. No realizar commit/push sin orden expresa del usuario.
+5. Mantener esta bitácora y `etapa-08.md` **solo en el backend durante ETAPA 08**; no editar ni sincronizar el repositorio frontend. No realizar commit/push sin orden expresa del usuario.
 
 ## 5. Prompts mínimos de sesión
 
