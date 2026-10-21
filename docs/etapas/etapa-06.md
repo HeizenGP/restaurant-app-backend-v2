@@ -23,6 +23,15 @@ Un único restaurante, **siete módulos funcionales M01–M07**, seis actores, t
 
 **Decisiones de modelado:** 14 tablas propuestas, dentro del esquema PostgreSQL `public` (sin un esquema independiente por módulo). Cada módulo conserva propiedad lógica de sus datos. Se proponen referencias FK entre módulos para integridad relacional; en código los módulos siguen comunicándose por puertos públicos, sin acceder a repositorios ajenos. El total comercial conserva precios por línea al momento de la solicitud. El estado global mostrado al cliente es **compuesto**: comercial (M04) + cocina (M05) + pagos (M06) + atención/entrega (M07), sin duplicar cuatro estados en `orders`.
 
+### 1.1 Diagrama entidad-relación (DER) editable
+
+- **[Abrir DER editable en diagrams.net](diagramas/etapa-06/etapa-06-der.drawio)**: archivo fuente con las **14 tablas**, sus claves y relaciones; editable directamente en [app.diagrams.net](https://app.diagrams.net/) mediante **Archivo → Abrir desde → Dispositivo**.
+- **[Vista previa vectorial del DER](diagramas/etapa-06/etapa-06-der.svg)**: imagen escalable para inspección sin modificar el modelo.
+
+![DER de Chifa ASIA: 14 tablas y relaciones entre M01–M07](diagramas/etapa-06/etapa-06-der.svg)
+
+**Lectura:** los vínculos muestran FKs y cardinalidades conceptuales; una misma entidad puede tener varias FKs al usuario, agrupadas visualmente para evitar conexiones redundantes. La nulabilidad exacta, los índices únicos parciales y las condiciones que abarcan varias tablas prevalecen según el diccionario de datos y las secciones 3–4 de este documento. **No es un esquema SQL ejecutable.**
+
 ## 2. Modelo lógico y diccionario de datos
 
 **Notación:** `PK` primaria, `FK` foránea, `UQ` única, `NN` no nulo; el resto es nullable. `UUID` se propone como identificador y `TIMESTAMPTZ` como fecha/hora de auditoría. Los campos enumerados con `VARCHAR` + `CHECK` son códigos técnicos propuestos (no nuevas funcionalidades). Los campos `*_by` guardan usuarios existentes, no roles inventados.
@@ -138,7 +147,7 @@ La **ocupación** refleja una operación de personal autorizado; elegir una mesa
 | `delivery_address` | TEXT | NN solo en delivery |
 | `contact_name` | VARCHAR(120) | Nullable; contacto necesario cuando aplique |
 | `contact_phone` | VARCHAR(30) | Nullable; contacto necesario cuando aplique |
-| `total_amount` | NUMERIC(12,2) | NN; total comercial de líneas, `CHECK (total_amount >= 0)` |
+| `total_amount` | NUMERIC(12,2) | NN; total comercial de líneas, `CHECK (total_amount > 0)`; no se registran pedidos de importe cero |
 | `version` | INTEGER | NN, `DEFAULT 0`, `CHECK (version >= 0)` |
 | `created_at` | TIMESTAMPTZ | NN |
 | `decided_by_user_id`, `decided_at` | UUID FK → `users.id`; TIMESTAMPTZ | Nullable; aprobación o rechazo de una solicitud |
@@ -165,7 +174,7 @@ La **ocupación** refleja una operación de personal autorizado; elegir una mesa
 | `quantity` | INTEGER | NN; `CHECK (quantity > 0)` |
 | `unit_price_snapshot` | NUMERIC(12,2) | NN; `CHECK (unit_price_snapshot >= 0)` |
 
-`UQ(order_id,product_id)` consolida repeticiones del mismo producto en una línea. `total_amount` se calcula como `SUM(quantity × unit_price_snapshot)` y se fija consistentemente con las líneas en una sola transacción; los importes/instantáneas son **duplicaciones históricas justificadas**, no precios vivos. No se mantienen subtotales derivables por línea.
+`UQ(order_id,product_id)` consolida repeticiones del mismo producto en una línea. `total_amount` se calcula como `SUM(quantity × unit_price_snapshot)` y se fija consistentemente con las líneas en una sola transacción; los importes/instantáneas son **duplicaciones históricas justificadas**, no precios vivos. No se mantienen subtotales derivables por línea. **Regla de inmutabilidad:** desde el registro de la solicitud, las líneas, cantidades, precios históricos y total quedan congelados; los 40 RF no contemplan edición posterior de un pedido. Por tanto, nunca se modifica el total después de verificar el anticipo. El backend bloqueará escrituras sobre estos campos; los `CHECK` no pueden hacer cumplir esta invariante entre tablas.
 
 ### M05 — Cocina y comandas
 
@@ -180,7 +189,7 @@ La **ocupación** refleja una operación de personal autorizado; elegir una mesa
 | `started_at`, `ready_at` | TIMESTAMPTZ | Nullable |
 | `started_by_user_id`, `ready_by_user_id` | UUID | FK → `users.id`, nullable según transición |
 
-El detalle y las cantidades de la comanda **se leen de `order_items`**, no se duplican en una tabla de cocina. Crear comanda y confirmar pedido deben formar parte del **mismo commit**. Solo cocina autorizada puede iniciar preparación o marcar `READY`; el requisito «todos los productos preparados» se valida al aceptar la acción, sin inventar seguimiento unitario no solicitado. El estado comercial no se modifica desde el repositorio de cocina.
+El detalle y las cantidades de la comanda **se leen de `order_items`**, no se duplican en una tabla de cocina. Crear comanda y confirmar pedido deben formar parte del **mismo commit**. Solo cocina autorizada puede iniciar preparación o marcar `READY`. **Decisión:** el personal de Cocina confirma manual y expresamente que **todos** los productos del pedido terminaron de prepararse; `ready_by_user_id` y `ready_at` dejan constancia de quién lo declaró y cuándo. No se afirma una verificación automática por producto, porque no se ha aprobado seguimiento unitario. El estado comercial no se modifica desde el repositorio de cocina.
 
 ### M06 — Caja, anticipo y devoluciones decididas manualmente
 
@@ -200,7 +209,7 @@ El detalle y las cantidades de la comanda **se leen de `order_items`**, no se du
 | `refund_decided_by_user_id` | UUID | FK → `users.id`; nullable |
 | `refund_decided_at` | TIMESTAMPTZ | Nullable |
 
-**Índice único parcial:** `UNIQUE(order_id) WHERE kind='ADVANCE'`, para un anticipo **registrado** por pedido. La verificación administrativa genera **exactamente un `payments` de tipo `ADVANCE`**; la confirmación del pedido **solo consulta** ese abono. `COLLECTION` admite varios registros; cada operación lleva llave de idempotencia. **Saldo derivado** = `orders.total_amount − SUM(payments.amount)` (no guardar saldo redundante), con comprobación transaccional de que no resulte negativo. El cálculo del anticipo aplica el **50 % del total**, con redondeo monetario pendiente de precisar para importes impares en céntimos; sin anticipo confirmado no hay comanda para recojo/delivery. No se realiza ni registra un reembolso automático: `refund_decision` solo consigna lo decidido por el Administrador en una cancelación y no elimina el pago histórico. Exigir en backend que un permiso de verificación de anticipo no otorgue permisos generales de Caja.
+**Índice único parcial:** `UNIQUE(order_id) WHERE kind='ADVANCE'`, para un anticipo **registrado** por pedido. La verificación administrativa genera **exactamente un `payments` de tipo `ADVANCE`**; la confirmación del pedido **solo consulta** ese abono. `COLLECTION` admite varios registros; cada operación lleva llave de idempotencia. **Saldo derivado** = `orders.total_amount − SUM(payments.amount)` (no guardar saldo redundante), con comprobación transaccional de que no resulte negativo. **Regla monetaria aprobada por el usuario:** el anticipo obligatorio es `CEIL(total_amount × 50) / 100`, donde `total_amount` es un decimal PEN con dos posiciones; equivale a **50 % redondeado al céntimo superior**. El restante inicial es `total_amount − anticipo` (no otro 50 % redondeado). Ejemplos: S/ 80.00 → anticipo S/ 40.00, restante S/ 40.00; S/ 10.01 → anticipo S/ 5.01, restante S/ 5.00; S/ 0.01 → anticipo S/ 0.01, restante S/ 0.00. Posteriores cobros reducen `saldo = total_amount − SUM(payments.amount)` sin permitir saldo negativo. Si el redondeo hace que el saldo inicial sea S/ 0.00 (p. ej. pedido de S/ 0.01), no se crea un cobro adicional de importe cero. **Total cero:** se rechaza la solicitud al registrarla, para cualquier modalidad, porque los RF no prevén pedidos gratuitos ni pagos de importe cero; la base de datos refuerza esta decisión con `CHECK (total_amount > 0)`. Sin anticipo confirmado no hay comanda para recojo/delivery. No se realiza ni registra un reembolso automático: `refund_decision` solo consigna **una decisión**, no un reembolso ejecutado, y no elimina el pago histórico. **Los campos financieros** (`kind`, `amount`, `method_code`, `operation_request_id`, `order_id`, autor y fecha del pago) **son inmutables tras registrar el cobro**; como única excepción, el bloque `refund_decision`/`refund_decided_by_user_id`/`refund_decided_at` pasa **una sola vez** de NULL a la decisión del Administrador, con autor y fecha, sin modificaciones posteriores. Esto no altera el saldo contabilizado ni declara una devolución realizada; no se introduce tabla ni automatización de reembolsos. Exigir en backend que un permiso de verificación de anticipo no otorgue permisos generales de Caja.
 
 **`CHECK`:** `refund_decision`/`refund_decided_by_user_id`/`refund_decided_at` nulos conjuntamente o completos conjuntamente; los tres deben ser NULL si `kind='COLLECTION'`. La cancelación del pedido y el rol del decisor se comprueban en el caso de uso.
 
@@ -271,6 +280,8 @@ Los FK que ya disponen de índice único o PK no necesitan un índice duplicado.
 
 **Propuesta precisa de `ConfirmOrder`:** abrir **una sola** sesión SQLAlchemy Async y transacción (futura ETAPA 08), adquirir bloqueo de fila del pedido, validar versión/estado/permisos y, en orden estable por ID de producto, bloquear existencias. Comprobar cantidad y disponibilidad. Para recojo/delivery consultar la fila **existente y verificada** del anticipo de M06, sin crear otra. Hacer los descuentos condicionales y sus movimientos por línea, transición M04, inserción única de comanda M05 y auditoría en el mismo commit. Ante error: rollback **completo**. Una petición repetida con llave/payload idénticos no ejecuta otra vez los cambios; si difiere el payload con la misma llave, responder conflicto. Considerar un orden consistente de bloqueo para reducir deadlocks; probar solicitudes concurrentes y reintentos en PostgreSQL real en ETAPA 08.
 
+**Invariantes adicionales:** los importes/instantáneas se congelan al registrar `orders` y `order_items`; el backend no expone edición de líneas o total sin nuevo RF aprobado. Las decisiones de devolución se escriben una sola vez y el monto del pago no se modifica. La marca `READY` representa declaración manual de Cocina con actor/fecha. Para saldo cero, el cierre sigue condicionado a los RF-M06-06 y RF-M07-04.
+
 **Límites explícitos:** `CHECK`, FK, UQ e índices no expresan permisos, «preparación completa», importe exacto del 50 % contra suma de líneas, transición de estados entre tablas, igualdad movimiento–producto ni saldo resultante entre filas; son **invariantes de casos de uso** más transacción/filas bloqueadas. Las restricciones físicas refuerzan, pero no sustituyen, la autorización ni la UoW. Las decisiones que afecten comportamiento no aprobado permanecen abiertas.
 
 ## 5. Trazabilidad de los 40 requisitos funcionales
@@ -328,6 +339,7 @@ Los siguientes vínculos representan **soporte de datos**, no afirman implementa
 
 - [x] Cobertura de datos propuesta para 40 RF de las ETAPAS 01–05; todos los módulos M01–M07 conservados.
 - [x] Un único esquema relacional con PK/FK, códigos, restricciones, índices y dueños por módulo.
+- [x] DER **editable** de 14 tablas y 23 vínculos, más vista SVG; inspección de estructura XML y referencias de conectores. La verificación de edición visual en diagrams.net queda pendiente.
 - [x] Roles N:M, sesión invitado, catálogo y stock, mesa, pedidos, comanda única, anticipo único, cobros múltiples, atención/entrega e idempotencia modelados.
 - [x] Diferenciadas garantías físicas (`CHECK`/FK/UQ/índices) y reglas del backend (roles, transiciones, importe, concurrencia).
 - [x] Comprobantes expresamente **simulados**, pero sin tablas/endpoints no autorizados por RF.
@@ -341,11 +353,11 @@ Los siguientes vínculos representan **soporte de datos**, no afirman implementa
 3. **M07:** qué roles pueden registrar recojo, entrega delivery y cierre. El modelo almacena actor, **no autoriza** roles por inferencia.
 4. **RNF-08:** percentil/usuarios concurrentes todavía propuestos; no crear índices por una cifra no aprobada.
 5. **Comprobantes simulados:** decisión de alcance sí confirmada; **faltan RF/CA de emisión**. No modelar comprobantes hasta ratificar esa funcionalidad concreta.
-6. **Precisión monetaria:** criterio de redondeo del anticipo del 50 % para importes con céntimos impares; y manejo de total cero. No se inventan reglas comerciales.
+6. **Precisión monetaria (resuelta por el usuario en la presente revisión):** anticipo del 50 % redondeado **al céntimo superior** y restante como `total − anticipo`; no se divide ni redondea ambos pagos por separado. Los pedidos de total cero se rechazan desde su registro, sin inventar pagos de cero.
 7. **Estados y datos optativos:** validar antes de migrar los códigos técnicos de `orders.status`, mecanismos de cancelación/revisión, necesidad de datos mínimos de contacto y política de caducidad de sesión/llaves; ninguna supone nueva funcionalidad.
 
 ### 6.3 Condiciones para aprobar la etapa
 
-Revisión funcional de tablas, tipos, claves, normalización, trazabilidad 40/40, transacciones propuestas y pendientes sin ampliar el alcance. **No se han creado tablas ni migraciones**. La implementación de modelos SQLAlchemy Async y Alembic corresponde a ETAPA 07; la implementación de casos de uso y pruebas de concurrencia, a ETAPA 08.
+Revisión funcional del **DER editable**, tablas, tipos, claves, normalización, trazabilidad 40/40, transacciones propuestas y pendientes sin ampliar el alcance. **No se han creado tablas ni migraciones**. La implementación de modelos SQLAlchemy Async y Alembic corresponde a ETAPA 07; la implementación de casos de uso y pruebas de concurrencia, a ETAPA 08.
 
 **Estado final: ETAPA 06 DISEÑADA / PENDIENTE DE REVISIÓN Y APROBACIÓN.**
