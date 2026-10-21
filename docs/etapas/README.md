@@ -29,7 +29,7 @@ Desarrollar progresivamente un ecosistema para clientes, mozos, caja, cocina y a
 | **02** | Flujo principal y subflujos | **Aprobada** | [Flujos](etapa-02.md) y [FL-01](etapa-02-flujo-principal.puml) |
 | **03** | Ingeniería de requisitos | **Aprobada** | [Reglas/RNF](etapa-03.md) y [40 RF/CA](etapa-03-requisitos.md) |
 | **04** | Modelado del sistema | **Aprobada por el usuario (2026-10-20), con verificaciones técnicas pendientes** | [Casos de uso UML](etapa-04.md) y [8 diagramas CU](diagramas/etapa-04/) |
-| **05** | Arquitectura de software | **Documentada; pendiente de validación/aprobación** | [Arquitectura](etapa-05.md), [diagramas](diagramas/etapa-05/) y Skills técnicas |
+| **05** | Arquitectura de software | **Documentada; pendiente de aprobación** | [Arquitectura y hoja de ruta de M01–M07](etapa-05.md) y Skills técnicas |
 | **06** | Diseño de base de datos | **Siguiente etapa** | Modelo lógico/físico PostgreSQL por definir |
 | **07** | Configuración técnica | Por iniciar | Proyectos ejecutables, infraestructura y migraciones iniciales |
 | **08** | Desarrollo del backend | Por iniciar | API REST y pruebas de los siete módulos |
@@ -102,8 +102,8 @@ La elaboración de una etapa no equivale a su aprobación, ni una casilla de doc
 - Preparar Skills **restaurant-fastapi-slice** (backend) y **restaurant-flutter-slice** (frontend); mantener **AGENTS.md** breve, cargar solo el contexto/Skill pertinente y usar MCP bajo demanda.
 - Evitar instalar FastAPI/Flutter, programar endpoints, crear tablas o migraciones durante esta etapa.
 
-**Entregable:** [decisiones y contratos arquitectónicos](etapa-05.md), [diagramas](diagramas/etapa-05/) y Skills en **.agents/skills/** de su respectivo repositorio.  
-**Cierre pendiente:** revisar observaciones técnicas heredadas de la ETAPA 04, validar diagramas/Skills de arquitectura y aprobar expresamente ETAPA 05.
+**Entregable:** [arquitectura, tecnologías y hoja de ruta de desarrollo M01–M07](etapa-05.md), más Skills en **.agents/skills/** de su respectivo repositorio. No se mantienen diagramas de arquitectura de ETAPA 05.  
+**Cierre pendiente:** revisar observaciones heredadas de ETAPA 04, validar Skills y aprobar expresamente ETAPA 05.
 
 ### ETAPA 06 — Diseño de base de datos desde cero · SIGUIENTE
 
