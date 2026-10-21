@@ -1,6 +1,6 @@
 # Documentación — Restaurant App V2
 
-**ETAPAS 00–03 APROBADAS por el usuario (2026-10-13). ETAPA 04 sigue en revisión. ETAPA 05 fue autorizada y documentada como propuesta, pero NO está aprobada.** La aprobación documental no certifica pruebas técnicas pendientes ni decide automáticamente propuestas explícitamente abiertas.
+**Estado actualizado (2026-10-21): ETAPAS 00–07 aprobadas expresamente por el usuario; ETAPA 08 autorizada y planificada, todavía sin bloques funcionales verificados.** ETAPA 08 se ejecuta solo en el repositorio backend (`~/proyectos/restaurant-app-v2/restaurant-app-backend-v2`) por Codex y AGY en el mismo workspace local. Los pendientes de RN/RNF y permisos no se dan por resueltos automáticamente.
 
 - [Plan maestro de etapas 00–11](etapas/README.md)
 - [ETAPA 00 — aprobada](etapas/etapa-00.md)
@@ -13,6 +13,10 @@
 - [ETAPA 04 — carpeta de diagramas UML](etapas/diagramas/etapa-04/)
 - [ETAPA 05 — arquitectura de software](etapas/etapa-05.md)
 - [ETAPA 05 — diagramas de arquitectura](etapas/diagramas/etapa-05/)
+- [ETAPA 06 — diseño de PostgreSQL y DER](etapas/etapa-06.md)
+- [ETAPA 07 — aprobada, configuración técnica](etapas/etapa-07.md)
+- [ETAPA 08 — plan backend](etapas/etapa-08.md)
+- [ETAPA 08 — bitácora Codex/AGY](etapas/etapa-08-progreso.md)
 - [Guía operativa de Codex y AGY](agentes/README.md)
 
-Mantener documentación compartida idéntica en develop de backend y frontend. No tratar borradores como aprobaciones.
+**Excepción ETAPA 08:** no editar ni sincronizar el frontend; gestionar código, plan y bitácora solo en backend. En etapas posteriores se evaluará la sincronización de documentos comunes. No tratar borradores como aprobaciones.
