@@ -1,8 +1,9 @@
 # Plan maestro de desarrollo — Restaurant App V2
 
 **Proyecto:** Chifa ASIA — sistema académico para un solo restaurante.  
-**Actualización:** 2026-10-20. **Rama de trabajo:** develop.  
-**Estado:** ETAPAS 00–06 **aprobadas expresamente por el usuario** (ETAPAS 04–05: aprobación documental el 2026-10-20; ETAPA 06: aprobación documental el 2026-10-21); ETAPA 07 **iniciada y pendiente de implementación/revisión/aprobación**; ETAPAS 08–11 **por desarrollar**. La ETAPA 05 incluye dos Skills configuradas y verificadas estructuralmente (sin prueba de ejecución en IDE). No confundir diseño/documentación con software implementado.
+**Actualización:** 2026-10-21. **Rama de trabajo:** develop.
+
+**Estado:** ETAPAS 00–06 **aprobadas expresamente por el usuario** (ETAPAS 04–05: aprobación documental el 2026-10-20; ETAPA 06: aprobación documental el 2026-10-21); ETAPA 07 **implementada y pendiente de revisión/aprobación**; ETAPAS 08–11 **por desarrollar**. La ETAPA 05 incluye dos Skills configuradas y verificadas estructuralmente (sin prueba de ejecución en IDE). No confundir implementación verificada con aprobación del usuario.
 
 ## 1. Propósito y reglas del plan
 
@@ -31,7 +32,7 @@ Desarrollar progresivamente un ecosistema para clientes, mozos, caja, cocina y a
 | **04** | Modelado del sistema | **Aprobada por el usuario (2026-10-20), con verificaciones técnicas pendientes** | [Casos de uso UML](etapa-04.md) y [8 diagramas CU](diagramas/etapa-04/) |
 | **05** | Arquitectura de software | **Aprobada (2026-10-20)** | [Arquitectura y tecnologías](etapa-05.md) y Skills técnicas |
 | **06** | Diseño de base de datos | **Aprobada (2026-10-21)** | [Modelo PostgreSQL y trazabilidad](etapa-06.md), [DER editable](diagramas/etapa-06/etapa-06-der.drawio) |
-| **07** | Configuración técnica | **Iniciada; pendiente de implementación/aprobación** | [Definición de etapa](etapa-07.md), infraestructura y migraciones iniciales |
+| **07** | Configuración técnica | **Implementada; pendiente de revisión/aprobación** | [Implementación y evidencia](etapa-07.md), infraestructura y migraciones iniciales |
 | **08** | Desarrollo del backend | Por iniciar | API REST y pruebas de los siete módulos |
 | **09** | Diseño UX/UI en Figma | Por iniciar | Interfaces y prototipos aprobados |
 | **10** | Desarrollo del frontend | Por iniciar | Apps Flutter conectadas al backend |
@@ -118,7 +119,7 @@ La elaboración de una etapa no equivale a su aprobación, ni una casilla de doc
 **Entregable aprobado:** [diseño PostgreSQL y matriz RF 40/40](etapa-06.md), [DER editable](diagramas/etapa-06/etapa-06-der.drawio) y [vista SVG](diagramas/etapa-06/etapa-06-der.svg).  
 **Aprobación expresa:** registrada el 2026-10-21 para el diseño documental de 14 tablas; pendientes funcionales documentados se mantienen sin ratificación. Edición visual en diagrams.net y pruebas con PostgreSQL no ejecutadas.
 
-### ETAPA 07 — Configuración técnica · INICIADA / PENDIENTE DE APROBACIÓN
+### ETAPA 07 — Configuración técnica · IMPLEMENTADA / PENDIENTE DE APROBACIÓN
 
 **Objetivo:** convertir la arquitectura aprobada en proyectos ejecutables con infraestructura mínima reproducible.
 
@@ -128,8 +129,9 @@ La elaboración de una etapa no equivale a su aprobación, ni una casilla de doc
 - Inicializar workspace Flutter y **customer_app/staff_app**, configuración de API local/remota y herramientas de análisis y pruebas.
 - Configurar base técnica de sesiones/autenticación y autorización, **sin implementar todavía los 40 RF completos**.
 
-**Entregable:** backend y aplicaciones base que arrancan, migraciones reproducibles, instrucciones de ejecución y comprobaciones automáticas mínimas.  
-**Cierre:** arranque local, conexión PostgreSQL, migración desde cero, análisis estático y pruebas de humo reproducibles.
+**Entregable implementado:** backend y aplicaciones base, migración reproducible, instrucciones y pruebas automáticas.
+
+**Verificación:** PostgreSQL 17.11 en Docker Compose con healthcheck sano, upgrade/downgrade Alembic, API saludable, 23 pruebas backend, análisis/pruebas Flutter y builds Android/Web correctos. La aprobación de la etapa sigue siendo exclusiva del usuario.
 
 ### ETAPA 08 — Desarrollo del backend
 
@@ -192,4 +194,4 @@ La elaboración de una etapa no equivale a su aprobación, ni una casilla de doc
 6. **Validación honesta:** distinguir documento revisado, archivo verificado, compilación, ejecución de pruebas y aprobación; nunca marcar como hecha una comprobación no ejecutada.
 7. **Control de cambios:** cambios de alcance, roles, políticas o simulaciones regresan a los documentos afectados y actualizan trazabilidad. No introducir funcionalidades extra como solución a una etapa técnica.
 
-**Próximo hito:** preparar y ejecutar la [ETAPA 07 — Configuración técnica](etapa-07.md) contra la arquitectura (ETAPA 05) y el modelo PostgreSQL aprobado (ETAPA 06), con verificación real antes de solicitar su aprobación.
+**Próximo hito:** revisar y, si corresponde, aprobar expresamente la [ETAPA 07 — Configuración técnica](etapa-07.md). No iniciar ETAPA 08 antes de esa decisión.

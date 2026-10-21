@@ -1,0 +1,5 @@
+Single-database Alembic environment for the approved PostgreSQL schema.
+
+The initial revision is equivalent to database/schema.sql. Do not apply the
+manual script and Alembic to the same database.
+

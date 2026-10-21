@@ -12,6 +12,9 @@ dist/
 venv/
 env/
 ENV/
+.direnv/
+.envrc
+.python-version
 
 # Herramientas de calidad y cobertura
 .pytest_cache/
@@ -22,6 +25,9 @@ ENV/
 .coverage
 .coverage.*
 htmlcov/
+coverage.xml
+junit.xml
+.cache/
 
 # Secretos y configuración local
 .env

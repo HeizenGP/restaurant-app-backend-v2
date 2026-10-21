@@ -2,7 +2,7 @@
 
 ## Estado y autoridad
 
-- **ETAPAS 00–03 aprobadas (2026-10-13) y ETAPA 04 aprobada expresamente por el usuario (2026-10-20), con comprobaciones técnicas pendientes. ETAPA 05 aprobada expresamente (2026-10-20). ETAPA 06 aprobada expresamente como diseño documental (2026-10-21), con decisiones de negocio abiertas. ETAPA 07 iniciada y pendiente de implementación/revisión/aprobación.** No aprobar etapas por inferencia.
+- **ETAPAS 00–03 aprobadas (2026-10-13) y ETAPA 04 aprobada expresamente por el usuario (2026-10-20), con comprobaciones técnicas pendientes. ETAPA 05 aprobada expresamente (2026-10-20). ETAPA 06 aprobada expresamente como diseño documental (2026-10-21), con decisiones de negocio abiertas. ETAPA 07 implementada técnicamente y pendiente de revisión/aprobación; ETAPA 08 no iniciada.** No aprobar etapas por inferencia.
 - Índice oficial: `docs/etapas/README.md`. Trabajo actual: `docs/etapas/etapa-07.md`.
 - Las ETAPAS 01–03 prevalecen como línea base de negocio y requisitos. ETAPA 04 es línea base documental de casos de uso aprobada, pero no resuelve por sí sola RN-20/RN-21, RNF-08, responsables de M07 ni comprobantes.
 
