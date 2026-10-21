@@ -18,6 +18,12 @@ from restaurant_app.modules.m01_access.adapters.inbound.http import (
 from restaurant_app.modules.m01_access.adapters.inbound.http import (
     router as access_router,
 )
+from restaurant_app.modules.m02_catalog_stock.adapters.inbound.http import (
+    install_catalog_error_handlers,
+)
+from restaurant_app.modules.m02_catalog_stock.adapters.inbound.http import (
+    router as catalog_router,
+)
 
 
 class HealthChecks(BaseModel):
@@ -67,7 +73,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.settings = app_settings
     application.state.database = create_database_resources(app_settings)
     install_access_error_handlers(application)
+    install_catalog_error_handlers(application)
     application.include_router(access_router, prefix=app_settings.api_v1_prefix)
+    application.include_router(catalog_router, prefix=app_settings.api_v1_prefix)
 
     if app_settings.cors_origins:
         application.add_middleware(

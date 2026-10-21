@@ -3,6 +3,7 @@
 from typing import Any
 
 from fastapi import FastAPI, Request, status
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
@@ -27,7 +28,7 @@ def _sanitized_validation_errors(error: RequestValidationError) -> list[dict[str
         context = safe_item.get("ctx")
         if isinstance(context, dict) and "error" in context:
             safe_item["ctx"] = {"error": str(context["error"])}
-        sanitized.append(safe_item)
+        sanitized.append(jsonable_encoder(safe_item))
     return sanitized
 
 
