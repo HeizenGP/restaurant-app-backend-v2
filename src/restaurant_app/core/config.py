@@ -3,9 +3,9 @@
 from enum import StrEnum
 from functools import lru_cache
 from typing import Literal, Self
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 
-from pydantic import Field, PostgresDsn, field_validator, model_validator
+from pydantic import Field, PostgresDsn, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -28,6 +28,7 @@ class Settings(BaseSettings):
         env_prefix="RESTAURANT_",
         extra="ignore",
         frozen=True,
+        populate_by_name=True,
     )
 
     app_name: str = "Restaurant App V2 API"
@@ -37,11 +38,13 @@ class Settings(BaseSettings):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     api_v1_prefix: str = "/api/v1"
 
-    database_url: PostgresDsn = Field(
-        default=PostgresDsn(
-            "postgresql+asyncpg://restaurant_app:"
-            "replace-this-local-password@127.0.0.1:5432/restaurant_app"
-        ),
+    postgres_host: str = Field(default="127.0.0.1", validation_alias="POSTGRES_HOST")
+    postgres_port: int = Field(default=5432, ge=1, le=65535, validation_alias="POSTGRES_PORT")
+    postgres_db: str = Field(default="restaurant_app", validation_alias="POSTGRES_DB")
+    postgres_user: str = Field(default="restaurant_app", validation_alias="POSTGRES_USER")
+    postgres_password: SecretStr = Field(
+        default=SecretStr("replace-this-local-password"),
+        validation_alias="POSTGRES_PASSWORD",
         repr=False,
     )
     database_echo: bool = False
@@ -64,13 +67,23 @@ class Settings(BaseSettings):
             normalized = normalized.rstrip("/")
         return normalized
 
-    @field_validator("database_url")
+    @field_validator("postgres_host", "postgres_db", "postgres_user")
     @classmethod
-    def require_asyncpg_driver(cls, value: PostgresDsn) -> PostgresDsn:
-        """Reject synchronous PostgreSQL drivers in the async application."""
+    def reject_blank_postgres_components(cls, value: str) -> str:
+        """Reject ambiguous connection components before constructing the DSN."""
 
-        if value.scheme != "postgresql+asyncpg":
-            raise ValueError("database_url must use the postgresql+asyncpg scheme")
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("PostgreSQL connection components must not be blank")
+        return normalized
+
+    @field_validator("postgres_password")
+    @classmethod
+    def reject_blank_postgres_password(cls, value: SecretStr) -> SecretStr:
+        """Require an explicit non-empty PostgreSQL password."""
+
+        if not value.get_secret_value():
+            raise ValueError("POSTGRES_PASSWORD must not be blank")
         return value
 
     @field_validator("cors_origins")
@@ -100,7 +113,25 @@ class Settings(BaseSettings):
 
         if self.environment is AppEnvironment.PRODUCTION and self.debug:
             raise ValueError("debug must be disabled in production")
+        if (
+            self.environment in {AppEnvironment.STAGING, AppEnvironment.PRODUCTION}
+            and self.postgres_password.get_secret_value() == "replace-this-local-password"
+        ):
+            raise ValueError("replace the local PostgreSQL password outside local/test")
         return self
+
+    @property
+    def database_url(self) -> PostgresDsn:
+        """Build one async DSN from the canonical POSTGRES_* connection values."""
+
+        return PostgresDsn.build(
+            scheme="postgresql+asyncpg",
+            username=quote(self.postgres_user, safe=""),
+            password=quote(self.postgres_password.get_secret_value(), safe=""),
+            host=self.postgres_host,
+            port=self.postgres_port,
+            path=quote(self.postgres_db, safe=""),
+        )
 
 
 @lru_cache(maxsize=1)

@@ -131,7 +131,10 @@ La elaboración de una etapa no equivale a su aprobación, ni una casilla de doc
 
 **Entregable implementado:** backend y aplicaciones base, migración reproducible, instrucciones y pruebas automáticas.
 
-**Verificación:** PostgreSQL 17.11 en Docker Compose con healthcheck sano, upgrade/downgrade Alembic, API saludable, 23 pruebas backend, análisis/pruebas Flutter y builds Android/Web correctos. La aprobación de la etapa sigue siendo exclusiva del usuario.
+**Verificación:** PostgreSQL 17.11 en Docker Compose con healthcheck sano,
+upgrade/downgrade Alembic hasta `20261021_0002`, API saludable, 26 pruebas backend,
+guardas destructivas verificadas, análisis/pruebas Flutter y builds Android/Web
+correctos. La aprobación de la etapa sigue siendo exclusiva del usuario.
 
 ### ETAPA 08 — Desarrollo del backend
 
@@ -141,6 +144,9 @@ La elaboración de una etapa no equivale a su aprobación, ni una casilla de doc
 - Garantizar transiciones autorizadas, verificación del 50 %, stock atómico y sin doble descuento, cobros idempotentes y bloqueo de operaciones inválidas.
 - Implementar simulaciones explícitas y auditables; **no** integrar pagos reales, WhatsApp automático, GPS ni SUNAT sin nuevos requisitos.
 - Incorporar validaciones, manejo de errores, OpenAPI, pruebas unitarias y de integración **contra PostgreSQL real de pruebas**.
+- Incorporar pruebas concurrentes reproducibles de `ConfirmOrder` y cobros con dos
+  sesiones/UoW independientes, sincronización determinista y verificación final
+  desde una tercera transacción.
 - Mantener correspondencia **RF/CA → caso de uso → endpoint → prueba**.
 
 **Entregable:** API documentada y funcional, migraciones incrementales pertinentes, matriz de cobertura y resultados verificables.  

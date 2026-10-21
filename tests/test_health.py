@@ -12,7 +12,8 @@ def build_test_app(*, database_ready: bool, cors_origins: list[str] | None = Non
     settings = Settings(
         _env_file=None,
         environment=AppEnvironment.TEST,
-        database_url="postgresql+asyncpg://restaurant_app:test@localhost/restaurant_app_test",
+        postgres_db="restaurant_app_test",
+        postgres_password="test",
         cors_origins=cors_origins or [],
     )
     application = create_app(settings)
@@ -44,7 +45,8 @@ def test_create_app_uses_injected_settings_for_database_resources() -> None:
     settings = Settings(
         _env_file=None,
         environment=AppEnvironment.TEST,
-        database_url=("postgresql+asyncpg://restaurant_app:test@localhost/settings_owned_database"),
+        postgres_db="settings_owned_database",
+        postgres_password="test",
     )
 
     application = create_app(settings)

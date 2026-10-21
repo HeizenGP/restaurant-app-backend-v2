@@ -1,12 +1,14 @@
 """PostgreSQL integration tests for the ETAPA 07 initial migration.
 
 Run these tests against a disposable database after ``alembic upgrade head`` by
-setting ``TEST_DATABASE_DSN`` and ``ALLOW_DESTRUCTIVE_TEST_DATABASE=1``.  The
-database name must also contain ``test`` or ``stage07``.  The module is skipped
-when the DSN is not defined so the default unit-test suite remains self-contained.
+setting ``TEST_DATABASE_DSN``. The database name must end in ``_test`` or
+``_stage07``, and ``ALLOW_DESTRUCTIVE_TEST_DATABASE`` must equal that exact name.
+The module is skipped when the DSN is not defined so the default unit-test suite
+remains self-contained.
 """
 
 import os
+import re
 from collections.abc import AsyncIterator
 from decimal import Decimal
 from urllib.parse import unquote, urlsplit
@@ -103,27 +105,32 @@ MUTABLE_TABLES = (
     "users",
 )
 
+DISPOSABLE_DATABASE_NAME = re.compile(r"^[a-z0-9][a-z0-9_]*(?:_test|_stage07)$")
+ALEMBIC_HEAD = "20261021_0002"
 
-def _test_database_dsn() -> str:
+
+def _test_database_target() -> tuple[str, str]:
     value = os.getenv("TEST_DATABASE_DSN")
     if not value:
         pytest.skip("TEST_DATABASE_DSN is not defined")
 
-    destructive_opt_in = os.getenv("ALLOW_DESTRUCTIVE_TEST_DATABASE", "")
-    if destructive_opt_in.strip().casefold() not in {"1", "true"}:
-        pytest.fail("destructive integration tests require ALLOW_DESTRUCTIVE_TEST_DATABASE=1")
-
     asyncpg_dsn = value.replace("postgresql+asyncpg://", "postgresql://", 1)
     parsed = urlsplit(asyncpg_dsn)
     database_name = unquote(parsed.path.removeprefix("/")).casefold()
-    if parsed.scheme not in {"postgres", "postgresql"} or not any(
-        marker in database_name for marker in ("test", "stage07")
+    if (
+        parsed.scheme not in {"postgres", "postgresql"}
+        or "/" in database_name
+        or DISPOSABLE_DATABASE_NAME.fullmatch(database_name) is None
     ):
         pytest.fail(
-            "TEST_DATABASE_DSN must use PostgreSQL and name a disposable database "
-            "containing 'test' or 'stage07'"
+            "TEST_DATABASE_DSN must use PostgreSQL and a disposable database name "
+            "ending in '_test' or '_stage07'"
         )
-    return asyncpg_dsn
+
+    destructive_authorization = os.getenv("ALLOW_DESTRUCTIVE_TEST_DATABASE", "").strip()
+    if destructive_authorization != database_name:
+        pytest.fail("ALLOW_DESTRUCTIVE_TEST_DATABASE must equal the exact disposable database name")
+    return asyncpg_dsn, database_name
 
 
 async def _clean_database(connection: asyncpg.Connection) -> None:
@@ -133,11 +140,21 @@ async def _clean_database(connection: asyncpg.Connection) -> None:
 
 @pytest_asyncio.fixture
 async def database() -> AsyncIterator[asyncpg.Connection]:
-    connection = await asyncpg.connect(_test_database_dsn())
+    database_dsn, authorized_database = _test_database_target()
+    connection = await asyncpg.connect(database_dsn)
     try:
+        connected_database = await connection.fetchval("SELECT current_database()")
+        if connected_database != authorized_database:
+            pytest.fail("connected database does not match the explicitly authorized test database")
         migrated = await connection.fetchval("SELECT to_regclass('public.alembic_version')")
         if migrated is None:
             pytest.fail("TEST_DATABASE_DSN must point to a database migrated to Alembic head")
+        applied_revisions = {
+            row["version_num"]
+            for row in await connection.fetch("SELECT version_num FROM public.alembic_version")
+        }
+        if applied_revisions != {ALEMBIC_HEAD}:
+            pytest.fail("TEST_DATABASE_DSN must point to the exact Alembic head")
         await _clean_database(connection)
         yield connection
         await _clean_database(connection)
@@ -319,9 +336,7 @@ async def test_initial_migration_installs_the_exact_approved_objects(
 
     roles = await database.fetch("SELECT code FROM public.roles")
     assert {row["code"] for row in roles} == ROLE_CODES
-    assert await database.fetchval("SELECT version_num FROM public.alembic_version") == (
-        "20261021_0001"
-    )
+    assert await database.fetchval("SELECT version_num FROM public.alembic_version") == ALEMBIC_HEAD
 
 
 async def test_order_header_and_lines_share_a_transaction_and_total_is_deferred(

@@ -212,12 +212,18 @@ def test_initial_revision_contains_all_postgresql_only_objects() -> None:
 
 
 def test_order_item_transaction_guard_preserves_postgresql_xid_logic() -> None:
-    migration_path = (
-        Path(__file__).parents[1] / "alembic" / "versions" / "20261021_0001_initial_schema.py"
-    )
-    migration = migration_path.read_text(encoding="utf-8")
+    repository_root = Path(__file__).parents[1]
+    schema = (repository_root / "database" / "schema.sql").read_text(encoding="utf-8")
+    correction = (
+        repository_root / "alembic" / "versions" / "20261021_0002_harden_order_item_xid_guard.py"
+    ).read_text(encoding="utf-8")
 
-    assert "(o.xmin::TEXT)::BIGINT" in migration
-    assert "txid_current() % 4294967296" in migration
-    assert "v_order_status <> 'REQUESTED'" in migration
-    assert "v_order_confirmed IS NOT NULL" in migration
+    assert 'down_revision: str | Sequence[str] | None = "20261021_0001"' in correction
+    assert "CREATE OR REPLACE FUNCTION" in correction
+    for definition in (schema, correction.split("def downgrade() -> None:", maxsplit=1)[0]):
+        assert "v_creation_xid xid" in definition
+        assert "SELECT o.xmin" in definition
+        assert "pg_current_xact_id()::xid" in definition
+        assert "txid_current()" not in definition
+        assert "v_order_status <> 'REQUESTED'" in definition
+        assert "v_order_confirmed IS NOT NULL" in definition

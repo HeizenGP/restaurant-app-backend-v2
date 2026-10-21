@@ -198,18 +198,24 @@ CREATE TRIGGER trg_orders_total_immutable
     FOR EACH ROW EXECUTE FUNCTION public.reject_order_total_change();
 
 -- El pedido se registra con todas sus líneas en UNA transacción.
--- La comprobación de xmin asegura que una línea no se incorpore desde
--- una transacción posterior; xmin es el ID interno de creación de la fila.
--- Usar una transacción normal (no subtransacciones/nested SAVEPOINT para
--- dividir cabecera y líneas). En ETAPA 07 comprobar en PostgreSQL real.
+-- La comparación de xmin rechaza el alta posterior mientras la cabecera
+-- conserve la versión de fila creada junto con sus líneas; es una defensa
+-- física acotada, no una garantía independiente del flujo de aplicación.
+-- xmin es el XID interno de esta versión de fila y cambia con cada UPDATE.
+-- pg_current_xact_id() devuelve xid8; el cast a xid compara el identificador
+-- interno de 32 bits sin depender de la API txid_* obsoleta ni de aritmética.
+-- CreateOrder debe usar una sola transacción superior: no dividir cabecera y
+-- líneas entre nested SAVEPOINT ni actualizar la cabecera antes de insertar
+-- todas las líneas. xmin tampoco es una versión de negocio ni debe reutilizarse
+-- para control de concurrencia de larga duración.
 CREATE FUNCTION public.enforce_order_item_creation_transaction()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE
-    v_creation_xid BIGINT;
+    v_creation_xid xid;
     v_order_status VARCHAR(16);
     v_order_confirmed TIMESTAMPTZ;
 BEGIN
-    SELECT (o.xmin::TEXT)::BIGINT, o.status, o.confirmed_at
+    SELECT o.xmin, o.status, o.confirmed_at
       INTO v_creation_xid, v_order_status, v_order_confirmed
       FROM public.orders AS o
      WHERE o.id = NEW.order_id FOR UPDATE;
@@ -219,8 +225,7 @@ BEGIN
             USING ERRCODE = '23503';
     END IF;
 
-    -- xmin es XID de 32 bits, mientras txid_current() es 64 bits.
-    IF v_creation_xid <> (txid_current() % 4294967296)
+    IF v_creation_xid <> pg_current_xact_id()::xid
        OR v_order_status <> 'REQUESTED' OR v_order_confirmed IS NOT NULL THEN
         RAISE EXCEPTION 'Las líneas deben registrarse junto con la cabecera'
             USING ERRCODE = '23514';
