@@ -9,7 +9,7 @@ Estados permitidos: `PENDIENTE`, `EN CURSO`, `BLOQUEADO`, `IMPLEMENTADO SIN VERI
 
 | Bloque | Responsable sugerido | Estado | RF validados | Evidencia | Siguiente dependencia |
 |---|---|---|---|---|---|
-| 08.00 Línea base | Codex | PENDIENTE | — | — | 08.01 |
+| 08.00 Línea base | AGY | VERIFICADO | — | 19/19 unit pass, ruff ✓, mypy ✓, ORM=14 tablas, Alembic head=0002, /health 200/503 | 08.01 |
 | 08.01 M01 Accesos | Codex | PENDIENTE | — | — | 08.02 |
 | 08.02 M02 Catálogo | AGY | PENDIENTE | — | — | 08.03 |
 | 08.03 M03 Mesas | Codex | PENDIENTE | — | — | 08.04 |
@@ -23,18 +23,23 @@ Estados permitidos: `PENDIENTE`, `EN CURSO`, `BLOQUEADO`, `IMPLEMENTADO SIN VERI
 
 ## 2. Último punto de control (actualizar SIEMPRE)
 
-- **Fecha / agente:** sin ejecución registrada.
-- **Bloque activo:** 08.00.
-- **Estado del bloque:** PENDIENTE.
-- **Directorio previsto:** `/home/heizen27/proyectos/restaurant-app-v2/restaurant-app-backend-v2` · **rama prevista:** `develop`; Codex/AGY deben comprobar ambos localmente al iniciar 08.00. Ningún estado de Git local ha sido verificado por este documento.
-- **Archivos afectados desde el último checkpoint:** ninguno documentado.
-- **RF/CA implementados y verificados:** ninguno documentado.
-- **API/slices terminados:** ninguno documentado.
-- **Migraciones y estado Alembic:** revisar `alembic current` antes de empezar; no suponer estado de una BD local.
-- **Pruebas ejecutadas (comando → resultado):** ninguna documentada en ETAPA 08.
-- **Fallos conocidos/bloqueos:** autorizaciones M07, RN-20/RN-21, RNF-08 y emisión de comprobantes conservan estatus documental pendiente; confirmar impacto solo en los RF que toquen.
-- **Revisión de otro agente:** pendiente.
-- **Siguiente acción exacta:** abrir el **mismo workspace local del backend** desde Codex o AGY, comprobar `pwd`, `git branch --show-current` y `git status`; auditar app, ORM, migraciones/pruebas de ETAPA 07, registrar baseline e iniciar 08.01 solo después de verificar 08.00.
+- **Fecha / agente:** 2026-10-21T12:36 -05:00 / AGY (Antigravity, Claude Opus 4.6 Thinking).
+- **Bloque activo:** 08.01.
+- **Estado del bloque anterior (08.00):** VERIFICADO.
+- **Directorio verificado:** `/home/heizen27/proyectos/restaurant-app-v2/restaurant-app-backend-v2` · **rama verificada:** `develop` · **HEAD:** `9ef4f85` (up to date con origin/develop) · `git status`: clean.
+- **Archivos afectados desde el último checkpoint:** ninguno (solo lectura / auditoría).
+- **RF/CA implementados y verificados:** ninguno (08.00 es línea base, no implementa RF).
+- **API/slices terminados:** ninguno; `/health` heredado de ETAPA 07 funciona (200/503).
+- **Migraciones y estado Alembic:** head = `20261021_0002`; 2 revisiones encadenadas; `alembic current` no ejecutado (PostgreSQL no levantado); ORM metadata y migración coinciden estáticamente.
+- **Pruebas ejecutadas (comando → resultado):**
+  - `pytest tests/ -m "not integration" -v` → **19 passed**, 7 deselected (integration skipped), 1.90s, coverage 95%.
+  - `ruff check src/ tests/` → All checks passed.
+  - `ruff format --check src/ tests/` → 96 files already formatted.
+  - `mypy --config-file=pyproject.toml` → Success: no issues found in 89 source files.
+- **Inventario verificado:** 14 tablas ORM, 17 índices, 8 funciones, 9 triggers, 1 vista, 6 roles seed, esqueletos hexagonales M01–M07 con `public.py` stub, Docker Compose con Postgres 17.11, `.env.example` coherente.
+- **Fallos conocidos/bloqueos:** autorizaciones M07, RN-20/RN-21, RNF-08 y emisión de comprobantes conservan estatus documental pendiente; no afectan 08.01 (M01 Accesos).
+- **Revisión de otro agente:** no requerida para 08.00 (auditoría).
+- **Siguiente acción exacta:** iniciar **08.01 — M01 Accesos** (RF-M01-01…05). Leer RF/CA de M01 en `etapa-03-requisitos.md`, CU de M01 en `etapa-04.md`, activar Skill `restaurant-fastapi-slice`. Implementar: dominio, puertos, casos de uso, adaptadores, endpoints REST `/api/v1/auth/*` y `/api/v1/users/*`, pruebas unitarias y de integración. Levantar PostgreSQL si es necesario.
 - **Commit/push:** NO autorizado de forma automática; no inventar hash de trabajo sin commit.
 
 ## 3. Matriz de trazabilidad (actualizar por RF realmente verificado)
