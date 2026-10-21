@@ -43,7 +43,7 @@ Las Skills enlazan `etapa-05.md`; no duplican matrices, estructura completa ni r
 ## Protocolo de validación
 
 1. Confirmar ambos repositorios en `develop` y revisar cambios previos.
-2. Ejecutar validadores específicos del artefacto: sintaxis/links de documentación, `quick_validate.py` para Skills y pruebas técnicas solo cuando exista código.
+2. Validar estructura de Skills (frontmatter `name`/`description`, coincidencia nombre/carpeta, restricciones de activación y referencias); ejecutar `quick_validate.py` si está disponible. Distinguir validación estática de prueba real de invocación en Codex/Antigravity.
 3. Comprobar que los 40 RF siguen asignados una vez a M01–M07 y que ningún pendiente se presenta como aprobado.
 4. Comparar archivos compartidos de `docs/` y reglas comunes entre repositorios.
 5. Registrar herramientas no disponibles (por ejemplo, render PlantUML) como pendientes; no simular el resultado.
