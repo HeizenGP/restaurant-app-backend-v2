@@ -1,20 +1,25 @@
 """HTTP + PostgreSQL checks for 08.04 without confirming orders."""
 
-from collections.abc import Iterator
-from contextlib import contextmanager
+import asyncio
+from collections.abc import AsyncIterator, Iterator
+from contextlib import asynccontextmanager, contextmanager
 from decimal import Decimal
 from urllib.parse import unquote, urlsplit
 from uuid import UUID, uuid4
 
 import asyncpg
+import httpx2 as httpx
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from restaurant_app.core.config import Settings
 from restaurant_app.main import create_app
 from restaurant_app.modules.m01_access.adapters.outbound.password_hasher import (
     Argon2PasswordHasher,
 )
+from restaurant_app.modules.m04_orders.public import SqlAlchemyAdvanceOrderReader
 from tests.integration.test_initial_migration import _test_database_target
 
 pytest_plugins = ("tests.integration.test_initial_migration",)
@@ -24,8 +29,7 @@ JWT_SECRET = "m04-integration-jwt-secret-with-more-than-32-characters"
 ACTOR_PASSWORD = "m04-integration-password"
 
 
-@contextmanager
-def api_client() -> Iterator[TestClient]:
+def build_test_application() -> FastAPI:
     authorized_dsn, authorized_database = _test_database_target()
     target = urlsplit(authorized_dsn)
     if target.hostname is None or target.username is None or target.password is None:
@@ -45,8 +49,30 @@ def api_client() -> Iterator[TestClient]:
     )
     if application.state.database.engine.url.database != authorized_database:
         pytest.fail("HTTP test target differs from the authorized disposable database")
-    with TestClient(application) as client:
+    return application
+
+
+@contextmanager
+def api_client() -> Iterator[TestClient]:
+    with TestClient(build_test_application()) as client:
         yield client
+
+
+@asynccontextmanager
+async def async_api_clients() -> AsyncIterator[tuple[httpx.AsyncClient, httpx.AsyncClient]]:
+    application = build_test_application()
+    try:
+        async with (
+            httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=application), base_url="http://testserver"
+            ) as first,
+            httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=application), base_url="http://testserver"
+            ) as second,
+        ):
+            yield first, second
+    finally:
+        await application.state.database.dispose()
 
 
 async def actor(database: asyncpg.Connection, role: str) -> tuple[UUID, str]:
@@ -96,6 +122,13 @@ async def test_guest_local_request_snapshot_table_approval_and_replay(
         )
         assert created_table.status_code == 201, created_table.text
         table_id = created_table.json()["id"]
+        occupied = client.patch(
+            f"/api/v1/tables/{table_id}/occupancy",
+            json={"is_occupied": True},
+            headers=waiter,
+        )
+        assert occupied.status_code == 200, occupied.text
+        assert occupied.json()["is_occupied"] is True
         guest = client.post("/api/v1/auth/guest")
         assert guest.status_code == 201
         guest_headers = {
@@ -107,6 +140,16 @@ async def test_guest_local_request_snapshot_table_approval_and_replay(
             "table_id": table_id,
             "items": [{"product_id": str(product_id), "quantity": 2}],
         }
+        blocked = client.post("/api/v1/orders", json=payload, headers=guest_headers)
+        assert blocked.status_code == 422, blocked.text
+        assert client.get("/api/v1/orders", headers=guest_headers).json() == []
+        released = client.patch(
+            f"/api/v1/tables/{table_id}/occupancy",
+            json={"is_occupied": False},
+            headers=admin,
+        )
+        assert released.status_code == 200, released.text
+        assert released.json()["is_occupied"] is False
         created = client.post("/api/v1/orders", json=payload, headers=guest_headers)
         assert created.status_code == 201, created.text
         order_id = created.json()["id"]
@@ -153,6 +196,14 @@ async def test_guest_local_request_snapshot_table_approval_and_replay(
         assert approved.status_code == 200, approved.text
         assert approved.json()["status"] == "APPROVED"
         assert approved.json()["table_verified_at"] is not None
+        assert client.get("/api/v1/tables", headers=guest_headers).json()[0]["is_occupied"] is False
+        occupied_after_approval = client.patch(
+            f"/api/v1/tables/{table_id}/occupancy",
+            json={"is_occupied": True},
+            headers=waiter,
+        )
+        assert occupied_after_approval.status_code == 200
+        assert occupied_after_approval.json()["is_occupied"] is True
         assert (
             client.post(
                 f"/api/v1/orders/{order_id}/decision",
@@ -187,6 +238,12 @@ async def test_guest_local_request_snapshot_table_approval_and_replay(
     )
     assert row["decided_by_user_id"] == waiter_id
     assert row["decided_by_user_id"] != admin_id
+    assert (
+        await database.fetchval(
+            "SELECT is_occupied FROM public.restaurant_tables WHERE id=$1", UUID(table_id)
+        )
+        is True
+    )
 
 
 @pytest.mark.asyncio
@@ -395,3 +452,202 @@ async def test_customer_pickup_admin_approval_and_request_validation(
         assert len(client.get("/api/v1/orders", headers=customer).json()) == 1
     assert await database.fetchval("SELECT count(*) FROM public.payments") == 0
     assert await database.fetchval("SELECT count(*) FROM public.kitchen_tickets") == 0
+    dsn, _ = _test_database_target()
+    engine = create_async_engine(dsn.replace("postgresql://", "postgresql+asyncpg://", 1))
+    try:
+        async with AsyncSession(engine) as session:
+            order_for_advance = await SqlAlchemyAdvanceOrderReader(session).get_order(
+                UUID(created.json()["id"]), lock=True
+            )
+            assert order_for_advance is not None
+            assert order_for_advance.id == UUID(created.json()["id"])
+            assert order_for_advance.modality == "PICKUP"
+            assert order_for_advance.status == "APPROVED"
+            assert order_for_advance.total_amount == Decimal("12.00")
+            assert await SqlAlchemyAdvanceOrderReader(session).get_order(uuid4()) is None
+    finally:
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_app_request_waits_for_manual_occupancy_change(
+    database: asyncpg.Connection,
+) -> None:
+    product_id = await catalog(database)
+    _, customer_email = await actor(database, "CUSTOMER")
+    table_id = await database.fetchval(
+        "INSERT INTO public.restaurant_tables(code) VALUES($1) RETURNING id",
+        f"M-{uuid4().hex[:12]}",
+    )
+    payload = {
+        "modality": "LOCAL",
+        "table_id": str(table_id),
+        "items": [{"product_id": str(product_id), "quantity": 1}],
+    }
+    async with async_api_clients() as (client, _):
+        login = await client.post(
+            "/api/v1/auth/login",
+            json={"email": customer_email, "password": ACTOR_PASSWORD},
+        )
+        assert login.status_code == 200, login.text
+        headers = {
+            "Authorization": "Bearer " + login.json()["access_token"],
+            "Idempotency-Key": f"manual-occupancy-{uuid4()}",
+        }
+        task: asyncio.Task[httpx.Response] | None = None
+        try:
+            async with database.transaction():
+                await database.execute(
+                    "UPDATE public.restaurant_tables SET is_occupied=TRUE WHERE id=$1", table_id
+                )
+                blocker_xid = await database.fetchval("SELECT pg_current_xact_id()::xid::text")
+                task = asyncio.create_task(
+                    client.post("/api/v1/orders", json=payload, headers=headers)
+                )
+                async with asyncio.timeout(10):
+                    while True:
+                        waiting = await database.fetchval(
+                            "SELECT count(*) FROM pg_locks "
+                            "WHERE locktype='transactionid' AND NOT granted "
+                            "AND transactionid::text=$1",
+                            blocker_xid,
+                        )
+                        if waiting >= 1:
+                            break
+                        if task.done():
+                            pytest.fail(
+                                "APP request completed before the concurrent occupancy change committed"
+                            )
+                        await asyncio.sleep(0.05)
+            response = await asyncio.wait_for(task, timeout=10)
+        finally:
+            if task is not None and not task.done():
+                task.cancel()
+                await asyncio.gather(task, return_exceptions=True)
+    assert response.status_code == 422, response.text
+    assert (
+        await database.fetchval(
+            "SELECT is_occupied FROM public.restaurant_tables WHERE id=$1", table_id
+        )
+        is True
+    )
+    assert await database.fetchval("SELECT count(*) FROM public.orders") == 0
+    assert await database.fetchval("SELECT count(*) FROM public.order_items") == 0
+    assert await database.fetchval("SELECT count(*) FROM public.idempotency_requests") == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("same_payload", [True, False], ids=["same-payload", "different-payload"])
+async def test_concurrent_same_key_is_atomic_and_idempotent(
+    database: asyncpg.Connection, same_payload: bool
+) -> None:
+    product_id = await catalog(database)
+    customer_id, customer_email = await actor(database, "CUSTOMER")
+    request_key = f"parallel-{uuid4()}"
+    base_payload = {
+        "modality": "PICKUP",
+        "contact_name": "Ana",
+        "contact_phone": "999111222",
+        "items": [{"product_id": str(product_id), "quantity": 1}],
+    }
+    second_payload = (
+        base_payload
+        if same_payload
+        else {
+            **base_payload,
+            "items": [{"product_id": str(product_id), "quantity": 2}],
+        }
+    )
+    tasks: list[asyncio.Task[httpx.Response]] = []
+    async with async_api_clients() as (first_client, second_client):
+        login = await first_client.post(
+            "/api/v1/auth/login",
+            json={"email": customer_email, "password": ACTOR_PASSWORD},
+        )
+        assert login.status_code == 200, login.text
+        headers = {
+            "Authorization": "Bearer " + login.json()["access_token"],
+            "Idempotency-Key": request_key,
+        }
+        try:
+            async with database.transaction():
+                await database.fetchval(
+                    "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
+                    f"CREATE_ORDER:{customer_id}:{request_key}",
+                )
+                tasks = [
+                    asyncio.create_task(
+                        client.post("/api/v1/orders", json=payload, headers=headers)
+                    )
+                    for client, payload in (
+                        (first_client, base_payload),
+                        (second_client, second_payload),
+                    )
+                ]
+                async with asyncio.timeout(10):
+                    while True:
+                        waiting = await database.fetchval(
+                            "SELECT count(*) FROM pg_locks "
+                            "WHERE locktype = 'advisory' AND NOT granted "
+                            "AND database = (SELECT oid FROM pg_database WHERE datname = current_database())"
+                        )
+                        if waiting >= 2:
+                            break
+                        if any(task.done() for task in tasks):
+                            outcomes = [
+                                str(task.exception())
+                                if task.exception()
+                                else task.result().status_code
+                                for task in tasks
+                                if task.done()
+                            ]
+                            pytest.fail(
+                                f"A concurrent request finished before the lock barrier: {outcomes}"
+                            )
+                        await asyncio.sleep(0.05)
+            responses = await asyncio.wait_for(asyncio.gather(*tasks), timeout=10)
+        finally:
+            for task in tasks:
+                if not task.done():
+                    task.cancel()
+            if tasks:
+                await asyncio.gather(*tasks, return_exceptions=True)
+
+    if same_payload:
+        assert [response.status_code for response in responses] == [201, 201]
+        assert responses[0].json()["id"] == responses[1].json()["id"]
+    else:
+        assert sorted(response.status_code for response in responses) == [201, 409]
+    winner = next(response for response in responses if response.status_code == 201).json()
+    async with database.transaction(isolation="repeatable_read", readonly=True):
+        order_row = await database.fetchrow(
+            "SELECT id,status,customer_user_id,total_amount FROM public.orders"
+        )
+        item_row = await database.fetchrow(
+            "SELECT order_id,quantity,unit_price_snapshot FROM public.order_items"
+        )
+        request_row = await database.fetchrow(
+            "SELECT actor_user_id,request_key,result_order_id,completed_at "
+            "FROM public.idempotency_requests"
+        )
+        assert await database.fetchval("SELECT count(*) FROM public.orders") == 1
+        assert await database.fetchval("SELECT count(*) FROM public.order_items") == 1
+        assert await database.fetchval("SELECT count(*) FROM public.idempotency_requests") == 1
+        assert await database.fetchval("SELECT count(*) FROM public.payments") == 0
+        assert await database.fetchval("SELECT count(*) FROM public.kitchen_tickets") == 0
+        assert await database.fetchval("SELECT count(*) FROM public.stock_movements") == 0
+        assert (
+            await database.fetchval("SELECT stock_qty FROM public.products WHERE id=$1", product_id)
+            == 8
+        )
+        assert order_row is not None and item_row is not None and request_row is not None
+        assert order_row["id"] == UUID(winner["id"])
+        assert order_row["status"] == "REQUESTED"
+        assert order_row["customer_user_id"] == customer_id
+        assert item_row["order_id"] == order_row["id"]
+        assert item_row["quantity"] == winner["lines"][0]["quantity"]
+        assert order_row["total_amount"] == item_row["unit_price_snapshot"] * item_row["quantity"]
+        assert request_row["actor_user_id"] == customer_id
+        assert request_row["request_key"] == request_key
+        assert request_row["result_order_id"] == order_row["id"]
+        assert request_row["completed_at"] is not None

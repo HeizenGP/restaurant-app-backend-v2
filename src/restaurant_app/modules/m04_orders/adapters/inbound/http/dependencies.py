@@ -42,7 +42,8 @@ class OrderTableReader:
         self._tables = TableLookup(session)
 
     async def get_table(self, table_id: UUID) -> TableAvailability | None:
-        table = await self._tables.get_table(table_id)
+        # Share-lock the selection through request commit, coordinating with M03 occupancy writes.
+        table = await self._tables.get_table(table_id, lock=True)
         return None if table is None else TableAvailability(table.id, table.is_occupied)
 
 

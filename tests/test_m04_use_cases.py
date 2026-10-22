@@ -109,6 +109,19 @@ async def test_create_app_guest_snapshots_total_and_rejects_disabled() -> None:
             contact_name=None,
             contact_phone=None,
         )
+    tables.get_table.return_value = None
+    with pytest.raises(InvalidOrderError):
+        await handler(
+            actor=guest,
+            request_key="missing-table",
+            modality=Modality.LOCAL,
+            channel=Channel.APP,
+            items=(RequestedItem(product_id, 2),),
+            table_id=existing.table_id,
+            delivery_address=None,
+            contact_name=None,
+            contact_phone=None,
+        )
     tables.get_table.return_value = TableAvailability(existing.table_id, False)
     products.get_product.return_value = ProductQuote(product_id, "Chaufa", Decimal("12"), False)
     with pytest.raises(ProductUnavailableError):

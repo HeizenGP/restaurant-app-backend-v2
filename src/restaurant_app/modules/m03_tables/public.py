@@ -14,5 +14,5 @@ class TableLookup:
     def __init__(self, session: AsyncSession) -> None:
         self._tables = SqlAlchemyTableRepository(session)
 
-    async def get_table(self, table_id: UUID) -> RestaurantTable | None:
-        return await self._tables.get_table(table_id)
+    async def get_table(self, table_id: UUID, *, lock: bool = False) -> RestaurantTable | None:
+        return await self._tables.get_table(table_id, lock=lock)

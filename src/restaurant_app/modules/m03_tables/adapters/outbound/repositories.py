@@ -37,8 +37,17 @@ class SqlAlchemyTableRepository:
         )
         return [self._table(row) for row in (await self._session.scalars(statement)).all()]
 
-    async def get_table(self, table_id: UUID) -> RestaurantTable | None:
-        model = await self._session.get(RestaurantTableModel, table_id)
+    async def get_table(self, table_id: UUID, *, lock: bool = False) -> RestaurantTable | None:
+        if lock:
+            model = (
+                await self._session.scalars(
+                    select(RestaurantTableModel)
+                    .where(RestaurantTableModel.id == table_id)
+                    .with_for_update(read=True)
+                )
+            ).one_or_none()
+        else:
+            model = await self._session.get(RestaurantTableModel, table_id)
         return None if model is None else self._table(model)
 
     async def create_table(
