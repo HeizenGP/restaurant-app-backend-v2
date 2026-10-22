@@ -105,3 +105,46 @@ class SqlAlchemyKitchenOrderReader:
             order.id: OrderForKitchen(order.id, order.modality, tuple(by_order[order.id]))
             for order in orders
         }
+
+
+# ---------------------------------------------------------------------------
+# Collection contract (08.08 — cashier reads the confirmed/closed order)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class OrderForCollection:
+    id: UUID
+    modality: str
+    status: str
+    total_amount: Decimal
+    customer_user_id: UUID | None
+    guest_session_id: UUID | None
+
+
+class CollectionOrderReader(Protocol):
+    async def get_order_for_collection(
+        self, order_id: UUID, *, lock: bool = False
+    ) -> OrderForCollection | None: ...
+
+
+class SqlAlchemyCollectionOrderReader:
+    """Read-only order snapshot for cashier; uses caller's session."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._orders = SqlAlchemyOrderRepository(session)
+
+    async def get_order_for_collection(
+        self, order_id: UUID, *, lock: bool = False
+    ) -> OrderForCollection | None:
+        order = await self._orders.get_order(order_id, lock=lock)
+        if order is None:
+            return None
+        return OrderForCollection(
+            id=order.id,
+            modality=order.modality.value,
+            status=order.status,
+            total_amount=order.total_amount,
+            customer_user_id=order.customer_user_id,
+            guest_session_id=order.guest_session_id,
+        )

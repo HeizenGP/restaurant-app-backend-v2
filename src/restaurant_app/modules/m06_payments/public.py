@@ -1,4 +1,4 @@
-"""Read-only verified-advance contract for the future ConfirmOrder UoW."""
+"""Read-only M06 contracts for confirmation and future order closure."""
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -8,6 +8,9 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from restaurant_app.modules.m06_payments.adapters.outbound.collection_repositories import (
+    SqlAlchemyCollectionRepository,
+)
 from restaurant_app.modules.m06_payments.adapters.outbound.repositories import (
     SqlAlchemyAdvanceRepository,
 )
@@ -46,3 +49,17 @@ def required_advance_amount(total_amount: Decimal) -> Decimal:
     """The approved 50% rule, exported without exposing M06 internals."""
 
     return required_advance(total_amount)
+
+
+class PaymentBalanceReader(Protocol):
+    async def get_balance(self, order_id: UUID, *, total_amount: Decimal) -> Decimal: ...
+
+
+class SqlAlchemyPaymentBalanceReader:
+    """Expose derived balance to M07 without implementing its close operation."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._payments = SqlAlchemyCollectionRepository(session)
+
+    async def get_balance(self, order_id: UUID, *, total_amount: Decimal) -> Decimal:
+        return total_amount - await self._payments.sum_paid(order_id)
