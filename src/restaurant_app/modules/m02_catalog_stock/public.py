@@ -15,13 +15,16 @@ from restaurant_app.modules.m02_catalog_stock.domain.entities import Product
 
 
 class ProductQuoteReader:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, *, lock_for_update: bool = False) -> None:
         self._session = session
+        self._lock_for_update = lock_for_update
 
     async def get_product(self, product_id: UUID) -> Product | None:
         model = (
             await self._session.scalars(
-                select(ProductModel).where(ProductModel.id == product_id).with_for_update(read=True)
+                select(ProductModel)
+                .where(ProductModel.id == product_id)
+                .with_for_update(read=not self._lock_for_update)
             )
         ).one_or_none()
         return (

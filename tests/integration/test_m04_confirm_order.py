@@ -856,3 +856,109 @@ async def test_two_orders_competing_for_last_unit_never_oversell(
             )
     finally:
         await third.close()
+
+
+@pytest.mark.asyncio
+async def test_two_waiters_on_distinct_tables_same_product_do_not_deadlock(
+    database: asyncpg.Connection,
+) -> None:
+    product_id = await product(database, stock=2)
+    table_ids = [await table(database), await table(database)]
+    waiter_emails = [(await actor(database, "WAITER"))[1] for _ in range(2)]
+    tasks: list[asyncio.Task[httpx.Response]] = []
+    async with async_clients() as (first, second):
+        clients = (first, second)
+        headers = []
+        for client, email in zip(clients, waiter_emails, strict=True):
+            login = await client.post(
+                "/api/v1/auth/login", json={"email": email, "password": ACTOR_PASSWORD}
+            )
+            assert login.status_code == 200
+            headers.append({"Authorization": "Bearer " + login.json()["access_token"]})
+        try:
+            async with database.transaction():
+                await database.fetchval(
+                    "SELECT id FROM public.products WHERE id=$1 FOR SHARE", product_id
+                )
+                barrier_xid = str(await database.fetchval("SELECT pg_current_xact_id()::xid"))
+                tasks = [
+                    asyncio.create_task(
+                        client.post(
+                            "/api/v1/orders/waiter",
+                            json={
+                                "table_id": str(table_id),
+                                "items": [{"product_id": str(product_id), "quantity": 1}],
+                            },
+                            headers={**auth, "Idempotency-Key": f"waiter-race-{index}"},
+                        )
+                    )
+                    for index, (client, table_id, auth) in enumerate(
+                        zip(clients, table_ids, headers, strict=True)
+                    )
+                ]
+
+                async def both_wait_on_barrier() -> None:
+                    while True:
+                        waits = await database.fetchrow(
+                            "SELECT count(*) AS total, "
+                            "count(*) FILTER (WHERE transactionid::text=$1) AS on_barrier "
+                            "FROM pg_locks WHERE NOT granted "
+                            "AND ((locktype='transactionid' AND transactionid::text=$1) "
+                            "OR (locktype='tuple' AND relation='public.products'::regclass)) "
+                            "AND pid<>pg_backend_pid()",
+                            barrier_xid,
+                        )
+                        if waits is not None and waits["total"] >= 2 and waits["on_barrier"] >= 1:
+                            return
+                        if any(task.done() for task in tasks):
+                            pytest.fail(
+                                "A waiter request finished before both product locks waited"
+                            )
+                        await asyncio.sleep(0.05)
+
+                try:
+                    await asyncio.wait_for(both_wait_on_barrier(), timeout=8)
+                except TimeoutError:
+                    locks = await database.fetch(
+                        "SELECT locktype,mode,transactionid::text,pid FROM pg_locks "
+                        "WHERE NOT granted"
+                    )
+                    pytest.fail(
+                        f"Product lock barrier did not form: {[tuple(row) for row in locks]}"
+                    )
+            responses = await asyncio.wait_for(asyncio.gather(*tasks), timeout=10)
+        finally:
+            for task in tasks:
+                if not task.done():
+                    task.cancel()
+            if tasks:
+                await asyncio.gather(*tasks, return_exceptions=True)
+        assert [response.status_code for response in responses] == [201, 201]
+        assert len({response.json()["id"] for response in responses}) == 2
+        assert all(response.json()["status"] == "CONFIRMED" for response in responses)
+    dsn, _ = _test_database_target()
+    third = await asyncpg.connect(dsn)
+    try:
+        async with third.transaction(isolation="repeatable_read"):
+            assert (
+                await third.fetchval(
+                    "SELECT stock_qty FROM public.products WHERE id=$1", product_id
+                )
+                == 0
+            )
+            assert await third.fetchval("SELECT count(*) FROM public.orders") == 2
+            assert await third.fetchval("SELECT count(*) FROM public.stock_movements") == 2
+            assert await third.fetchval("SELECT count(*) FROM public.kitchen_tickets") == 2
+            assert (
+                await third.fetchval(
+                    "SELECT count(*) FROM public.idempotency_requests "
+                    "WHERE operation='CONFIRM_ORDER'"
+                )
+                == 2
+            )
+            for table_id in table_ids:
+                assert await third.fetchval(
+                    "SELECT is_occupied FROM public.restaurant_tables WHERE id=$1", table_id
+                )
+    finally:
+        await third.close()

@@ -29,8 +29,8 @@ from restaurant_app.modules.m06_payments.public import SqlAlchemyAdvanceReader
 
 
 class OrderProductReader:
-    def __init__(self, session: AsyncSession) -> None:
-        self._products = ProductQuoteReader(session)
+    def __init__(self, session: AsyncSession, *, lock_for_update: bool = False) -> None:
+        self._products = ProductQuoteReader(session, lock_for_update=lock_for_update)
 
     async def get_product(self, product_id: UUID) -> ProductQuote | None:
         product = await self._products.get_product(product_id)
@@ -77,10 +77,12 @@ class OrderTableOccupancy:
         return TableAvailability(table.id, table.is_occupied, table.occupancy_started_at)
 
 
-def create_order_handler(session: AsyncSession) -> CreateOrder:
+def create_order_handler(
+    session: AsyncSession, *, lock_products_for_update: bool = False
+) -> CreateOrder:
     return CreateOrder(
         SqlAlchemyOrderRepository(session),
-        OrderProductReader(session),
+        OrderProductReader(session, lock_for_update=lock_products_for_update),
         OrderTableReader(session),
         OrderTableOccupancy(session),
     )
@@ -97,7 +99,12 @@ def confirm_order_handler(session: AsyncSession) -> ConfirmOrder:
 
 
 def create_waiter_order_handler(session: AsyncSession) -> CreateWaiterOrder:
-    return CreateWaiterOrder(create_order_handler(session), confirm_order_handler(session))
+    # A direct waiter order confirms in this UoW: take UPDATE locks before quoting,
+    # never acquire a shared product lock that must later be upgraded by M02.
+    return CreateWaiterOrder(
+        create_order_handler(session, lock_products_for_update=True),
+        confirm_order_handler(session),
+    )
 
 
 async def require_order_admin(principal: CurrentPrincipal) -> Principal:
