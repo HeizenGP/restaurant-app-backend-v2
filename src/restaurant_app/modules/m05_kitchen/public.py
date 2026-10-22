@@ -1,5 +1,7 @@
-"""M05 public contract for creating one ticket inside the caller's UoW."""
+"""M05 public contracts for ticket creation and preparation progress."""
 
+from dataclasses import dataclass
+from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
@@ -39,3 +41,31 @@ class SqlAlchemyTicketIssuer:
                 select(KitchenTicketModel.id).where(KitchenTicketModel.order_id == order_id)
             )
         ) is not None
+
+
+@dataclass(frozen=True, slots=True)
+class KitchenProgress:
+    status: str
+    started_at: datetime | None
+    ready_at: datetime | None
+
+
+class KitchenProgressReader(Protocol):
+    async def get_progress(self, order_id: UUID) -> KitchenProgress | None: ...
+
+
+class SqlAlchemyKitchenProgressReader:
+    """Observe committed kitchen state without exposing M05 persistence to M07."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def get_progress(self, order_id: UUID) -> KitchenProgress | None:
+        ticket = (
+            await self._session.scalars(
+                select(KitchenTicketModel).where(KitchenTicketModel.order_id == order_id)
+            )
+        ).one_or_none()
+        if ticket is None:
+            return None
+        return KitchenProgress(ticket.status, ticket.started_at, ticket.ready_at)

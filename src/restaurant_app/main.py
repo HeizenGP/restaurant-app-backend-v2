@@ -38,6 +38,12 @@ from restaurant_app.modules.m06_payments.adapters.inbound.http import (
     install_payment_error_handlers,
 )
 from restaurant_app.modules.m06_payments.adapters.inbound.http import router as advance_router
+from restaurant_app.modules.m07_fulfillment.adapters.inbound.http import (
+    install_fulfillment_error_handlers,
+)
+from restaurant_app.modules.m07_fulfillment.adapters.inbound.http import (
+    router as fulfillment_router,
+)
 
 
 class HealthChecks(BaseModel):
@@ -93,6 +99,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     install_kitchen_error_handlers(application)
     install_advance_error_handlers(application)
     install_payment_error_handlers(application)
+    install_fulfillment_error_handlers(application)
     application.include_router(access_router, prefix=app_settings.api_v1_prefix)
     application.include_router(catalog_router, prefix=app_settings.api_v1_prefix)
     application.include_router(table_router, prefix=app_settings.api_v1_prefix)
@@ -100,6 +107,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(kitchen_router, prefix=app_settings.api_v1_prefix)
     application.include_router(advance_router, prefix=app_settings.api_v1_prefix)
     application.include_router(collection_router, prefix=app_settings.api_v1_prefix)
+    application.include_router(fulfillment_router, prefix=app_settings.api_v1_prefix)
 
     if app_settings.cors_origins:
         application.add_middleware(

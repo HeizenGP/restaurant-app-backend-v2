@@ -6,17 +6,21 @@ The caller supplies its shared transaction and decides whether to lock the order
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import datetime
 from decimal import Decimal
 from typing import Protocol
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from restaurant_app.modules.m01_access.public import Principal
 from restaurant_app.modules.m04_orders.adapters.outbound.models import OrderItemModel, OrderModel
 from restaurant_app.modules.m04_orders.adapters.outbound.repositories import (
     SqlAlchemyOrderRepository,
 )
+from restaurant_app.modules.m04_orders.application.use_cases.get_order import GetOrder
+from restaurant_app.modules.m04_orders.domain.errors import OrderNotFoundError
 
 
 @dataclass(frozen=True, slots=True)
@@ -148,3 +152,73 @@ class SqlAlchemyCollectionOrderReader:
             customer_user_id=order.customer_user_id,
             guest_session_id=order.guest_session_id,
         )
+
+
+@dataclass(frozen=True, slots=True)
+class OrderForFulfillment:
+    id: UUID
+    modality: str
+    status: str
+    total_amount: Decimal
+    created_at: datetime
+    closed_by_user_id: UUID | None
+    closed_at: datetime | None
+
+
+class FulfillmentOrderReader(Protocol):
+    async def get_order(
+        self, order_id: UUID, *, lock: bool = False
+    ) -> OrderForFulfillment | None: ...
+
+    async def get_visible_order(
+        self, actor: Principal, order_id: UUID
+    ) -> OrderForFulfillment | None: ...
+
+    async def close_order(self, order_id: UUID, *, actor_id: UUID) -> OrderForFulfillment: ...
+
+
+class SqlAlchemyFulfillmentOrderReader:
+    """M04-owned order snapshot and existing M04 visibility policy for M07."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+        self._orders = SqlAlchemyOrderRepository(session)
+
+    @staticmethod
+    def _snapshot(order: OrderModel) -> OrderForFulfillment:
+        return OrderForFulfillment(
+            id=order.id,
+            modality=order.modality,
+            status=order.status,
+            total_amount=order.total_amount,
+            created_at=order.created_at,
+            closed_by_user_id=order.closed_by_user_id,
+            closed_at=order.closed_at,
+        )
+
+    async def get_order(self, order_id: UUID, *, lock: bool = False) -> OrderForFulfillment | None:
+        statement = select(OrderModel).where(OrderModel.id == order_id)
+        if lock:
+            statement = statement.with_for_update()
+        order = (await self._session.scalars(statement)).one_or_none()
+        return None if order is None else self._snapshot(order)
+
+    async def get_visible_order(
+        self, actor: Principal, order_id: UUID
+    ) -> OrderForFulfillment | None:
+        try:
+            await GetOrder(self._orders)(actor=actor, order_id=order_id)
+        except OrderNotFoundError:
+            return None
+        return await self.get_order(order_id)
+
+    async def close_order(self, order_id: UUID, *, actor_id: UUID) -> OrderForFulfillment:
+        order = await self._session.get(OrderModel, order_id)
+        assert order is not None
+        order.status = "CLOSED"
+        order.closed_by_user_id = actor_id
+        order.closed_at = func.clock_timestamp()
+        order.version += 1
+        await self._session.flush()
+        await self._session.refresh(order)
+        return self._snapshot(order)
