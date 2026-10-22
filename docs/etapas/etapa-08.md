@@ -1,6 +1,6 @@
 # ETAPA 08 — Plan de implementación backend | Chifa ASIA
 
-**Estado:** EN DESARROLLO; 08.00 y 08.01 verificados técnicamente, 08.02 pendiente · **Aprobación final:** exclusiva del usuario.
+**Estado:** 08.00–08.10 verificados técnicamente en backend; ETAPA 08 pendiente de aprobación final expresa del usuario.
 
 **Rama:** `develop` · **Único repositorio editable:** `restaurant-app-backend-v2` · **Workspace compartido Codex/AGY:** `~/proyectos/restaurant-app-v2/restaurant-app-backend-v2` (`/home/heizen27/proyectos/restaurant-app-v2/restaurant-app-backend-v2`). **Frontend intocable en ETAPA 08.**  
 **Fuentes de verdad:** `AGENTS.md`, `docs/etapas/README.md`, `docs/etapas/etapa-03-requisitos.md` (40 RF / 48 CA), `etapa-03.md` (RN/RNF), `etapa-04.md` (CU), `etapa-05.md` (arquitectura), `etapa-06.md` (BD), `etapa-07.md` (infraestructura). Consultar solo fragmentos pertinentes.  
@@ -12,7 +12,7 @@ Implementar **40/40 RF** de los módulos M01–M07 como casos de uso, endpoints 
 
 **Fuera de alcance:** Flutter/UI/Figma (ETAPAS 09–10), microservicios, pasarelas reales, SUNAT, automatización WhatsApp, SMS/push externos, GPS/rutas/repartidores, inventario de ingredientes, comprobantes sin RF/CA autorizados, cambios de negocio no aprobados. No remodelar la BD aprobada por conveniencia. Migraciones incrementales solo si son imprescindibles y justificadas.
 
-**Decisiones abiertas:** RN-20 y RN-21 requieren ratificación de texto (sin deshacer lo ya exigido por RF/RNF); RNF-08 no posee cifra aprobada; autorización de **recojo, entrega delivery y cierre** de M07 sigue pendiente; emisión de comprobantes simulados no tiene RF/CA. Bloquear **solo el caso de uso afectado**, registrarlo en progreso y solicitar decisión; jamás inventarla. M07-01 (servir) sí tiene actor Mozo definido en CA aprobado.
+**Decisiones abiertas:** RN-20 y RN-21 requieren ratificación de texto (sin deshacer lo ya exigido por RF/RNF); RNF-08 no posee cifra aprobada; emisión de comprobantes simulados no tiene RF/CA. Bloquear **solo el caso de uso afectado**, registrarlo en progreso y solicitar decisión; jamás inventarla. **Permisos M07 aprobados expresamente para 08.09:** Mozo registra servido en mesa; Administrador registra recojo en tienda, entrega comercial de delivery y cierre; Super Administrador conserva acceso total. Esto no concede al Administrador permiso de Cajero ni incorpora repartidores/rutas.
 
 ## 2. Coordinación Codex + Antigravity y ahorro de tokens
 
@@ -36,7 +36,7 @@ Implementar **40/40 RF** de los módulos M01–M07 como casos de uso, endpoints 
 | **08.06 — M05 Cocina base** | **AGY / Codex** | **RF-M05-02…04**: lectura de contenido por comanda, RECEIVED → PREPARING → READY, declaración manual de todos los ítems preparados | Cocina únicamente con permiso; **M05-01 queda pendiente de 08.07** |
 | **08.07 — Confirmación transversal** | **Codex / AGY** | **RF-M04-03,09 + RF-M02-05,06 + RF-M05-01**. Integrar M04 ↔ M02 ↔ M06 ↔ M05 con **una UoW SQLAlchemy** y puertos públicos | Confirmar local Mozo directo, app local tras verificación, pickup/delivery con anticipo previo; comanda única, stock exacto, rollback, concurrencia/idempotencia probadas |
 | **08.08 — M06 Caja/cobros** | **AGY / Codex** | **RF-M06-01,05,06**: cobros parciales/último saldo, consulta por pedido, múltiples pagos, no sobrepago; medios simulados | Solo Cajero/Superadmin o rol Cajero acumulado; probar dos pagos simultáneos e idempotencia; bloquear cierre con deuda |
-| **08.09 — M07 Cumplimiento/cierre** | **Codex / AGY** | **RF-M07-01…04 + RF-M04-10**: servido, recojo, entrega comercial, cierre, seguimiento compuesto | Mesa/recogida/delivery según modalidad; `READY` y saldo cero; **roles M07 abiertos requieren decisión previa**, no inventarlos |
+| **08.09 — M07 Cumplimiento/cierre** | **Codex / AGY** | **RF-M07-01…04 + RF-M04-10**: servido, recojo, entrega comercial, cierre, seguimiento compuesto | Mesa/recogida/delivery según modalidad; `READY` y saldo cero; permisos M07 aprobados y registrados en §1 |
 | **08.10 — Cierre integral** | **AGY / Codex** | Trazabilidad **40 RF / 48 CA**, respuestas HTTP, OpenAPI, auditoría, pruebas negativas, carrera concurrencial, revisión de seguridad | Sin RF pendiente oculto; reporte veraz de pruebas y bloqueos; **solicitar aprobación al usuario** |
 
 > **Conteo sin duplicados:** M01 5 (08.01), M02 4+2 (08.02/08.07), M03 4 (08.03), M04 8+2+1 (08.04/08.07/08.09), M05 3+1 (08.06/08.07), M06 3+3 (08.05/08.08), M07 4 (08.09) = **40 RF**. Los CA se leen **por identificador** desde ETAPA 03. Una fila de esta tabla expresa asignación, nunca aprobación ni prueba ejecutada.

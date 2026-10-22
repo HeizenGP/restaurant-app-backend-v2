@@ -2,9 +2,9 @@
 
 ## Estado y autoridad
 
-- **ETAPAS 00–03 aprobadas (2026-10-13) y ETAPA 04 aprobada expresamente por el usuario (2026-10-20), con comprobaciones técnicas pendientes. ETAPA 05 aprobada expresamente (2026-10-20). ETAPA 06 aprobada expresamente como diseño documental (2026-10-21), con decisiones de negocio abiertas. ETAPA 07 APROBADA expresamente por el usuario (2026-10-21); ETAPA 08 EN DESARROLLO: 08.00 y 08.01 verificados técnicamente, 08.02 pendiente.** La ETAPA 08 completa no está aprobada; no aprobar etapas por inferencia.
+- **ETAPAS 00–03 aprobadas (2026-10-13) y ETAPA 04 aprobada expresamente por el usuario (2026-10-20), con comprobaciones técnicas pendientes. ETAPA 05 aprobada expresamente (2026-10-20). ETAPA 06 aprobada expresamente como diseño documental (2026-10-21), con decisiones de negocio abiertas. ETAPA 07 APROBADA expresamente por el usuario (2026-10-21); ETAPA 08 EN DESARROLLO: bloques 08.00–08.10 verificados técnicamente, pendientes de aprobación final del usuario.** No aprobar etapas por inferencia.
 - Índice oficial: `docs/etapas/README.md`. Trabajo actual: `docs/etapas/etapa-08.md`; continuidad: `docs/etapas/etapa-08-progreso.md`.
-- Las ETAPAS 01–03 prevalecen como línea base de negocio y requisitos. ETAPA 04 es línea base documental de casos de uso aprobada, pero no resuelve por sí sola RN-20/RN-21, RNF-08, responsables de M07 ni comprobantes.
+- Las ETAPAS 01–03 prevalecen como línea base de negocio y requisitos. ETAPA 04 es línea base documental de casos de uso aprobada, pero no resuelve por sí sola RN-20/RN-21, RNF-08 ni comprobantes. Los permisos operativos M07 fueron aprobados expresamente por el usuario para 08.09: Mozo sirve; Administrador registra recojo, entrega y cierre; Super Administrador conserva acceso total (ver bitácora 08).
 
 ## Carga selectiva
 
