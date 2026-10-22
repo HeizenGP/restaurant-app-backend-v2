@@ -11,12 +11,12 @@ from restaurant_app.modules.m06_payments.application.ports.collection_repository
     CollectionRepository,
 )
 from restaurant_app.modules.m06_payments.domain.entities import PaymentSummary
-from restaurant_app.modules.m06_payments.domain.payment_methods import validate_collection_method
 from restaurant_app.modules.m06_payments.domain.errors import (
     InvalidPaymentRequestError,
     PaymentConflictError,
     PaymentNotFoundError,
 )
+from restaurant_app.modules.m06_payments.domain.payment_methods import validate_collection_method
 
 
 class RecordCollection:

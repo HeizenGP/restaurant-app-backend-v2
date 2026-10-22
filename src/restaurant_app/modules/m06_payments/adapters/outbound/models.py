@@ -26,7 +26,7 @@ class PaymentModel(Base):
             "(method_code IN ('YAPE','PLIN') AND reference_code IS NOT NULL "
             "AND reference_code ~ '^9[0-9]{8}$') OR "
             "(method_code = 'TARJETA' AND reference_code IS NOT NULL "
-            "AND reference_code ~ '^[0-9]{9}$'))",
+            "AND reference_code ~ '^[0-9]{9}$')))",
             name="ck_payments_method_reference",
         ),
         CheckConstraint(

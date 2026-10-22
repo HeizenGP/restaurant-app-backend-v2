@@ -112,6 +112,7 @@ EXPECTED_COLUMNS = {
         "kind",
         "amount",
         "method_code",
+        "reference_code",
         "recorded_by_user_id",
         "recorded_at",
         "operation_request_id",

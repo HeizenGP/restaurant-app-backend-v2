@@ -83,8 +83,7 @@ async def test_reference_validation_history_and_idempotency(database: asyncpg.Co
         assert summary.json()["payment_status"] == "PAID"
         assert Decimal(summary.json()["balance"]) == Decimal("0.00")
         assert {
-            (item["method_code"], item["reference_code"])
-            for item in summary.json()["payments"]
+            (item["method_code"], item["reference_code"]) for item in summary.json()["payments"]
         } == set(cases)
     rows = await database.fetch(
         "SELECT method_code, reference_code FROM public.payments "

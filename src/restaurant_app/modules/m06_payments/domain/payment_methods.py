@@ -13,9 +13,7 @@ def validate_collection_method(
     """Validate payment method and optional non-sensitive simulated reference."""
     method = method_code.strip().upper()
     if method not in ALLOWED_METHODS:
-        raise InvalidPaymentRequestError(
-            "method_code must be EFECTIVO, YAPE, PLIN or TARJETA"
-        )
+        raise InvalidPaymentRequestError("method_code must be EFECTIVO, YAPE, PLIN or TARJETA")
     if method == "EFECTIVO":
         if reference_code is not None:
             raise InvalidPaymentRequestError("EFECTIVO does not accept reference_code")
