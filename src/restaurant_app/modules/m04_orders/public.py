@@ -22,6 +22,8 @@ class OrderForAdvance:
     modality: str
     status: str
     total_amount: Decimal
+    customer_user_id: UUID | None
+    guest_session_id: UUID | None
 
 
 class AdvanceOrderReader(Protocol):
@@ -41,4 +43,6 @@ class SqlAlchemyAdvanceOrderReader:
             modality=order.modality.value,
             status=order.status,
             total_amount=order.total_amount,
+            customer_user_id=order.customer_user_id,
+            guest_session_id=order.guest_session_id,
         )

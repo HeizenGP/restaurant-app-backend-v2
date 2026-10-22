@@ -1,1 +1,5 @@
-"""M06 payments outbound adapters."""
+"""M06 outbound persistence."""
+
+from .repositories import SqlAlchemyAdvanceRepository
+
+__all__ = ["SqlAlchemyAdvanceRepository"]

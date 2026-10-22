@@ -1,1 +1,41 @@
-"""Stable public contracts for M06 payments; functional contracts begin in ETAPA 08."""
+"""Read-only verified-advance contract for the future ConfirmOrder UoW."""
+
+from dataclasses import dataclass
+from datetime import datetime
+from decimal import Decimal
+from typing import Protocol
+from uuid import UUID
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from restaurant_app.modules.m06_payments.adapters.outbound.repositories import (
+    SqlAlchemyAdvanceRepository,
+)
+
+
+@dataclass(frozen=True, slots=True)
+class VerifiedAdvance:
+    order_id: UUID
+    amount: Decimal
+    recorded_at: datetime
+
+
+class AdvanceReader(Protocol):
+    async def get_verified_advance(self, order_id: UUID) -> VerifiedAdvance | None: ...
+
+
+class SqlAlchemyAdvanceReader:
+    """Use the caller's session; this reader never creates or repeats a payment."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._advances = SqlAlchemyAdvanceRepository(session)
+
+    async def get_verified_advance(self, order_id: UUID) -> VerifiedAdvance | None:
+        payment = await self._advances.get_advance(order_id)
+        if payment is None:
+            return None
+        return VerifiedAdvance(
+            order_id=payment.order_id,
+            amount=payment.amount,
+            recorded_at=payment.recorded_at,
+        )

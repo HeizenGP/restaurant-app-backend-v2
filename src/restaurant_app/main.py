@@ -28,6 +28,10 @@ from restaurant_app.modules.m03_tables.adapters.inbound.http import install_tabl
 from restaurant_app.modules.m03_tables.adapters.inbound.http import router as table_router
 from restaurant_app.modules.m04_orders.adapters.inbound.http import install_order_error_handlers
 from restaurant_app.modules.m04_orders.adapters.inbound.http import router as order_router
+from restaurant_app.modules.m06_payments.adapters.inbound.http import (
+    install_advance_error_handlers,
+)
+from restaurant_app.modules.m06_payments.adapters.inbound.http import router as advance_router
 
 
 class HealthChecks(BaseModel):
@@ -80,10 +84,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     install_catalog_error_handlers(application)
     install_table_error_handlers(application)
     install_order_error_handlers(application)
+    install_advance_error_handlers(application)
     application.include_router(access_router, prefix=app_settings.api_v1_prefix)
     application.include_router(catalog_router, prefix=app_settings.api_v1_prefix)
     application.include_router(table_router, prefix=app_settings.api_v1_prefix)
     application.include_router(order_router, prefix=app_settings.api_v1_prefix)
+    application.include_router(advance_router, prefix=app_settings.api_v1_prefix)
 
     if app_settings.cors_origins:
         application.add_middleware(
