@@ -50,6 +50,7 @@ class SqlAlchemyOrderRepository:
                     product_name_snapshot=row.product_name_snapshot,
                     quantity=row.quantity,
                     unit_price_snapshot=row.unit_price_snapshot,
+                    id=row.id,
                 )
                 for row in rows
             ),
@@ -255,3 +256,51 @@ class SqlAlchemyOrderRepository:
         await self._session.flush()
         await self._session.refresh(model)
         return await self._order(model)
+
+    async def find_confirmation(self, *, actor_id: UUID, key: str, fingerprint: str) -> UUID | None:
+        # The operation/key lock precedes row locks for every confirmation path.
+        lock_name = f"CONFIRM_ORDER:{actor_id}:{key}"
+        await self._session.execute(
+            select(func.pg_advisory_xact_lock(func.hashtextextended(lock_name, 0)))
+        )
+        request = (
+            await self._session.scalars(
+                select(IdempotencyRequestModel).where(
+                    IdempotencyRequestModel.actor_user_id == actor_id,
+                    IdempotencyRequestModel.operation == "CONFIRM_ORDER",
+                    IdempotencyRequestModel.request_key == key,
+                )
+            )
+        ).one_or_none()
+        if request is None:
+            return None
+        if request.request_hash != fingerprint or request.result_order_id is None:
+            raise OrderConflictError("Idempotency-Key was already used for another confirmation")
+        return request.result_order_id
+
+    async def mark_confirmed(self, order_id: UUID, *, actor_id: UUID) -> Order:
+        model = await self._session.get(OrderModel, order_id)
+        assert model is not None
+        model.status = OrderStatus.CONFIRMED.value
+        model.confirmed_by_user_id = actor_id
+        model.confirmed_at = func.clock_timestamp()
+        model.version += 1
+        await self._session.flush()
+        await self._session.refresh(model)
+        return await self._order(model)
+
+    async def record_confirmation(
+        self, *, actor_id: UUID, key: str, fingerprint: str, order_id: UUID
+    ) -> None:
+        self._session.add(
+            IdempotencyRequestModel(
+                actor_user_id=actor_id,
+                operation="CONFIRM_ORDER",
+                request_key=key,
+                request_hash=fingerprint,
+                result_order_id=order_id,
+                completed_at=func.clock_timestamp(),
+                expires_at=func.clock_timestamp() + timedelta(hours=24),
+            )
+        )
+        await self._session.flush()

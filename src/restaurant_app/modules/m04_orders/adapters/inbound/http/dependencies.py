@@ -12,11 +12,20 @@ from restaurant_app.modules.m01_access.public import (
     Principal,
     RoleCode,
 )
-from restaurant_app.modules.m02_catalog_stock.public import ProductQuoteReader
+from restaurant_app.modules.m02_catalog_stock.public import (
+    ProductQuoteReader,
+    SqlAlchemyStockConfirmer,
+)
 from restaurant_app.modules.m03_tables.public import TableLookup, TableOccupancy
 from restaurant_app.modules.m04_orders.adapters.outbound import SqlAlchemyOrderRepository
+from restaurant_app.modules.m04_orders.application.use_cases.confirm_order import ConfirmOrder
 from restaurant_app.modules.m04_orders.application.use_cases.create_order import CreateOrder
+from restaurant_app.modules.m04_orders.application.use_cases.create_waiter_order import (
+    CreateWaiterOrder,
+)
 from restaurant_app.modules.m04_orders.domain.entities import ProductQuote, TableAvailability
+from restaurant_app.modules.m05_kitchen.public import SqlAlchemyTicketIssuer
+from restaurant_app.modules.m06_payments.public import SqlAlchemyAdvanceReader
 
 
 class OrderProductReader:
@@ -70,8 +79,25 @@ class OrderTableOccupancy:
 
 def create_order_handler(session: AsyncSession) -> CreateOrder:
     return CreateOrder(
-        SqlAlchemyOrderRepository(session), OrderProductReader(session), OrderTableReader(session)
+        SqlAlchemyOrderRepository(session),
+        OrderProductReader(session),
+        OrderTableReader(session),
+        OrderTableOccupancy(session),
     )
+
+
+def confirm_order_handler(session: AsyncSession) -> ConfirmOrder:
+    return ConfirmOrder(
+        SqlAlchemyOrderRepository(session),
+        OrderTableReader(session),
+        SqlAlchemyStockConfirmer(session),
+        SqlAlchemyAdvanceReader(session),
+        SqlAlchemyTicketIssuer(session),
+    )
+
+
+def create_waiter_order_handler(session: AsyncSession) -> CreateWaiterOrder:
+    return CreateWaiterOrder(create_order_handler(session), confirm_order_handler(session))
 
 
 async def require_order_admin(principal: CurrentPrincipal) -> Principal:
@@ -88,3 +114,11 @@ async def require_order_reviewer(principal: CurrentPrincipal) -> Principal:
 
 
 OrderReviewer = Annotated[Principal, Depends(require_order_reviewer)]
+
+
+async def require_order_waiter(principal: CurrentPrincipal) -> Principal:
+    AuthorizeRoles(RoleCode.WAITER)(principal)
+    return principal
+
+
+OrderWaiter = Annotated[Principal, Depends(require_order_waiter)]

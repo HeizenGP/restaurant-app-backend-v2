@@ -9,6 +9,7 @@ from restaurant_app.modules.m01_access.public import AuthorizeRoles, Principal, 
 from restaurant_app.modules.m04_orders.application.ports.order_repository import (
     OrderRepository,
     ProductReader,
+    TableOccupancy,
     TableReader,
 )
 from restaurant_app.modules.m04_orders.domain.entities import (
@@ -26,11 +27,16 @@ from restaurant_app.modules.m04_orders.domain.errors import (
 
 class CreateOrder:
     def __init__(
-        self, orders: OrderRepository, products: ProductReader, tables: TableReader
+        self,
+        orders: OrderRepository,
+        products: ProductReader,
+        tables: TableReader,
+        waiter_tables: TableOccupancy | None = None,
     ) -> None:
         self._orders = orders
         self._products = products
         self._tables = tables
+        self._waiter_tables = waiter_tables
         self._authorize_admin = AuthorizeRoles(RoleCode.ADMIN)
 
     async def __call__(
@@ -49,6 +55,8 @@ class CreateOrder:
         if channel is Channel.APP:
             if actor.kind.value == "USER":
                 AuthorizeRoles(RoleCode.CUSTOMER)(actor)
+        elif channel is Channel.WAITER:
+            AuthorizeRoles(RoleCode.WAITER)(actor)
         else:
             self._authorize_admin(actor)
             if channel not in {Channel.PHONE, Channel.WHATSAPP}:
@@ -64,12 +72,21 @@ class CreateOrder:
         if len({item.product_id for item in items}) != len(items):
             raise InvalidOrderError("Duplicate products must be consolidated")
         if modality is Modality.LOCAL:
-            if channel is not Channel.APP or table_id is None or delivery_address is not None:
-                raise InvalidOrderError("Local APP orders require a table and no delivery address")
+            if (
+                channel not in {Channel.APP, Channel.WAITER}
+                or table_id is None
+                or delivery_address is not None
+            ):
+                raise InvalidOrderError("Local orders require a table and no delivery address")
         elif modality is Modality.DELIVERY:
-            if table_id is not None or not delivery_address or not delivery_address.strip():
+            if (
+                channel is Channel.WAITER
+                or table_id is not None
+                or not delivery_address
+                or not delivery_address.strip()
+            ):
                 raise InvalidOrderError("Delivery requires an address and no table")
-        elif table_id is not None or delivery_address is not None:
+        elif channel is Channel.WAITER or table_id is not None or delivery_address is not None:
             raise InvalidOrderError("Pickup requires no table or delivery address")
         if modality is not Modality.LOCAL and (not contact_name or not contact_phone):
             raise InvalidOrderError("Pickup and delivery require contact name and phone")
@@ -101,19 +118,27 @@ class CreateOrder:
         if replay is not None:
             return replay
         if table_id is not None:
-            table = await self._tables.get_table(table_id)
-            if table is None:
-                raise InvalidOrderError("Table not found")
-            if table.is_occupied and (
-                table.occupancy_started_at is None
-                or not await self._orders.has_verified_active_table_order(
-                    table_id=table_id,
-                    occupied_since=table.occupancy_started_at,
-                    customer_user_id=actor.user_id,
-                    guest_session_id=actor.session_id if actor.user_id is None else None,
-                )
-            ):
-                raise InvalidOrderError("The selected table is occupied")
+            if channel is Channel.WAITER:
+                assert self._waiter_tables is not None and actor.user_id is not None
+                table = await self._waiter_tables.lock_table(table_id)
+                if table is None:
+                    raise InvalidOrderError("Table not found")
+                if not table.is_occupied:
+                    await self._waiter_tables.occupy(table_id, actor_id=actor.user_id)
+            else:
+                table = await self._tables.get_table(table_id)
+                if table is None:
+                    raise InvalidOrderError("Table not found")
+                if table.is_occupied and (
+                    table.occupancy_started_at is None
+                    or not await self._orders.has_verified_active_table_order(
+                        table_id=table_id,
+                        occupied_since=table.occupancy_started_at,
+                        customer_user_id=actor.user_id,
+                        guest_session_id=actor.session_id if actor.user_id is None else None,
+                    )
+                ):
+                    raise InvalidOrderError("The selected table is occupied")
         lines: list[OrderLine] = []
         total = Decimal("0.00")
         for item in sorted(items, key=lambda line: line.product_id):

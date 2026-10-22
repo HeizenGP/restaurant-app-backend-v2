@@ -15,6 +15,7 @@ class Modality(StrEnum):
 
 class Channel(StrEnum):
     APP = "APP"
+    WAITER = "WAITER"
     PHONE = "PHONE"
     WHATSAPP = "WHATSAPP"
 
@@ -23,6 +24,7 @@ class OrderStatus(StrEnum):
     REQUESTED = "REQUESTED"
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
+    CONFIRMED = "CONFIRMED"
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,6 +54,7 @@ class OrderLine:
     product_name_snapshot: str
     quantity: int
     unit_price_snapshot: Decimal
+    id: UUID | None = None
 
 
 @dataclass(frozen=True, slots=True)

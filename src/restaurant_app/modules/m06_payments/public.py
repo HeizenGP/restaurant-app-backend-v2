@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from restaurant_app.modules.m06_payments.adapters.outbound.repositories import (
     SqlAlchemyAdvanceRepository,
 )
+from restaurant_app.modules.m06_payments.domain.entities import required_advance
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,3 +40,9 @@ class SqlAlchemyAdvanceReader:
             amount=payment.amount,
             recorded_at=payment.recorded_at,
         )
+
+
+def required_advance_amount(total_amount: Decimal) -> Decimal:
+    """The approved 50% rule, exported without exposing M06 internals."""
+
+    return required_advance(total_amount)

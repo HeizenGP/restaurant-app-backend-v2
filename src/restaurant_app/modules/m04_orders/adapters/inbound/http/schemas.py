@@ -41,6 +41,11 @@ class ManualOrderCreateRequest(OrderCreateRequest):
     channel: Literal[Channel.PHONE, Channel.WHATSAPP]
 
 
+class WaiterOrderCreateRequest(StrictRequest):
+    table_id: UUID
+    items: list[ItemRequest] = Field(min_length=1, max_length=100)
+
+
 class DecisionRequest(StrictRequest):
     approved: bool
     table_verified: bool = False

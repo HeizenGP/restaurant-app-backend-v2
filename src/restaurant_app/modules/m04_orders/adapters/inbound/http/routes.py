@@ -1,4 +1,4 @@
-"""M04 registration, review and ownership reads; no confirmation routes."""
+"""M04 registration, review, confirmation and ownership reads."""
 
 from typing import Annotated
 from uuid import UUID
@@ -11,13 +11,17 @@ from restaurant_app.modules.m04_orders.adapters.inbound.http.dependencies import
     OrderAdmin,
     OrderReviewer,
     OrderTableOccupancy,
+    OrderWaiter,
+    confirm_order_handler,
     create_order_handler,
+    create_waiter_order_handler,
 )
 from restaurant_app.modules.m04_orders.adapters.inbound.http.schemas import (
     DecisionRequest,
     ManualOrderCreateRequest,
     OrderCreateRequest,
     OrderResponse,
+    WaiterOrderCreateRequest,
 )
 from restaurant_app.modules.m04_orders.adapters.outbound import SqlAlchemyOrderRepository
 from restaurant_app.modules.m04_orders.application.use_cases.decide_order import DecideOrder
@@ -70,6 +74,22 @@ async def create_manual_request(
     return OrderResponse.from_domain(order)
 
 
+@router.post("/waiter", response_model=OrderResponse, status_code=status.HTTP_201_CREATED)
+async def create_waiter_order(
+    payload: WaiterOrderCreateRequest,
+    request_key: RequestKey,
+    actor: OrderWaiter,
+    session: DatabaseSession,
+) -> OrderResponse:
+    order = await create_waiter_order_handler(session)(
+        actor=actor,
+        request_key=request_key,
+        table_id=payload.table_id,
+        items=tuple(item.to_domain() for item in payload.items),
+    )
+    return OrderResponse.from_domain(order)
+
+
 @router.get("", response_model=list[OrderResponse])
 async def list_requests(actor: CurrentPrincipal, session: DatabaseSession) -> list[OrderResponse]:
     orders = await ListOrders(SqlAlchemyOrderRepository(session))(actor=actor)
@@ -96,5 +116,18 @@ async def decide_request(
         order_id=order_id,
         approved=payload.approved,
         table_verified=payload.table_verified,
+    )
+    return OrderResponse.from_domain(order)
+
+
+@router.post("/{order_id}/confirm", response_model=OrderResponse)
+async def confirm_request(
+    order_id: UUID,
+    request_key: RequestKey,
+    actor: OrderReviewer,
+    session: DatabaseSession,
+) -> OrderResponse:
+    order = await confirm_order_handler(session)(
+        actor=actor, order_id=order_id, request_key=request_key
     )
     return OrderResponse.from_domain(order)
