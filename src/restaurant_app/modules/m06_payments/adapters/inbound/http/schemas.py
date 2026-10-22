@@ -51,6 +51,7 @@ class RecordCollectionRequest(BaseModel):
 
     amount: Decimal
     method_code: str
+    reference_code: str | None = None
 
 
 class PaymentItemResponse(BaseModel):
@@ -60,6 +61,7 @@ class PaymentItemResponse(BaseModel):
     kind: str
     amount: Decimal
     method_code: str | None
+    reference_code: str | None
     recorded_by_user_id: UUID
     recorded_at: datetime
 
@@ -86,6 +88,7 @@ class PaymentSummaryResponse(BaseModel):
                         kind="COLLECTION",
                         amount=p.amount,
                         method_code=p.method_code,
+                        reference_code=p.reference_code,
                         recorded_by_user_id=p.recorded_by_user_id,
                         recorded_at=p.recorded_at,
                     )
@@ -97,6 +100,7 @@ class PaymentSummaryResponse(BaseModel):
                         kind="ADVANCE",
                         amount=p.amount,
                         method_code=None,
+                        reference_code=None,
                         recorded_by_user_id=p.recorded_by_user_id,
                         recorded_at=p.recorded_at,
                     )

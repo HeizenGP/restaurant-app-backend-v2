@@ -11,6 +11,7 @@ from restaurant_app.modules.m06_payments.application.ports.collection_repository
     CollectionRepository,
 )
 from restaurant_app.modules.m06_payments.domain.entities import PaymentSummary
+from restaurant_app.modules.m06_payments.domain.payment_methods import validate_collection_method
 from restaurant_app.modules.m06_payments.domain.errors import (
     InvalidPaymentRequestError,
     PaymentConflictError,
@@ -40,22 +41,22 @@ class RecordCollection:
         amount: Decimal,
         method_code: str,
         request_key: str,
+        reference_code: str | None = None,
     ) -> PaymentSummary:
         self._authorize(actor)
         assert actor.user_id is not None
 
         if not 1 <= len(request_key) <= 128 or not request_key.strip():
             raise InvalidPaymentRequestError("Idempotency-Key must contain 1 to 128 characters")
-        method = method_code.strip()
-        # The approved schema has no fixed catalog of simulated methods.
-        if not 1 <= len(method) <= 24 or not method.isprintable():
-            raise InvalidPaymentRequestError("method_code must be printable and 1 to 24 characters")
+        method, reference = validate_collection_method(method_code, reference_code)
         if not amount.is_finite() or amount <= 0 or amount > Decimal("9999999999.99"):
             raise InvalidPaymentRequestError("amount must be a positive PEN amount")
         cents = amount.quantize(Decimal("0.01"))
         if amount != cents:
             raise InvalidPaymentRequestError("amount must have at most two decimal places")
-        fingerprint = hashlib.sha256(f"{order_id}:{cents:.2f}:{method}".encode()).hexdigest()
+        fingerprint = hashlib.sha256(
+            f"{order_id}:{cents:.2f}:{method}:{reference or ''}".encode()
+        ).hexdigest()
 
         replay_order_id = await self._payments.find_request(
             actor_id=actor.user_id, key=request_key, fingerprint=fingerprint
@@ -91,6 +92,7 @@ class RecordCollection:
             order_id=order_id,
             amount=cents,
             method_code=method,
+            reference_code=reference,
         )
         return await self._build_summary(order_id)
 

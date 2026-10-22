@@ -80,6 +80,7 @@ class SqlAlchemyCollectionRepository:
                         order_id=m.order_id,
                         amount=m.amount,
                         method_code=m.method_code,
+                        reference_code=m.reference_code,
                         recorded_by_user_id=m.recorded_by_user_id,
                         recorded_at=m.recorded_at,
                     )
@@ -104,6 +105,7 @@ class SqlAlchemyCollectionRepository:
         order_id: UUID,
         amount: Decimal,
         method_code: str,
+        reference_code: str | None,
     ) -> CollectionPayment:
         """Insert a new COLLECTION payment and its idempotency record."""
         request = IdempotencyRequestModel(
@@ -121,6 +123,7 @@ class SqlAlchemyCollectionRepository:
             kind="COLLECTION",
             amount=amount,
             method_code=method_code,
+            reference_code=reference_code,
             recorded_by_user_id=actor_id,
             operation_request_id=request.id,
         )
@@ -137,6 +140,7 @@ class SqlAlchemyCollectionRepository:
             order_id=payment.order_id,
             amount=payment.amount,
             method_code=payment.method_code or method_code,
+            reference_code=payment.reference_code,
             recorded_by_user_id=payment.recorded_by_user_id,
             recorded_at=payment.recorded_at,
         )

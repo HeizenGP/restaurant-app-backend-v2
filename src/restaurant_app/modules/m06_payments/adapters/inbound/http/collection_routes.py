@@ -39,6 +39,7 @@ async def record_payment(
         order_id=order_id,
         amount=body.amount,
         method_code=body.method_code,
+        reference_code=body.reference_code,
         request_key=request_key,
     )
     return PaymentSummaryResponse.from_domain(summary)

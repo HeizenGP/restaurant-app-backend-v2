@@ -20,6 +20,16 @@ class PaymentModel(Base):
         CheckConstraint("kind IN ('ADVANCE','COLLECTION')", name="ck_payments_kind"),
         CheckConstraint("amount > 0", name="ck_payments_amount_positive"),
         CheckConstraint(
+            "(kind = 'ADVANCE' AND reference_code IS NULL) OR "
+            "(kind = 'COLLECTION' AND method_code IS NOT NULL AND ("
+            "(method_code = 'EFECTIVO' AND reference_code IS NULL) OR "
+            "(method_code IN ('YAPE','PLIN') AND reference_code IS NOT NULL "
+            "AND reference_code ~ '^9[0-9]{8}$') OR "
+            "(method_code = 'TARJETA' AND reference_code IS NOT NULL "
+            "AND reference_code ~ '^[0-9]{9}$'))",
+            name="ck_payments_method_reference",
+        ),
+        CheckConstraint(
             "refund_decision IS NULL OR refund_decision IN ('APPROVED','DENIED')",
             name="ck_payments_refund_decision",
         ),
@@ -46,6 +56,7 @@ class PaymentModel(Base):
     kind: Mapped[str] = mapped_column(String(12), nullable=False)
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     method_code: Mapped[str | None] = mapped_column(String(24), nullable=True)
+    reference_code: Mapped[str | None] = mapped_column(String(9), nullable=True)
     recorded_by_user_id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
         ForeignKey("public.users.id", ondelete="RESTRICT"),

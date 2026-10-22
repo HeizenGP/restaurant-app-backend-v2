@@ -109,7 +109,7 @@ async def test_local_cashier_partial_final_replay_permissions_and_balance(
         )
         final = client.post(
             path,
-            json={"amount": "7.00", "method_code": "SIMULADO"},
+            json={"amount": "7.00", "method_code": "EFECTIVO"},
             headers={**cashier, "Idempotency-Key": "cashier-final"},
         )
         assert final.status_code == 200, final.text

@@ -106,7 +106,7 @@ MUTABLE_TABLES = (
 )
 
 DISPOSABLE_DATABASE_NAME = re.compile(r"^[a-z0-9][a-z0-9_]*(?:_test|_stage07)$")
-ALEMBIC_HEAD = "20261021_0003"
+ALEMBIC_HEAD = "20261022_0004"
 
 
 def _test_database_target() -> tuple[str, str]:
@@ -611,7 +611,7 @@ async def test_advance_rounds_up_to_exactly_half_and_payment_history_is_immutabl
                 recorded_by_user_id,
                 operation_request_id
             )
-            VALUES ($1, 'COLLECTION', 5.00, 'CASH', $2, $3)
+            VALUES ($1, 'COLLECTION', 5.00, 'EFECTIVO', $2, $3)
             """,
             order_id,
             actor_id,
@@ -650,7 +650,7 @@ async def test_advance_rounds_up_to_exactly_half_and_payment_history_is_immutabl
                 recorded_by_user_id,
                 operation_request_id
             )
-            VALUES ($1, 'COLLECTION', 5.01, 'CASH', $2, $3)
+            VALUES ($1, 'COLLECTION', 5.01, 'EFECTIVO', $2, $3)
             """,
             order_id,
             actor_id,

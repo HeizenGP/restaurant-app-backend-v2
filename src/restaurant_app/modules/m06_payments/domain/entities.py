@@ -52,6 +52,7 @@ class CollectionPayment:
     method_code: str | None
     recorded_by_user_id: UUID
     recorded_at: datetime
+    reference_code: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

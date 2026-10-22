@@ -41,4 +41,5 @@ class CollectionRepository(Protocol):
         order_id: UUID,
         amount: Decimal,
         method_code: str,
+        reference_code: str | None,
     ) -> CollectionPayment: ...

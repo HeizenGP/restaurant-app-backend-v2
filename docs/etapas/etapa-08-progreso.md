@@ -24,6 +24,12 @@ Estados permitidos: `PENDIENTE`, `EN CURSO`, `BLOQUEADO`, `IMPLEMENTADO SIN VERI
 
 ## 2. Último punto de control (actualizar SIEMPRE)
 
+### Ampliación de 08.08 — Métodos de pago simulados (publicada; pruebas PostgreSQL pendientes)
+
+- Catálogo cerrado: EFECTIVO (sin referencia), YAPE y PLIN (celular peruano de 9 dígitos que comienza en 9), TARJETA (código **simulado** de operación de 9 dígitos; nunca PAN, CVV ni vencimiento).
+- Nuevo campo `payments.reference_code` y revisión Alembic `20261022_0004`. CHECK `NOT VALID` conserva cobros históricos sin validar pero protege nuevas escrituras. Referencia persistida en historial e incluida en idempotencia. Pruebas unitarias e integración añadidas; se actualizó la revisión de la base descartable.
+- **Verificación pendiente en WSL2:** ejecutar `alembic upgrade head` en una BD **de prueba**, luego pruebas completas y `ruff`/`mypy`/`alembic check`. No declarar 08.08 ampliado como verificado hasta obtener resultados. Sin cambios en frontend ni entrega M07.
+
 ### Cierre técnico de 08.08 — M06 Caja y cobros
 
 - **Estado real y alcance:** 2026-10-22, workspace backend compartido `/home/heizen27/proyectos/restaurant-app-v2/restaurant-app-backend-v2`, rama `develop`, HEAD inicial/final `62e6e3f8dfeaebee47a5edd06306311bdb434d40`; el trabajo de Caja ya estaba parcialmente en archivos locales sin commit cuando se retomó, sin pruebas ni rutas registradas. Se verificaron código/Git, `AGENTS.md`, Skill `restaurant-fastapi-slice`, plan/bitácora, RF-M06-01/05/06 y CA, RN-17 y los contratos de ETAPAS 05/06. Se continuó ese trabajo en el mismo workspace, sin repetir 08.00–08.07, frontend, commits ni push. La Skill guio el slice de dominio/puertos/casos de uso/adaptadores, guards en HTTP y handler y contratos públicos entre módulos.
