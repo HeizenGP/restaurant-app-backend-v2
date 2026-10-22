@@ -64,7 +64,11 @@ def order(*, modality: Modality = Modality.LOCAL, status: str = "REQUESTED") -> 
 
 @pytest.mark.asyncio
 async def test_create_app_guest_snapshots_total_and_rejects_disabled() -> None:
-    orders = SimpleNamespace(find_request=AsyncMock(return_value=None), create_order=AsyncMock())
+    orders = SimpleNamespace(
+        find_request=AsyncMock(return_value=None),
+        has_verified_active_table_order=AsyncMock(return_value=False),
+        create_order=AsyncMock(),
+    )
     product_id = uuid4()
     products = SimpleNamespace(
         get_product=AsyncMock(
@@ -96,7 +100,8 @@ async def test_create_app_guest_snapshots_total_and_rejects_disabled() -> None:
     assert kwargs["customer_user_id"] is None
     assert kwargs["lines"][0].unit_price_snapshot == Decimal("12.00")
     assert kwargs["lines"][0].quantity == 2
-    tables.get_table.return_value = TableAvailability(existing.table_id, True)
+    occupied_since = datetime.now(UTC)
+    tables.get_table.return_value = TableAvailability(existing.table_id, True, occupied_since)
     with pytest.raises(InvalidOrderError):
         await handler(
             actor=guest,
@@ -109,6 +114,12 @@ async def test_create_app_guest_snapshots_total_and_rejects_disabled() -> None:
             contact_name=None,
             contact_phone=None,
         )
+    orders.has_verified_active_table_order.assert_awaited_once_with(
+        table_id=existing.table_id,
+        occupied_since=occupied_since,
+        customer_user_id=None,
+        guest_session_id=guest.session_id,
+    )
     tables.get_table.return_value = None
     with pytest.raises(InvalidOrderError):
         await handler(
@@ -131,6 +142,61 @@ async def test_create_app_guest_snapshots_total_and_rejects_disabled() -> None:
             modality=Modality.LOCAL,
             channel=Channel.APP,
             items=(RequestedItem(product_id, 2),),
+            table_id=existing.table_id,
+            delivery_address=None,
+            contact_name=None,
+            contact_phone=None,
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("guest", [False, True], ids=["registered", "guest-session"])
+async def test_occupied_table_additional_request_needs_verified_owner(guest: bool) -> None:
+    customer = principal(guest=guest) if guest else principal(RoleCode.CUSTOMER)
+    existing = order()
+    assert existing.table_id is not None
+    product_id = uuid4()
+    orders = SimpleNamespace(
+        find_request=AsyncMock(return_value=None),
+        has_verified_active_table_order=AsyncMock(return_value=True),
+        create_order=AsyncMock(return_value=existing),
+    )
+    products = SimpleNamespace(
+        get_product=AsyncMock(
+            return_value=ProductQuote(product_id, "Chaufa", Decimal("12.00"), True)
+        )
+    )
+    occupied_since = datetime.now(UTC)
+    tables = SimpleNamespace(
+        get_table=AsyncMock(return_value=TableAvailability(existing.table_id, True, occupied_since))
+    )
+    handler = CreateOrder(orders, products, tables)
+    result = await handler(
+        actor=customer,
+        request_key="extra-1",
+        modality=Modality.LOCAL,
+        channel=Channel.APP,
+        items=(RequestedItem(product_id, 1),),
+        table_id=existing.table_id,
+        delivery_address=None,
+        contact_name=None,
+        contact_phone=None,
+    )
+    assert result == existing
+    orders.has_verified_active_table_order.assert_awaited_once_with(
+        table_id=existing.table_id,
+        occupied_since=occupied_since,
+        customer_user_id=customer.user_id,
+        guest_session_id=customer.session_id if guest else None,
+    )
+    orders.has_verified_active_table_order.return_value = False
+    with pytest.raises(InvalidOrderError):
+        await handler(
+            actor=customer,
+            request_key="extra-2",
+            modality=Modality.LOCAL,
+            channel=Channel.APP,
+            items=(RequestedItem(product_id, 1),),
             table_id=existing.table_id,
             delivery_address=None,
             contact_name=None,
@@ -192,9 +258,17 @@ async def test_creation_permissions_shape_and_idempotent_replay() -> None:
 async def test_decision_requires_in_person_local_check_and_admin_for_delivery() -> None:
     local = order()
     repo = SimpleNamespace(
-        get_order=AsyncMock(return_value=local), decide_order=AsyncMock(return_value=local)
+        get_order=AsyncMock(return_value=local),
+        decide_order=AsyncMock(return_value=local),
+        has_conflicting_verified_table_owner=AsyncMock(return_value=False),
     )
-    handler = DecideOrder(repo)
+    assert local.table_id is not None
+    occupied = TableAvailability(local.table_id, True, datetime.now(UTC))
+    tables = SimpleNamespace(
+        lock_table=AsyncMock(return_value=occupied),
+        occupy=AsyncMock(return_value=occupied),
+    )
+    handler = DecideOrder(repo, tables)
     waiter = principal(RoleCode.WAITER)
     with pytest.raises(OrderConflictError):
         await handler(actor=waiter, order_id=local.id, approved=True, table_verified=False)

@@ -17,6 +17,11 @@ class RestaurantTableModel(Base):
     __tablename__ = "restaurant_tables"
     __table_args__ = (
         CheckConstraint("btrim(code) <> ''", name="ck_restaurant_tables_code_not_blank"),
+        CheckConstraint(
+            "(is_occupied AND occupancy_started_at IS NOT NULL) "
+            "OR (NOT is_occupied AND occupancy_started_at IS NULL)",
+            name="ck_restaurant_tables_occupancy_started",
+        ),
         {"schema": "public"},
     )
 
@@ -26,6 +31,9 @@ class RestaurantTableModel(Base):
     code: Mapped[str] = mapped_column(String(24), nullable=False, unique=True)
     area_label: Mapped[str | None] = mapped_column(String(80), nullable=True)
     is_occupied: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("FALSE"))
+    occupancy_started_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
     updated_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, server_default=text("CURRENT_TIMESTAMP")
     )

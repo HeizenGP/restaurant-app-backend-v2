@@ -29,6 +29,7 @@ class SqlAlchemyTableRepository:
             is_occupied=model.is_occupied,
             updated_at=model.updated_at,
             updated_by_user_id=model.updated_by_user_id,
+            occupancy_started_at=model.occupancy_started_at,
         )
 
     async def list_tables(self) -> list[RestaurantTable]:
@@ -37,13 +38,15 @@ class SqlAlchemyTableRepository:
         )
         return [self._table(row) for row in (await self._session.scalars(statement)).all()]
 
-    async def get_table(self, table_id: UUID, *, lock: bool = False) -> RestaurantTable | None:
+    async def get_table(
+        self, table_id: UUID, *, lock: bool = False, write: bool = False
+    ) -> RestaurantTable | None:
         if lock:
             model = (
                 await self._session.scalars(
                     select(RestaurantTableModel)
                     .where(RestaurantTableModel.id == table_id)
-                    .with_for_update(read=True)
+                    .with_for_update(read=not write)
                 )
             ).one_or_none()
         else:
@@ -109,6 +112,7 @@ class SqlAlchemyTableRepository:
             raise TableNotFoundError
         if model.is_occupied != is_occupied:
             model.is_occupied = is_occupied
+            model.occupancy_started_at = func.clock_timestamp() if is_occupied else None
             model.updated_at = func.clock_timestamp()
             model.updated_by_user_id = actor_id
             await self._session.flush()

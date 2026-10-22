@@ -196,7 +196,7 @@ async def test_guest_local_request_snapshot_table_approval_and_replay(
         assert approved.status_code == 200, approved.text
         assert approved.json()["status"] == "APPROVED"
         assert approved.json()["table_verified_at"] is not None
-        assert client.get("/api/v1/tables", headers=guest_headers).json()[0]["is_occupied"] is False
+        assert client.get("/api/v1/tables", headers=guest_headers).json()[0]["is_occupied"] is True
         occupied_after_approval = client.patch(
             f"/api/v1/tables/{table_id}/occupancy",
             json={"is_occupied": True},
@@ -244,6 +244,160 @@ async def test_guest_local_request_snapshot_table_approval_and_replay(
         )
         is True
     )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("guest", [False, True], ids=["registered", "guest-session"])
+async def test_additional_local_orders_require_current_verified_table_owner(
+    database: asyncpg.Connection, guest: bool
+) -> None:
+    product_id = await catalog(database)
+    _, admin_email = await actor(database, "ADMIN")
+    _, waiter_email = await actor(database, "WAITER")
+    if not guest:
+        _, customer_email = await actor(database, "CUSTOMER")
+        _, other_email = await actor(database, "CUSTOMER")
+    with api_client() as client:
+        admin = bearer(client, admin_email)
+        waiter = bearer(client, waiter_email)
+        if guest:
+            first = client.post("/api/v1/auth/guest")
+            other = client.post("/api/v1/auth/guest")
+            assert first.status_code == other.status_code == 201
+            owner = {"Authorization": "Bearer " + first.json()["access_token"]}
+            outsider = {"Authorization": "Bearer " + other.json()["access_token"]}
+        else:
+            owner = bearer(client, customer_email)
+            outsider = bearer(client, other_email)
+        table_response = client.post("/api/v1/tables", json={"code": "T-01"}, headers=admin)
+        assert table_response.status_code == 201, table_response.text
+        table_id = table_response.json()["id"]
+        payload = {
+            "modality": "LOCAL",
+            "table_id": table_id,
+            "items": [{"product_id": str(product_id), "quantity": 1}],
+        }
+        first_order = client.post(
+            "/api/v1/orders", json=payload, headers={**owner, "Idempotency-Key": "first"}
+        )
+        assert first_order.status_code == 201, first_order.text
+        assert first_order.json()["status"] == "REQUESTED"
+        assert table_response.json()["is_occupied"] is False
+        still_free = client.get("/api/v1/tables", headers=owner)
+        assert still_free.status_code == 200
+        assert still_free.json()[0]["is_occupied"] is False
+        # A QR/table ID and a pending request cannot establish ownership.
+        pending_outsider = client.post(
+            "/api/v1/orders",
+            json=payload,
+            headers={**outsider, "Idempotency-Key": "outsider-before-approval"},
+        )
+        assert pending_outsider.status_code == 201, pending_outsider.text
+        manually_occupied = client.patch(
+            f"/api/v1/tables/{table_id}/occupancy",
+            json={"is_occupied": True},
+            headers=waiter,
+        )
+        assert manually_occupied.status_code == 200, manually_occupied.text
+        assert (
+            client.post(
+                "/api/v1/orders",
+                json=payload,
+                headers={**owner, "Idempotency-Key": "pending-is-not-membership"},
+            ).status_code
+            == 422
+        )
+        unverified = client.post(
+            f"/api/v1/orders/{first_order.json()['id']}/decision",
+            json={"approved": True, "table_verified": False},
+            headers=waiter,
+        )
+        assert unverified.status_code == 409, unverified.text
+        assert client.get("/api/v1/tables", headers=owner).json()[0]["is_occupied"] is True
+        approved = client.post(
+            f"/api/v1/orders/{first_order.json()['id']}/decision",
+            json={"approved": True, "table_verified": True},
+            headers=waiter,
+        )
+        assert approved.status_code == 200, approved.text
+        assert approved.json()["status"] == "APPROVED"
+        assert client.get("/api/v1/tables", headers=owner).json()[0]["is_occupied"] is True
+        conflict = client.post(
+            f"/api/v1/orders/{pending_outsider.json()['id']}/decision",
+            json={"approved": True, "table_verified": True},
+            headers=waiter,
+        )
+        assert conflict.status_code == 409, conflict.text
+        assert (
+            client.post(
+                "/api/v1/orders",
+                json=payload,
+                headers={**outsider, "Idempotency-Key": "outsider-while-occupied"},
+            ).status_code
+            == 422
+        )
+        if not guest:
+            # A second login session of the same registered user keeps the association.
+            owner = bearer(client, customer_email)
+        additional = client.post(
+            "/api/v1/orders", json=payload, headers={**owner, "Idempotency-Key": "additional"}
+        )
+        assert additional.status_code == 201, additional.text
+        assert additional.json()["status"] == "REQUESTED"
+        assert (
+            client.post(
+                f"/api/v1/orders/{additional.json()['id']}/decision",
+                json={"approved": True, "table_verified": False},
+                headers=waiter,
+            ).status_code
+            == 409
+        )
+        verified_additional = client.post(
+            f"/api/v1/orders/{additional.json()['id']}/decision",
+            json={"approved": True, "table_verified": True},
+            headers=waiter,
+        )
+        assert verified_additional.status_code == 200, verified_additional.text
+        assert (
+            client.patch(
+                f"/api/v1/tables/{table_id}/occupancy",
+                json={"is_occupied": False},
+                headers=waiter,
+            ).status_code
+            == 403
+        )
+        released = client.patch(
+            f"/api/v1/tables/{table_id}/occupancy",
+            json={"is_occupied": False},
+            headers=admin,
+        )
+        assert released.status_code == 200, released.text
+        occupied_again = client.patch(
+            f"/api/v1/tables/{table_id}/occupancy",
+            json={"is_occupied": True},
+            headers=waiter,
+        )
+        assert occupied_again.status_code == 200, occupied_again.text
+        assert (
+            client.post(
+                "/api/v1/orders",
+                json=payload,
+                headers={**owner, "Idempotency-Key": "stale-membership"},
+            ).status_code
+            == 422
+        )
+    table_row = await database.fetchrow(
+        "SELECT is_occupied, occupancy_started_at FROM public.restaurant_tables WHERE id=$1",
+        UUID(table_id),
+    )
+    assert table_row is not None and table_row["is_occupied"] is True
+    first_verified_at = await database.fetchval(
+        "SELECT table_verified_at FROM public.orders WHERE id=$1", UUID(first_order.json()["id"])
+    )
+    assert first_verified_at is not None
+    assert table_row["occupancy_started_at"] > first_verified_at
+    assert await database.fetchval("SELECT count(*) FROM public.orders") == 3
+    assert await database.fetchval("SELECT count(*) FROM public.order_items") == 3
 
 
 @pytest.mark.asyncio
@@ -498,7 +652,9 @@ async def test_app_request_waits_for_manual_occupancy_change(
         try:
             async with database.transaction():
                 await database.execute(
-                    "UPDATE public.restaurant_tables SET is_occupied=TRUE WHERE id=$1", table_id
+                    "UPDATE public.restaurant_tables "
+                    "SET is_occupied=TRUE, occupancy_started_at=clock_timestamp() WHERE id=$1",
+                    table_id,
                 )
                 blocker_xid = await database.fetchval("SELECT pg_current_xact_id()::xid::text")
                 task = asyncio.create_task(
@@ -534,6 +690,109 @@ async def test_app_request_waits_for_manual_occupancy_change(
     assert await database.fetchval("SELECT count(*) FROM public.orders") == 0
     assert await database.fetchval("SELECT count(*) FROM public.order_items") == 0
     assert await database.fetchval("SELECT count(*) FROM public.idempotency_requests") == 0
+
+
+@pytest.mark.asyncio
+async def test_simultaneous_local_approvals_cannot_assign_two_table_owners(
+    database: asyncpg.Connection,
+) -> None:
+    product_id = await catalog(database)
+    _, first_email = await actor(database, "CUSTOMER")
+    _, second_email = await actor(database, "CUSTOMER")
+    _, waiter_email = await actor(database, "WAITER")
+    table_id = await database.fetchval(
+        "INSERT INTO public.restaurant_tables(code) VALUES($1) RETURNING id",
+        f"M-{uuid4().hex[:12]}",
+    )
+    payload = {
+        "modality": "LOCAL",
+        "table_id": str(table_id),
+        "items": [{"product_id": str(product_id), "quantity": 1}],
+    }
+    tasks: list[asyncio.Task[httpx.Response]] = []
+    async with async_api_clients() as (first_client, second_client):
+        first_login = await first_client.post(
+            "/api/v1/auth/login", json={"email": first_email, "password": ACTOR_PASSWORD}
+        )
+        second_login = await second_client.post(
+            "/api/v1/auth/login", json={"email": second_email, "password": ACTOR_PASSWORD}
+        )
+        waiter_login = await first_client.post(
+            "/api/v1/auth/login", json={"email": waiter_email, "password": ACTOR_PASSWORD}
+        )
+        assert all(
+            response.status_code == 200 for response in (first_login, second_login, waiter_login)
+        )
+        first_order = await first_client.post(
+            "/api/v1/orders",
+            json=payload,
+            headers={
+                "Authorization": "Bearer " + first_login.json()["access_token"],
+                "Idempotency-Key": "first-owner",
+            },
+        )
+        second_order = await second_client.post(
+            "/api/v1/orders",
+            json=payload,
+            headers={
+                "Authorization": "Bearer " + second_login.json()["access_token"],
+                "Idempotency-Key": "second-owner",
+            },
+        )
+        assert first_order.status_code == second_order.status_code == 201
+        waiter_headers = {"Authorization": "Bearer " + waiter_login.json()["access_token"]}
+        try:
+            async with database.transaction():
+                await database.fetchval(
+                    "SELECT id FROM public.restaurant_tables WHERE id=$1 FOR UPDATE", table_id
+                )
+                blocker_xid = await database.fetchval("SELECT pg_current_xact_id()::xid::text")
+                tasks = [
+                    asyncio.create_task(
+                        client.post(
+                            f"/api/v1/orders/{response.json()['id']}/decision",
+                            json={"approved": True, "table_verified": True},
+                            headers=waiter_headers,
+                        )
+                    )
+                    for client, response in (
+                        (first_client, first_order),
+                        (second_client, second_order),
+                    )
+                ]
+                async with asyncio.timeout(10):
+                    while True:
+                        waiting = await database.fetchval(
+                            "SELECT count(*) FROM pg_locks "
+                            "WHERE locktype='transactionid' AND NOT granted "
+                            "AND transactionid::text=$1",
+                            blocker_xid,
+                        )
+                        if waiting >= 1:
+                            break
+                        if any(task.done() for task in tasks):
+                            pytest.fail("A decision completed before the table lock barrier")
+                        await asyncio.sleep(0.05)
+            responses = await asyncio.wait_for(asyncio.gather(*tasks), timeout=10)
+        finally:
+            for task in tasks:
+                if not task.done():
+                    task.cancel()
+            if tasks:
+                await asyncio.gather(*tasks, return_exceptions=True)
+    assert sorted(response.status_code for response in responses) == [200, 409]
+    assert (
+        await database.fetchval("SELECT count(*) FROM public.orders WHERE status='APPROVED'") == 1
+    )
+    assert (
+        await database.fetchval("SELECT count(*) FROM public.orders WHERE status='REQUESTED'") == 1
+    )
+    assert (
+        await database.fetchval(
+            "SELECT is_occupied FROM public.restaurant_tables WHERE id=$1", table_id
+        )
+        is True
+    )
 
 
 @pytest.mark.asyncio

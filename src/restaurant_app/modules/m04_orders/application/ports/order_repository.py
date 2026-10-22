@@ -1,5 +1,6 @@
 """Ports consumed by request registration and decision handlers."""
 
+from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
@@ -21,8 +22,32 @@ class TableReader(Protocol):
     async def get_table(self, table_id: UUID) -> TableAvailability | None: ...
 
 
+class TableOccupancy(Protocol):
+    async def lock_table(self, table_id: UUID) -> TableAvailability | None: ...
+
+    async def occupy(self, table_id: UUID, *, actor_id: UUID) -> TableAvailability: ...
+
+
 class OrderRepository(Protocol):
     async def find_request(self, *, actor_id: UUID, key: str, fingerprint: str) -> Order | None: ...
+
+    async def has_verified_active_table_order(
+        self,
+        *,
+        table_id: UUID,
+        occupied_since: datetime,
+        customer_user_id: UUID | None,
+        guest_session_id: UUID | None,
+    ) -> bool: ...
+
+    async def has_conflicting_verified_table_owner(
+        self,
+        *,
+        table_id: UUID,
+        occupied_since: datetime,
+        customer_user_id: UUID | None,
+        guest_session_id: UUID | None,
+    ) -> bool: ...
 
     async def create_order(
         self,

@@ -10,6 +10,7 @@ from restaurant_app.modules.m01_access.public import CurrentPrincipal
 from restaurant_app.modules.m04_orders.adapters.inbound.http.dependencies import (
     OrderAdmin,
     OrderReviewer,
+    OrderTableOccupancy,
     create_order_handler,
 )
 from restaurant_app.modules.m04_orders.adapters.inbound.http.schemas import (
@@ -90,7 +91,7 @@ async def decide_request(
     actor: OrderReviewer,
     session: DatabaseSession,
 ) -> OrderResponse:
-    order = await DecideOrder(SqlAlchemyOrderRepository(session))(
+    order = await DecideOrder(SqlAlchemyOrderRepository(session), OrderTableOccupancy(session))(
         actor=actor,
         order_id=order_id,
         approved=payload.approved,

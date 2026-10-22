@@ -43,6 +43,7 @@ class ProductQuote:
 class TableAvailability:
     id: UUID
     is_occupied: bool
+    occupancy_started_at: datetime | None = None
 
 
 @dataclass(frozen=True, slots=True)

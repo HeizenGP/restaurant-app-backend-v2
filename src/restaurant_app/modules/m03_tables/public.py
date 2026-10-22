@@ -1,4 +1,4 @@
-"""Read-only table lookup exported to the local-order slice."""
+"""Public table contracts for local-order coordination in one transaction."""
 
 from uuid import UUID
 
@@ -16,3 +16,16 @@ class TableLookup:
 
     async def get_table(self, table_id: UUID, *, lock: bool = False) -> RestaurantTable | None:
         return await self._tables.get_table(table_id, lock=lock)
+
+
+class TableOccupancy:
+    """M04 may occupy a physically verified table; release remains M03 admin-only."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._tables = SqlAlchemyTableRepository(session)
+
+    async def lock_table(self, table_id: UUID) -> RestaurantTable | None:
+        return await self._tables.get_table(table_id, lock=True, write=True)
+
+    async def occupy(self, table_id: UUID, *, actor_id: UUID) -> RestaurantTable:
+        return await self._tables.set_occupancy(table_id, is_occupied=True, actor_id=actor_id)

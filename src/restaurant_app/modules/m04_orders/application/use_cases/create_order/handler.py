@@ -104,7 +104,15 @@ class CreateOrder:
             table = await self._tables.get_table(table_id)
             if table is None:
                 raise InvalidOrderError("Table not found")
-            if table.is_occupied:
+            if table.is_occupied and (
+                table.occupancy_started_at is None
+                or not await self._orders.has_verified_active_table_order(
+                    table_id=table_id,
+                    occupied_since=table.occupancy_started_at,
+                    customer_user_id=actor.user_id,
+                    guest_session_id=actor.session_id if actor.user_id is None else None,
+                )
+            ):
                 raise InvalidOrderError("The selected table is occupied")
         lines: list[OrderLine] = []
         total = Decimal("0.00")

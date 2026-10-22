@@ -13,3 +13,4 @@ class RestaurantTable:
     is_occupied: bool
     updated_at: datetime
     updated_by_user_id: UUID | None
+    occupancy_started_at: datetime | None = None

@@ -106,7 +106,7 @@ MUTABLE_TABLES = (
 )
 
 DISPOSABLE_DATABASE_NAME = re.compile(r"^[a-z0-9][a-z0-9_]*(?:_test|_stage07)$")
-ALEMBIC_HEAD = "20261021_0002"
+ALEMBIC_HEAD = "20261021_0003"
 
 
 def _test_database_target() -> tuple[str, str]:

@@ -1,6 +1,6 @@
 """One-transaction PostgreSQL persistence for M04 requests and decisions."""
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 from uuid import UUID
 
@@ -86,6 +86,64 @@ class SqlAlchemyOrderRepository:
             raise OrderConflictError("Stored request result is unavailable")
         return await self._order(model)
 
+    async def has_verified_active_table_order(
+        self,
+        *,
+        table_id: UUID,
+        occupied_since: datetime,
+        customer_user_id: UUID | None,
+        guest_session_id: UUID | None,
+    ) -> bool:
+        if (customer_user_id is None) == (guest_session_id is None):
+            return False
+        owner = (
+            OrderModel.customer_user_id == customer_user_id
+            if customer_user_id is not None
+            else OrderModel.guest_session_id == guest_session_id
+        )
+        # Only an earlier, in-person-verified APP order establishes table membership.
+        # CONFIRMED exists in the approved schema; its transition belongs to 08.07.
+        statement = (
+            select(OrderModel.id)
+            .where(
+                OrderModel.table_id == table_id,
+                OrderModel.modality == Modality.LOCAL.value,
+                OrderModel.channel == Channel.APP.value,
+                OrderModel.table_verified_at.is_not(None),
+                OrderModel.table_verified_at >= occupied_since,
+                OrderModel.status.in_((OrderStatus.APPROVED.value, "CONFIRMED")),
+                owner,
+            )
+            .limit(1)
+            .with_for_update(read=True)
+        )
+        return (await self._session.scalar(statement)) is not None
+
+    async def has_conflicting_verified_table_owner(
+        self,
+        *,
+        table_id: UUID,
+        occupied_since: datetime,
+        customer_user_id: UUID | None,
+        guest_session_id: UUID | None,
+    ) -> bool:
+        statement = (
+            select(OrderModel.customer_user_id, OrderModel.guest_session_id)
+            .where(
+                OrderModel.table_id == table_id,
+                OrderModel.modality == Modality.LOCAL.value,
+                OrderModel.channel == Channel.APP.value,
+                OrderModel.table_verified_at >= occupied_since,
+                OrderModel.status.in_((OrderStatus.APPROVED.value, "CONFIRMED")),
+            )
+            .with_for_update(read=True)
+        )
+        owners = (await self._session.execute(statement)).all()
+        return any(
+            user_id != customer_user_id or session_id != guest_session_id
+            for user_id, session_id in owners
+        )
+
     async def create_order(
         self,
         *,
@@ -155,7 +213,7 @@ class SqlAlchemyOrderRepository:
     async def get_order(self, order_id: UUID, *, lock: bool = False) -> Order | None:
         statement = select(OrderModel).where(OrderModel.id == order_id)
         if lock:
-            statement = statement.with_for_update()
+            statement = statement.with_for_update().execution_options(populate_existing=True)
         model = (await self._session.scalars(statement)).one_or_none()
         return None if model is None else await self._order(model)
 

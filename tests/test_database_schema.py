@@ -40,6 +40,7 @@ EXPECTED_COLUMNS = {
         "code",
         "area_label",
         "is_occupied",
+        "occupancy_started_at",
         "updated_at",
         "updated_by_user_id",
     },
