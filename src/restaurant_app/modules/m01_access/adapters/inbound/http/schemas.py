@@ -1,7 +1,7 @@
 """Pydantic HTTP contracts for M01; domain and application stay framework-free."""
 
 from datetime import datetime
-from typing import Self
+from typing import Any, Self
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
@@ -46,6 +46,34 @@ class RoleAssignmentRequest(StrictRequest):
     role: RoleCode
 
 
+class SavedCardInput(StrictRequest):
+    id: str = Field(min_length=1)
+    card_number_masked: str = Field(min_length=4, max_length=30)
+    card_holder: str = Field(min_length=1, max_length=120)
+    expiry: str = Field(min_length=3, max_length=10)
+    brand: str = Field(min_length=1, max_length=30)
+    document_type: str | None = Field(default=None, max_length=20)
+    document_number: str | None = Field(default=None, max_length=30)
+
+
+class SavedAddressInput(StrictRequest):
+    id: str = Field(min_length=1)
+    label: str = Field(min_length=1, max_length=50)
+    address: str = Field(min_length=1, max_length=500)
+    reference: str | None = Field(default=None, max_length=200)
+    department: str | None = Field(default=None, max_length=50)
+    recipient_phone: str | None = Field(default=None, max_length=30)
+    is_default: bool = False
+
+
+class UpdateProfileRequest(StrictRequest):
+    display_name: str | None = Field(default=None, min_length=1, max_length=120)
+    phone: str | None = Field(default=None, max_length=30)
+    avatar_url: str | None = None
+    saved_cards: list[SavedCardInput] | None = None
+    saved_addresses: list[SavedAddressInput] | None = None
+
+
 class UserResponse(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -55,6 +83,10 @@ class UserResponse(BaseModel):
     is_active: bool
     roles: list[RoleCode]
     created_at: datetime
+    phone: str | None = None
+    avatar_url: str | None = None
+    saved_cards: list[dict[str, Any]] = Field(default_factory=list)
+    saved_addresses: list[dict[str, Any]] = Field(default_factory=list)
 
     @classmethod
     def from_domain(cls, user: User) -> Self:
@@ -65,6 +97,10 @@ class UserResponse(BaseModel):
             is_active=user.is_active,
             roles=sorted(user.roles, key=str),
             created_at=user.created_at,
+            phone=user.phone,
+            avatar_url=user.avatar_url,
+            saved_cards=list(user.saved_cards),
+            saved_addresses=list(user.saved_addresses),
         )
 
 

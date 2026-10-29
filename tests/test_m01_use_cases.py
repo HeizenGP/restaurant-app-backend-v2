@@ -16,6 +16,7 @@ from restaurant_app.modules.m01_access.application.use_cases import (
     RegisterUserCommand,
     RevokeSession,
     StartGuestSession,
+    UpdateUserProfile,
 )
 from restaurant_app.modules.m01_access.domain.entities import (
     AuthSession,
@@ -104,6 +105,30 @@ class FakeUserRepository:
         if role_code in user.roles:
             raise RoleAlreadyAssignedError(str(user_id), role_code.value)
         updated = replace(user, roles=user.roles | {role_code})
+        self._entries[user.email] = (updated, self._entries[user.email][1])
+        return updated
+
+    async def update_profile(
+        self,
+        user_id: UUID,
+        *,
+        display_name: str | None = None,
+        phone: str | None = None,
+        avatar_url: str | None = None,
+        saved_cards: list[dict] | None = None,
+        saved_addresses: list[dict] | None = None,
+    ) -> User:
+        user = await self.find_by_id(user_id)
+        if user is None:
+            raise AssertionError("test target must exist")
+        updated = replace(
+            user,
+            display_name=display_name if display_name is not None else user.display_name,
+            phone=phone if phone is not None else user.phone,
+            avatar_url=avatar_url if avatar_url is not None else user.avatar_url,
+            saved_cards=tuple(saved_cards) if saved_cards is not None else user.saved_cards,
+            saved_addresses=tuple(saved_addresses) if saved_addresses is not None else user.saved_addresses,
+        )
         self._entries[user.email] = (updated, self._entries[user.email][1])
         return updated
 
@@ -468,3 +493,38 @@ async def test_assign_role_checks_handler_authorization_and_accumulates_roles() 
             user_id=target.id,
             role=RoleCode.SUPER_ADMIN,
         )
+
+
+async def test_update_user_profile_persists_phone_avatar_cards_and_addresses() -> None:
+    target = make_user()
+    users = FakeUserRepository([(target, "hash")])
+
+    updated = await UpdateUserProfile(users)(
+        user_id=target.id,
+        phone="902875868",
+        avatar_url="https://images.unsplash.com/photo-1507003211169?w=300",
+        saved_cards=[
+            {
+                "id": "card-1",
+                "card_number_masked": "•••• •••• •••• 4242",
+                "card_holder": "Heizen",
+                "expiry": "12/28",
+                "brand": "Visa",
+            }
+        ],
+        saved_addresses=[
+            {
+                "id": "addr-1",
+                "label": "Casa",
+                "address": "Av. Las Begonias 123",
+                "is_default": True,
+            }
+        ],
+    )
+
+    assert updated.phone == "902875868"
+    assert updated.avatar_url == "https://images.unsplash.com/photo-1507003211169?w=300"
+    assert len(updated.saved_cards) == 1
+    assert updated.saved_cards[0]["brand"] == "Visa"
+    assert len(updated.saved_addresses) == 1
+    assert updated.saved_addresses[0]["label"] == "Casa"

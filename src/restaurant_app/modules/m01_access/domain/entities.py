@@ -36,6 +36,10 @@ class User:
     is_active: bool
     roles: frozenset[RoleCode]
     created_at: datetime
+    phone: str | None = None
+    avatar_url: str | None = None
+    saved_cards: tuple[dict, ...] = ()
+    saved_addresses: tuple[dict, ...] = ()
 
     def has_role(self, role: RoleCode) -> bool:
         """Check role membership; Super Admin always returns True (RN-03)."""

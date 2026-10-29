@@ -25,6 +25,10 @@ CREATE TABLE public.users (
     password_hash  TEXT NOT NULL,
     is_active      BOOLEAN NOT NULL DEFAULT TRUE,
     created_at     TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    phone          VARCHAR(30),
+    avatar_url     TEXT,
+    saved_cards    JSONB NOT NULL DEFAULT '[]'::jsonb,
+    saved_addresses JSONB NOT NULL DEFAULT '[]'::jsonb,
     CONSTRAINT ck_users_display_name_not_blank CHECK (btrim(display_name) <> ''),
     CONSTRAINT ck_users_email_not_blank CHECK (btrim(email) <> ''),
     CONSTRAINT ck_users_password_hash_not_blank CHECK (btrim(password_hash) <> '')

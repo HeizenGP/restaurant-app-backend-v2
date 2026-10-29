@@ -3,7 +3,7 @@
 from datetime import timedelta
 from uuid import UUID
 
-from fastapi import APIRouter, Response, status
+from fastapi import APIRouter, HTTPException, Response, status
 
 from restaurant_app.core.dependencies import AppSettings, DatabaseSession
 from restaurant_app.modules.m01_access.adapters.inbound.http.dependencies import (
@@ -18,6 +18,7 @@ from restaurant_app.modules.m01_access.adapters.inbound.http.schemas import (
     RefreshRequest,
     RegisterRequest,
     RoleAssignmentRequest,
+    UpdateProfileRequest,
     UserResponse,
 )
 from restaurant_app.modules.m01_access.adapters.outbound import (
@@ -32,7 +33,9 @@ from restaurant_app.modules.m01_access.application.use_cases import (
     RegisterUserCommand,
     RevokeSession,
     StartGuestSession,
+    UpdateUserProfile,
 )
+from restaurant_app.modules.m01_access.domain.entities import SessionKind
 
 auth_router = APIRouter(prefix="/auth", tags=["M01 access"])
 users_router = APIRouter(prefix="/users", tags=["M01 users"])
@@ -126,6 +129,67 @@ async def revoke_session(
 ) -> Response:
     await RevokeSession(SqlAlchemySessionRepository(session))(principal)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@users_router.get(
+    "/me",
+    response_model=UserResponse,
+    summary="Get current user profile",
+)
+async def get_current_user_profile(
+    principal: CurrentPrincipal,
+    session: DatabaseSession,
+) -> UserResponse:
+    if principal.kind is not SessionKind.USER or principal.user_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Guest sessions do not have a registered profile",
+        )
+    user = await SqlAlchemyUserRepository(session).find_by_id(principal.user_id)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    return UserResponse.from_domain(user)
+
+
+@users_router.patch(
+    "/me/profile",
+    response_model=UserResponse,
+    summary="Update current user profile (photo, phone, addresses, cards)",
+)
+async def update_current_user_profile(
+    payload: UpdateProfileRequest,
+    principal: CurrentPrincipal,
+    session: DatabaseSession,
+) -> UserResponse:
+    if principal.kind is not SessionKind.USER or principal.user_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Guest sessions cannot modify profile",
+        )
+
+    saved_cards_data = (
+        [card.model_dump() for card in payload.saved_cards]
+        if payload.saved_cards is not None
+        else None
+    )
+    saved_addresses_data = (
+        [addr.model_dump() for addr in payload.saved_addresses]
+        if payload.saved_addresses is not None
+        else None
+    )
+
+    user = await UpdateUserProfile(SqlAlchemyUserRepository(session))(
+        principal.user_id,
+        display_name=payload.display_name,
+        phone=payload.phone,
+        avatar_url=payload.avatar_url,
+        saved_cards=saved_cards_data,
+        saved_addresses=saved_addresses_data,
+    )
+    return UserResponse.from_domain(user)
 
 
 @users_router.post(

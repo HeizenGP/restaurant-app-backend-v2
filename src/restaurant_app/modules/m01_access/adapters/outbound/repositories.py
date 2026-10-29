@@ -22,6 +22,7 @@ from restaurant_app.modules.m01_access.domain.entities import (
 from restaurant_app.modules.m01_access.domain.errors import (
     EmailAlreadyRegisteredError,
     RoleAlreadyAssignedError,
+    UserNotFoundError,
 )
 
 
@@ -40,6 +41,10 @@ class SqlAlchemyUserRepository:
             is_active=model.is_active,
             roles=roles,
             created_at=model.created_at,
+            phone=model.phone,
+            avatar_url=model.avatar_url,
+            saved_cards=tuple(model.saved_cards or []),
+            saved_addresses=tuple(model.saved_addresses or []),
         )
 
     async def _find_rows(
@@ -109,6 +114,39 @@ class SqlAlchemyUserRepository:
         user = await self.find_by_id(user_id)
         if user is None:  # pragma: no cover - caller verifies existence first
             raise RuntimeError("role target disappeared")
+        return user
+
+    async def update_profile(
+        self,
+        user_id: UUID,
+        *,
+        display_name: str | None = None,
+        phone: str | None = None,
+        avatar_url: str | None = None,
+        saved_cards: list[dict] | None = None,
+        saved_addresses: list[dict] | None = None,
+    ) -> User:
+        values: dict[str, object] = {}
+        if display_name is not None:
+            values["display_name"] = display_name
+        if phone is not None:
+            values["phone"] = phone
+        if avatar_url is not None:
+            values["avatar_url"] = avatar_url
+        if saved_cards is not None:
+            values["saved_cards"] = saved_cards
+        if saved_addresses is not None:
+            values["saved_addresses"] = saved_addresses
+
+        if values:
+            await self._session.execute(
+                update(UserModel).where(UserModel.id == user_id).values(**values)
+            )
+            await self._session.flush()
+
+        user = await self.find_by_id(user_id)
+        if user is None:
+            raise UserNotFoundError(str(user_id))
         return user
 
 

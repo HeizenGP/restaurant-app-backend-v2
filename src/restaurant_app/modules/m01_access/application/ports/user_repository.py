@@ -32,3 +32,16 @@ class UserRepository(Protocol):
     async def assign_role(self, user_id: UUID, role_code: RoleCode) -> User:
         """Add *role_code* and return the user with the cumulative role set."""
         ...
+
+    async def update_profile(
+        self,
+        user_id: UUID,
+        *,
+        display_name: str | None = None,
+        phone: str | None = None,
+        avatar_url: str | None = None,
+        saved_cards: list[dict] | None = None,
+        saved_addresses: list[dict] | None = None,
+    ) -> User:
+        """Update profile fields for *user_id* and return updated user."""
+        ...

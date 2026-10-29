@@ -8,6 +8,7 @@ from .refresh_session import RefreshSession
 from .register_user import RegisterUser, RegisterUserCommand
 from .revoke_session import RevokeSession
 from .start_guest_session import StartGuestSession
+from .update_profile import UpdateUserProfile
 
 __all__ = [
     "AssignUserRole",
@@ -19,4 +20,5 @@ __all__ = [
     "RegisterUserCommand",
     "RevokeSession",
     "StartGuestSession",
+    "UpdateUserProfile",
 ]
