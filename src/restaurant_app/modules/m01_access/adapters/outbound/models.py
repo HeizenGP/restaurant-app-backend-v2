@@ -1,6 +1,7 @@
 """SQLAlchemy mappings owned by M01 access."""
 
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import (
@@ -44,10 +45,10 @@ class UserModel(Base):
     )
     phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(Text, nullable=True)
-    saved_cards: Mapped[list[dict]] = mapped_column(
+    saved_cards: Mapped[list[dict[str, Any]]] = mapped_column(
         JSONB, nullable=False, server_default=text("'[]'::jsonb")
     )
-    saved_addresses: Mapped[list[dict]] = mapped_column(
+    saved_addresses: Mapped[list[dict[str, Any]]] = mapped_column(
         JSONB, nullable=False, server_default=text("'[]'::jsonb")
     )
 

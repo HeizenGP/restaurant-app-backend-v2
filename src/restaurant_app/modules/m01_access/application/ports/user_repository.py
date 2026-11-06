@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Any, Protocol
 from uuid import UUID
 
 from restaurant_app.modules.m01_access.domain.entities import RoleCode, User
@@ -40,8 +40,8 @@ class UserRepository(Protocol):
         display_name: str | None = None,
         phone: str | None = None,
         avatar_url: str | None = None,
-        saved_cards: list[dict] | None = None,
-        saved_addresses: list[dict] | None = None,
+        saved_cards: list[dict[str, Any]] | None = None,
+        saved_addresses: list[dict[str, Any]] | None = None,
     ) -> User:
         """Update profile fields for *user_id* and return updated user."""
         ...

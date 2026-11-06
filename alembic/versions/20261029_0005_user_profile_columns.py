@@ -54,4 +54,3 @@ def downgrade() -> None:
     op.drop_column("users", "saved_cards", schema="public")
     op.drop_column("users", "avatar_url", schema="public")
     op.drop_column("users", "phone", schema="public")
-

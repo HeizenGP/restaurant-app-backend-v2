@@ -127,7 +127,9 @@ class FakeUserRepository:
             phone=phone if phone is not None else user.phone,
             avatar_url=avatar_url if avatar_url is not None else user.avatar_url,
             saved_cards=tuple(saved_cards) if saved_cards is not None else user.saved_cards,
-            saved_addresses=tuple(saved_addresses) if saved_addresses is not None else user.saved_addresses,
+            saved_addresses=tuple(saved_addresses)
+            if saved_addresses is not None
+            else user.saved_addresses,
         )
         self._entries[user.email] = (updated, self._entries[user.email][1])
         return updated

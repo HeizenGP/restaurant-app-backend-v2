@@ -24,6 +24,22 @@ Estados permitidos: `PENDIENTE`, `EN CURSO`, `BLOQUEADO`, `IMPLEMENTADO SIN VERI
 
 ## 2. Último punto de control (actualizar SIEMPRE)
 
+### Carga automática y migración de productos del catálogo Chifa ASIA (Render / Alembic)
+
+- **Fecha:** 2026-11-06, workspace único backend `/home/heizen27/proyectos/restaurant-app-v2/restaurant-app-backend-v2`, rama `develop`.
+- **Requerimiento:** Asegurar que los productos del catálogo de Chifa ASIA se carguen automáticamente en Render tanto al ejecutar migraciones Alembic como al iniciar la API FastAPI en producción/despliegue.
+- **Implementación dual:**
+  1. **Migración Alembic:** `alembic/versions/20261106_0006_seed_catalog_products.py` creada sobre `20261029_0005`. Inserta 5 categorías oficiales (`Arroces y Chaufas`, `Tallarines y Saltados`, `Sopas y Entradas`, `Especialidades`, `Bebidas`) y 21 platos emblemáticos con stock inicial y disponibilidad activos. Operación 100% idempotente (`ON CONFLICT (name) DO NOTHING` y `WHERE NOT EXISTS`), con reversibilidad completa en `downgrade()`.
+  2. **Carga en Lifespan de FastAPI:** `restaurant_app.modules.m02_catalog_stock.seed.seed_initial_catalog` integrado en el `lifespan` de `src/restaurant_app/main.py`. Si Render solo ejecuta `uvicorn` sin correr `alembic upgrade head`, el hook de arranque comprueba y puebla los productos automáticamente si no existen (protegido con `try/except` para no interrumpir el arranque si la base aún no responde, e ignorado en entorno `TEST`).
+  3. **Línea base SQL:** Se incorporó el seed correspondiente en `database/schema.sql` tras la definición de productos.
+  4. **Corrección de tipos:** Se tiparon genéricos de `dict` a `dict[str, Any]` en M01 (`entities.py`, `models.py`, `user_repository.py`, `repositories.py`, `update_profile/handler.py`), resolviendo 10 errores de Mypy preexistentes.
+- **Verificación técnica:**
+  - `alembic history` → cadena limpia hasta `20261106_0006 (head)`.
+  - `ruff check src tests alembic` → **All checks passed!**
+  - `mypy src` → **Success: no issues found in 214 source files**.
+  - `pytest -v -m "not integration"` → **94 passed** (incluidas las nuevas pruebas unitarias para `seed_initial_catalog` y el hook de arranque en `lifespan`).
+- **Pendientes:** Aprobación del usuario; despliegue en Render verificado en la nube con las variables de conexión `POSTGRES_*`.
+
 ### Cierre técnico de 08.10 — Validación integral del backend
 
 - **Estado de inicio/final:** 2026-10-22, workspace único backend `/home/heizen27/proyectos/restaurant-app-v2/restaurant-app-backend-v2`, rama `develop`, HEAD `210ae896963463e60ed569f5fa53515ea6e7a708`, árbol limpio antes de editar. La cabecera previa de esta bitácora decía que 08.09 seguía sin commit en `607a705…`; Git real demuestra que 08.09 ya está incorporado en `210ae89`. Se consultaron `AGENTS.md`, índice/plan/progreso, Skill `restaurant-fastapi-slice`, los 40 RF/48 CA de ETAPA 03, RN/RNF pertinentes y contratos M01–M07. Sin frontend, ETAPA 09, commit ni push.

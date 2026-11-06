@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
+from typing import Any
 from uuid import UUID
 
 
@@ -38,8 +39,8 @@ class User:
     created_at: datetime
     phone: str | None = None
     avatar_url: str | None = None
-    saved_cards: tuple[dict, ...] = ()
-    saved_addresses: tuple[dict, ...] = ()
+    saved_cards: tuple[dict[str, Any], ...] = ()
+    saved_addresses: tuple[dict[str, Any], ...] = ()
 
     def has_role(self, role: RoleCode) -> bool:
         """Check role membership; Super Admin always returns True (RN-03)."""

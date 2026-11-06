@@ -1,6 +1,7 @@
 """SQLAlchemy Async persistence adapters for M01."""
 
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import func, select, update
@@ -123,8 +124,8 @@ class SqlAlchemyUserRepository:
         display_name: str | None = None,
         phone: str | None = None,
         avatar_url: str | None = None,
-        saved_cards: list[dict] | None = None,
-        saved_addresses: list[dict] | None = None,
+        saved_cards: list[dict[str, Any]] | None = None,
+        saved_addresses: list[dict[str, Any]] | None = None,
     ) -> User:
         values: dict[str, object] = {}
         if display_name is not None:

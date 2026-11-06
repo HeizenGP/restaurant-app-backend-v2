@@ -3,4 +3,3 @@ from restaurant_app.modules.m01_access.application.use_cases.update_profile.hand
 )
 
 __all__ = ["UpdateUserProfile"]
-

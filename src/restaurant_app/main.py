@@ -24,6 +24,7 @@ from restaurant_app.modules.m02_catalog_stock.adapters.inbound.http import (
 from restaurant_app.modules.m02_catalog_stock.adapters.inbound.http import (
     router as catalog_router,
 )
+from restaurant_app.modules.m02_catalog_stock.seed import seed_initial_catalog
 from restaurant_app.modules.m03_tables.adapters.inbound.http import install_table_error_handlers
 from restaurant_app.modules.m03_tables.adapters.inbound.http import router as table_router
 from restaurant_app.modules.m04_orders.adapters.inbound.http import install_order_error_handlers
@@ -68,7 +69,19 @@ class HealthResponse(BaseModel):
 
 @asynccontextmanager
 async def lifespan(application: FastAPI) -> AsyncIterator[None]:
-    """Release this application's technical resources on shutdown."""
+    """Execute startup hooks and release this application's technical resources on shutdown."""
+
+    settings = getattr(application.state, "settings", None)
+    environment = getattr(settings, "environment", None)
+    if environment != AppEnvironment.TEST:
+        database = getattr(application.state, "database", None)
+        if database is not None and hasattr(database, "session_factory"):
+            try:
+                await seed_initial_catalog(database.session_factory)
+            except Exception as exc:
+                logging.getLogger("restaurant_app.catalog.seed").warning(
+                    "Initial catalog seeding skipped on startup: %s", exc
+                )
 
     yield
     resources = cast(DatabaseResources, application.state.database)

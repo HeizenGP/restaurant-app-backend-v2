@@ -1,5 +1,6 @@
 """Smoke tests for the technical FastAPI endpoint."""
 
+import pytest
 from fastapi import FastAPI, status
 from fastapi.testclient import TestClient
 
@@ -86,3 +87,23 @@ def test_configured_cors_origin_is_allowed() -> None:
 
     assert response.status_code == status.HTTP_200_OK
     assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
+
+
+def test_lifespan_startup_triggers_seed_outside_test_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from unittest.mock import AsyncMock
+
+    mock_seed = AsyncMock()
+    monkeypatch.setattr("restaurant_app.main.seed_initial_catalog", mock_seed)
+
+    settings = Settings(
+        _env_file=None,
+        environment=AppEnvironment.LOCAL,
+        postgres_password="replace-this-local-password",
+    )
+    application = create_app(settings)
+    with TestClient(application):
+        pass
+
+    mock_seed.assert_awaited_once()

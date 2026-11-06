@@ -172,3 +172,22 @@ async def test_stock_and_availability_require_admin_and_preserve_actor() -> None
         )
     await SetProductAvailability(repository)(actor=admin, product_id=product_id, is_available=False)
     repository.set_availability.assert_awaited_once_with(product_id, is_available=False)
+
+
+@pytest.mark.asyncio
+async def test_seed_initial_catalog_executes_idempotent_queries() -> None:
+    from unittest.mock import MagicMock
+
+    from restaurant_app.modules.m02_catalog_stock.seed import seed_initial_catalog
+
+    mock_session = AsyncMock()
+    mock_session.begin = MagicMock()
+    mock_session.begin.return_value.__aenter__ = AsyncMock()
+    mock_session.begin.return_value.__aexit__ = AsyncMock(return_value=None)
+    mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+    mock_session.__aexit__ = AsyncMock(return_value=None)
+
+    mock_factory = MagicMock(return_value=mock_session)
+    await seed_initial_catalog(mock_factory)
+
+    assert mock_session.execute.await_count == 2

@@ -1,5 +1,6 @@
 """Update user profile information (phone, avatar, addresses, cards)."""
 
+from typing import Any
 from uuid import UUID
 
 from restaurant_app.modules.m01_access.application.ports.user_repository import UserRepository
@@ -19,8 +20,8 @@ class UpdateUserProfile:
         display_name: str | None = None,
         phone: str | None = None,
         avatar_url: str | None = None,
-        saved_cards: list[dict] | None = None,
-        saved_addresses: list[dict] | None = None,
+        saved_cards: list[dict[str, Any]] | None = None,
+        saved_addresses: list[dict[str, Any]] | None = None,
     ) -> User:
         return await self._users.update_profile(
             user_id,
@@ -30,4 +31,3 @@ class UpdateUserProfile:
             saved_cards=saved_cards,
             saved_addresses=saved_addresses,
         )
-
