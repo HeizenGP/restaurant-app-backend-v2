@@ -50,6 +50,27 @@ class InvalidTokenError(AccessError):
         super().__init__(reason)
 
 
+class ExternalAuthenticationError(AccessError):
+    """The external identity assertion is invalid or cannot be safely linked."""
+
+    def __init__(self, detail: str = "Google authentication could not be completed") -> None:
+        super().__init__(detail)
+
+
+class AuthenticationProviderUnavailableError(AccessError):
+    """An optional authentication provider is not configured."""
+
+    def __init__(self, provider: str) -> None:
+        super().__init__(f"{provider} authentication is not configured")
+
+
+class InvalidPasswordResetTokenError(AccessError):
+    """A password reset token is invalid, expired or already used."""
+
+    def __init__(self) -> None:
+        super().__init__("Invalid or expired password reset token")
+
+
 class RoleAlreadyAssignedError(AccessError):
     """The user already has the specified role."""
 

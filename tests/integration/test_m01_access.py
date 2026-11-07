@@ -50,7 +50,7 @@ def register(
     client: TestClient,
     *,
     email: str,
-    password: str = "correct-password",
+    password: str = "Correct-password1",
     name: str = "Integration Client",
 ) -> dict[str, Any]:
     response = client.post(
@@ -65,7 +65,7 @@ def login(
     client: TestClient,
     *,
     email: str,
-    password: str = "correct-password",
+    password: str = "Correct-password1",
 ) -> dict[str, Any]:
     response = client.post(
         "/api/v1/auth/login",
@@ -93,7 +93,7 @@ async def test_registration_login_refresh_and_logout_persist_only_hashes(
         )
         assert stored is not None
         assert stored["password_hash"].startswith("$argon2id$")
-        assert "correct-password" not in stored["password_hash"]
+        assert "Correct-password1" not in stored["password_hash"]
         assert stored["roles"] == ["CUSTOMER"]
         assert "password" not in user and "password_hash" not in user
 
@@ -102,7 +102,7 @@ async def test_registration_login_refresh_and_logout_persist_only_hashes(
             json={
                 "display_name": "Duplicate",
                 "email": "CLIENT@example.test",
-                "password": "another-password",
+                "password": "Another-password2",
             },
         )
         assert duplicate.status_code == 409

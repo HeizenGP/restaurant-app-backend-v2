@@ -45,6 +45,9 @@ from restaurant_app.modules.m07_fulfillment.adapters.inbound.http import (
 from restaurant_app.modules.m07_fulfillment.adapters.inbound.http import (
     router as fulfillment_router,
 )
+from restaurant_app.modules.m07_fulfillment.adapters.inbound.http.delivery_routes import (
+    delivery_router,
+)
 
 
 class HealthChecks(BaseModel):
@@ -121,6 +124,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(advance_router, prefix=app_settings.api_v1_prefix)
     application.include_router(collection_router, prefix=app_settings.api_v1_prefix)
     application.include_router(fulfillment_router, prefix=app_settings.api_v1_prefix)
+    application.include_router(delivery_router, prefix=app_settings.api_v1_prefix)
 
     if app_settings.cors_origins:
         application.add_middleware(

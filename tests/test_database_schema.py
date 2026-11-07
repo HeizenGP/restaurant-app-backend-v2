@@ -12,6 +12,7 @@ EXPECTED_COLUMNS = {
         "display_name",
         "email",
         "password_hash",
+        "google_subject",
         "is_active",
         "created_at",
         "phone",
@@ -29,6 +30,28 @@ EXPECTED_COLUMNS = {
         "created_at",
         "expires_at",
         "revoked_at",
+    },
+    "public.password_reset_tokens": {
+        "id",
+        "user_id",
+        "token_hash",
+        "created_at",
+        "expires_at",
+        "used_at",
+    },
+    "public.user_addresses": {
+        "id",
+        "user_id",
+        "label",
+        "address",
+        "department",
+        "reference",
+        "recipient_phone",
+        "latitude",
+        "longitude",
+        "is_default",
+        "created_at",
+        "updated_at",
     },
     "public.categories": {"id", "name"},
     "public.products": {
@@ -137,6 +160,9 @@ EXPECTED_INDEXES = {
     "ux_users_email_ci",
     "ix_user_roles_role_code_user_id",
     "ix_sessions_user_expiry",
+    "ix_password_reset_tokens_user_created",
+    "ix_user_addresses_user_id",
+    "ix_user_addresses_user_default",
     "ix_products_category_available",
     "ix_orders_customer_created",
     "ix_orders_guest_created",
@@ -197,7 +223,15 @@ def test_metadata_has_all_named_indexes_and_restrictive_foreign_keys() -> None:
         foreign_key for table in Base.metadata.tables.values() for foreign_key in table.foreign_keys
     ]
     assert foreign_keys
-    assert all(foreign_key.ondelete == "RESTRICT" for foreign_key in foreign_keys)
+    assert all(
+        foreign_key.ondelete == "RESTRICT"
+        or (
+            foreign_key.parent.table.name in ("password_reset_tokens", "user_addresses")
+            and foreign_key.parent.name == "user_id"
+            and foreign_key.ondelete == "CASCADE"
+        )
+        for foreign_key in foreign_keys
+    )
 
 
 def test_initial_revision_contains_all_postgresql_only_objects() -> None:

@@ -28,6 +28,7 @@ APP_TABLES = {
     "kitchen_tickets",
     "order_items",
     "orders",
+    "password_reset_tokens",
     "payments",
     "products",
     "restaurant_tables",
@@ -46,6 +47,7 @@ EXPLICIT_INDEXES = {
     "ix_orders_status_created",
     "ix_orders_table_id",
     "ix_payments_order_recorded",
+    "ix_password_reset_tokens_user_created",
     "ix_products_category_available",
     "ix_sessions_user_expiry",
     "ix_stock_movements_product_recorded",
@@ -101,12 +103,13 @@ MUTABLE_TABLES = (
     "products",
     "categories",
     "auth_sessions",
+    "password_reset_tokens",
     "user_roles",
     "users",
 )
 
 DISPOSABLE_DATABASE_NAME = re.compile(r"^[a-z0-9][a-z0-9_]*(?:_test|_stage07)$")
-ALEMBIC_HEAD = "20261106_0006"
+ALEMBIC_HEAD = "20261106_0007"
 
 
 def _test_database_target() -> tuple[str, str]:

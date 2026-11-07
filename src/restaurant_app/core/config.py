@@ -63,6 +63,16 @@ class Settings(BaseSettings):
     jwt_refresh_ttl_days: int = Field(default=7, ge=1, le=90)
     guest_session_ttl_hours: int = Field(default=24, ge=1, le=168)
 
+    google_oauth_client_id: str | None = None
+    password_reset_ttl_minutes: int = Field(default=30, ge=5, le=120)
+    password_reset_url: str = "kairo://app/recuperar-acceso"
+    smtp_host: str | None = None
+    smtp_port: int = Field(default=587, ge=1, le=65535)
+    smtp_username: str | None = None
+    smtp_password: SecretStr | None = Field(default=None, repr=False)
+    smtp_from_email: str | None = None
+    smtp_use_starttls: bool = True
+
     cors_origins: list[str] = Field(default_factory=list)
 
     @field_validator("api_v1_prefix")
@@ -115,6 +125,16 @@ class Settings(BaseSettings):
             raise ValueError("JWT issuer and audience must not be blank")
         return normalized
 
+    @field_validator("google_oauth_client_id", "smtp_host", "smtp_username", "smtp_from_email")
+    @classmethod
+    def normalize_optional_setting(cls, value: str | None) -> str | None:
+        """Treat blank optional integrations as disabled."""
+
+        if value is None:
+            return None
+        normalized = value.strip()
+        return normalized or None
+
     @field_validator("cors_origins")
     @classmethod
     def validate_cors_origins(cls, origins: list[str]) -> list[str]:
@@ -153,6 +173,18 @@ class Settings(BaseSettings):
             == "replace-this-local-jwt-secret-with-at-least-32-bytes"
         ):
             raise ValueError("replace the local JWT secret outside local/test")
+        smtp_values = (
+            self.smtp_host,
+            self.smtp_username,
+            self.smtp_password,
+            self.smtp_from_email,
+        )
+        if any(value is not None for value in smtp_values) and not all(
+            value is not None for value in smtp_values
+        ):
+            raise ValueError(
+                "SMTP_HOST, SMTP_USERNAME, SMTP_PASSWORD and SMTP_FROM_EMAIL must be set together"
+            )
         return self
 
     @property

@@ -9,9 +9,12 @@ from fastapi.responses import JSONResponse
 
 from restaurant_app.modules.m01_access.domain.errors import (
     AccessError,
+    AuthenticationProviderUnavailableError,
     AuthorizationError,
     EmailAlreadyRegisteredError,
+    ExternalAuthenticationError,
     InvalidCredentialsError,
+    InvalidPasswordResetTokenError,
     InvalidTokenError,
     RoleAlreadyAssignedError,
     SessionExpiredError,
@@ -53,6 +56,15 @@ def install_access_error_handlers(application: FastAPI) -> None:
         if isinstance(error, EmailAlreadyRegisteredError):
             status_code = status.HTTP_409_CONFLICT
             detail = "Email already registered"
+        elif isinstance(error, AuthenticationProviderUnavailableError):
+            status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+            detail = "Authentication provider is not configured"
+        elif isinstance(error, ExternalAuthenticationError):
+            status_code = status.HTTP_401_UNAUTHORIZED
+            detail = "Google authentication could not be completed"
+        elif isinstance(error, InvalidPasswordResetTokenError):
+            status_code = status.HTTP_400_BAD_REQUEST
+            detail = "Invalid or expired password reset token"
         elif isinstance(error, RoleAlreadyAssignedError):
             status_code = status.HTTP_409_CONFLICT
             detail = "Role already assigned"

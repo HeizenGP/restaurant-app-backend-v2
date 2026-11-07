@@ -3,6 +3,7 @@
 from restaurant_app.modules.m01_access.adapters.outbound.models import (
     AuthSessionModel,
     RoleModel,
+    UserAddressModel,
     UserModel,
     UserRoleModel,
 )
@@ -38,6 +39,7 @@ __all__ = [
     "RestaurantTableModel",
     "RoleModel",
     "StockMovementModel",
+    "UserAddressModel",
     "UserModel",
     "UserRoleModel",
 ]

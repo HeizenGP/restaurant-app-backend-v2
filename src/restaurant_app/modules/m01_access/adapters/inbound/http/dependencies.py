@@ -10,7 +10,9 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from restaurant_app.core.dependencies import AppSettings, DatabaseSession
 from restaurant_app.modules.m01_access.adapters.outbound import (
     Argon2PasswordHasher,
+    DisabledPasswordResetMessenger,
     JwtTokenProvider,
+    SmtpPasswordResetMessenger,
     SqlAlchemySessionRepository,
     SqlAlchemyUserRepository,
 )
@@ -40,6 +42,29 @@ def build_token_provider(settings: AppSettings) -> JwtTokenProvider:
         audience=settings.jwt_audience,
         access_ttl=timedelta(minutes=settings.jwt_access_ttl_minutes),
         refresh_ttl=timedelta(days=settings.jwt_refresh_ttl_days),
+    )
+
+
+def build_password_reset_messenger(
+    settings: AppSettings,
+) -> DisabledPasswordResetMessenger | SmtpPasswordResetMessenger:
+    """Build an SMTP adapter only when every required setting exists."""
+
+    if (
+        settings.smtp_host is None
+        or settings.smtp_username is None
+        or settings.smtp_password is None
+        or settings.smtp_from_email is None
+    ):
+        return DisabledPasswordResetMessenger()
+    return SmtpPasswordResetMessenger(
+        host=settings.smtp_host,
+        port=settings.smtp_port,
+        username=settings.smtp_username,
+        password=settings.smtp_password.get_secret_value(),
+        from_email=settings.smtp_from_email,
+        reset_url=settings.password_reset_url,
+        use_starttls=settings.smtp_use_starttls,
     )
 
 

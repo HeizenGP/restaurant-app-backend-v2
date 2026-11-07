@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from decimal import Decimal
 from enum import StrEnum
 from typing import Any
 from uuid import UUID
@@ -56,6 +57,24 @@ class User:
     def is_super_admin(self) -> bool:
         """RN-03: Super Admin has all permissions."""
         return RoleCode.SUPER_ADMIN in self.roles
+
+
+@dataclass(frozen=True, slots=True)
+class UserAddress:
+    """User delivery address with GPS coordinates and delivery reference."""
+
+    id: UUID
+    user_id: UUID
+    label: str
+    address: str
+    latitude: Decimal
+    longitude: Decimal
+    is_default: bool
+    created_at: datetime
+    updated_at: datetime
+    department: str | None = None
+    reference: str | None = None
+    recipient_phone: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

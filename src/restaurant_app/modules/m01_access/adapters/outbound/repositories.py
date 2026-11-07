@@ -4,13 +4,14 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import ColumnElement
 
 from restaurant_app.modules.m01_access.adapters.outbound.models import (
     AuthSessionModel,
+    PasswordResetTokenModel,
     UserModel,
     UserRoleModel,
 )
@@ -70,12 +71,15 @@ class SqlAlchemyUserRepository:
         roles = frozenset(RoleCode(code) for _, code in rows if code is not None)
         return self._to_user(model, roles)
 
-    async def find_by_email_with_hash(self, email: str) -> tuple[User, str] | None:
+    async def find_by_email_with_hash(self, email: str) -> tuple[User, str | None] | None:
         rows = await self._find_rows(func.lower(UserModel.email) == email.casefold())
         user = self._map_rows(rows)
         if user is None:
             return None
         return user, rows[0][0].password_hash
+
+    async def find_by_google_subject(self, subject: str) -> User | None:
+        return self._map_rows(await self._find_rows(UserModel.google_subject == subject))
 
     async def find_by_id(self, user_id: UUID) -> User | None:
         return self._map_rows(await self._find_rows(UserModel.id == user_id))
@@ -104,6 +108,44 @@ class SqlAlchemyUserRepository:
         if user is None:  # pragma: no cover - database returned an inserted row above
             raise RuntimeError("created user could not be reloaded")
         return user
+
+    async def create_from_google(
+        self,
+        *,
+        display_name: str,
+        email: str,
+        google_subject: str,
+        avatar_url: str | None,
+    ) -> User:
+        model = UserModel(
+            display_name=display_name,
+            email=email,
+            password_hash=None,
+            google_subject=google_subject,
+            avatar_url=avatar_url,
+        )
+        self._session.add(model)
+        try:
+            await self._session.flush()
+            self._session.add(UserRoleModel(user_id=model.id, role_code=RoleCode.CUSTOMER.value))
+            await self._session.flush()
+        except IntegrityError as error:
+            raise EmailAlreadyRegisteredError(email) from error
+        user = await self.find_by_id(model.id)
+        if user is None:  # pragma: no cover
+            raise RuntimeError("created Google user could not be reloaded")
+        return user
+
+    async def update_password(self, user_id: UUID, *, password_hash: str) -> None:
+        result = await self._session.execute(
+            update(UserModel)
+            .where(UserModel.id == user_id)
+            .values(password_hash=password_hash)
+            .returning(UserModel.id)
+        )
+        if result.scalar_one_or_none() is None:
+            raise UserNotFoundError(str(user_id))
+        await self._session.flush()
 
     async def assign_role(self, user_id: UUID, role_code: RoleCode) -> User:
         self._session.add(UserRoleModel(user_id=user_id, role_code=role_code.value))
@@ -240,3 +282,55 @@ class SqlAlchemySessionRepository:
             .returning(AuthSessionModel.id)
         )
         return (await self._session.execute(statement)).scalar_one_or_none() is not None
+
+    async def revoke_all_for_user(self, user_id: UUID, *, revoked_at: datetime) -> int:
+        result = await self._session.execute(
+            update(AuthSessionModel)
+            .where(
+                AuthSessionModel.user_id == user_id,
+                AuthSessionModel.revoked_at.is_(None),
+            )
+            .values(revoked_at=revoked_at)
+        )
+        return result.rowcount or 0  # type: ignore[attr-defined]
+
+
+class SqlAlchemyPasswordResetRepository:
+    """Store only recovery-token digests and consume them atomically."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def replace_active_token(
+        self,
+        *,
+        user_id: UUID,
+        token_hash: str,
+        created_at: datetime,
+        expires_at: datetime,
+    ) -> None:
+        await self._session.execute(
+            delete(PasswordResetTokenModel).where(PasswordResetTokenModel.user_id == user_id)
+        )
+        self._session.add(
+            PasswordResetTokenModel(
+                user_id=user_id,
+                token_hash=token_hash,
+                created_at=created_at,
+                expires_at=expires_at,
+            )
+        )
+        await self._session.flush()
+
+    async def consume(self, *, token_hash: str, now: datetime) -> UUID | None:
+        statement = (
+            update(PasswordResetTokenModel)
+            .where(
+                PasswordResetTokenModel.token_hash == token_hash,
+                PasswordResetTokenModel.used_at.is_(None),
+                PasswordResetTokenModel.expires_at > now,
+            )
+            .values(used_at=now)
+            .returning(PasswordResetTokenModel.user_id)
+        )
+        return (await self._session.execute(statement)).scalar_one_or_none()

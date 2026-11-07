@@ -1,6 +1,7 @@
 """SQLAlchemy mappings owned by M01 access."""
 
 from datetime import datetime
+from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
@@ -9,9 +10,11 @@ from sqlalchemy import (
     CheckConstraint,
     ForeignKey,
     Index,
+    Numeric,
     PrimaryKeyConstraint,
     String,
     Text,
+    UniqueConstraint,
     func,
     text,
 )
@@ -29,7 +32,15 @@ class UserModel(Base):
     __table_args__ = (
         CheckConstraint("btrim(display_name) <> ''", name="ck_users_display_name_not_blank"),
         CheckConstraint("btrim(email) <> ''", name="ck_users_email_not_blank"),
-        CheckConstraint("btrim(password_hash) <> ''", name="ck_users_password_hash_not_blank"),
+        CheckConstraint(
+            "password_hash IS NULL OR btrim(password_hash) <> ''",
+            name="ck_users_password_hash_not_blank",
+        ),
+        CheckConstraint(
+            "password_hash IS NOT NULL OR google_subject IS NOT NULL",
+            name="ck_users_has_authentication_method",
+        ),
+        UniqueConstraint("google_subject", name="uq_users_google_subject"),
         {"schema": "public"},
     )
 
@@ -38,7 +49,8 @@ class UserModel(Base):
     )
     display_name: Mapped[str] = mapped_column(String(120), nullable=False)
     email: Mapped[str] = mapped_column(String(254), nullable=False)
-    password_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    password_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
+    google_subject: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("TRUE"))
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, server_default=text("CURRENT_TIMESTAMP")
@@ -54,6 +66,31 @@ class UserModel(Base):
 
 
 Index("ux_users_email_ci", func.lower(UserModel.email), unique=True)
+
+
+class PasswordResetTokenModel(Base):
+    """One-time, short-lived password recovery token digest."""
+
+    __tablename__ = "password_reset_tokens"
+    __table_args__ = (
+        CheckConstraint("expires_at > created_at", name="ck_password_reset_tokens_expiry"),
+        UniqueConstraint("token_hash", name="uq_password_reset_tokens_token_hash"),
+        Index("ix_password_reset_tokens_user_created", "user_id", "created_at"),
+        {"schema": "public"},
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+    )
+    user_id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("public.users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
 
 
 class RoleModel(Base):
@@ -128,3 +165,47 @@ class AuthSessionModel(Base):
     )
     expires_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False)
     revoked_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+
+
+class UserAddressModel(Base):
+    """User delivery address with GPS coordinates and delivery metadata."""
+
+    __tablename__ = "user_addresses"
+    __table_args__ = (
+        CheckConstraint("btrim(label) <> ''", name="ck_user_addresses_label_not_blank"),
+        CheckConstraint("btrim(address) <> ''", name="ck_user_addresses_address_not_blank"),
+        CheckConstraint(
+            "latitude >= -90.0 AND latitude <= 90.0",
+            name="ck_user_addresses_latitude_range",
+        ),
+        CheckConstraint(
+            "longitude >= -180.0 AND longitude <= 180.0",
+            name="ck_user_addresses_longitude_range",
+        ),
+        Index("ix_user_addresses_user_id", "user_id"),
+        Index("ix_user_addresses_user_default", "user_id", "is_default"),
+        {"schema": "public"},
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+    )
+    user_id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("public.users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    label: Mapped[str] = mapped_column(String(50), nullable=False)
+    address: Mapped[str] = mapped_column(String(500), nullable=False)
+    department: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    reference: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    recipient_phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    latitude: Mapped[Decimal] = mapped_column(Numeric(10, 7), nullable=False)
+    longitude: Mapped[Decimal] = mapped_column(Numeric(10, 7), nullable=False)
+    is_default: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("FALSE"))
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, server_default=text("CURRENT_TIMESTAMP")
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, server_default=text("CURRENT_TIMESTAMP")
+    )

@@ -1,6 +1,7 @@
 """Pydantic HTTP contracts for M01; domain and application stay framework-free."""
 
 from datetime import datetime
+from decimal import Decimal
 from typing import Any, Self
 from uuid import UUID
 
@@ -32,10 +33,51 @@ class RegisterRequest(StrictRequest):
             raise ValueError("email is invalid")
         return normalized
 
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(cls, value: SecretStr) -> SecretStr:
+        password = value.get_secret_value()
+        if not any(character.islower() for character in password):
+            raise ValueError("password must include a lowercase letter")
+        if not any(character.isupper() for character in password):
+            raise ValueError("password must include an uppercase letter")
+        if not any(character.isdigit() for character in password):
+            raise ValueError("password must include a number")
+        return value
+
 
 class LoginRequest(StrictRequest):
     email: str = Field(min_length=3, max_length=254)
     password: SecretStr = Field(min_length=1, max_length=128)
+
+
+class GoogleLoginRequest(StrictRequest):
+    id_token: SecretStr = Field(min_length=20, max_length=8192)
+
+
+class PasswordResetRequest(StrictRequest):
+    email: str = Field(min_length=3, max_length=254)
+
+    @field_validator("email")
+    @classmethod
+    def validate_email_shape(cls, value: str) -> str:
+        return RegisterRequest.validate_email_shape(value)
+
+
+class PasswordResetConfirmRequest(StrictRequest):
+    token: SecretStr = Field(min_length=32, max_length=512)
+    new_password: SecretStr = Field(min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_password_strength(cls, value: SecretStr) -> SecretStr:
+        return RegisterRequest.validate_password_strength(value)
+
+
+class MessageResponse(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    message: str
 
 
 class RefreshRequest(StrictRequest):
@@ -63,7 +105,48 @@ class SavedAddressInput(StrictRequest):
     reference: str | None = Field(default=None, max_length=200)
     department: str | None = Field(default=None, max_length=50)
     recipient_phone: str | None = Field(default=None, max_length=30)
+    latitude: Decimal | None = Field(default=None, ge=-90, le=90)
+    longitude: Decimal | None = Field(default=None, ge=-180, le=180)
     is_default: bool = False
+
+
+class CreateAddressRequest(StrictRequest):
+    label: str = Field(min_length=1, max_length=50)
+    address: str = Field(min_length=3, max_length=500)
+    department: str | None = Field(default=None, max_length=50)
+    reference: str | None = Field(default=None, max_length=200)
+    recipient_phone: str | None = Field(default=None, max_length=30)
+    latitude: Decimal = Field(ge=-90, le=90)
+    longitude: Decimal = Field(ge=-180, le=180)
+    is_default: bool = False
+
+
+class UpdateAddressRequest(StrictRequest):
+    label: str | None = Field(default=None, min_length=1, max_length=50)
+    address: str | None = Field(default=None, min_length=3, max_length=500)
+    department: str | None = Field(default=None, max_length=50)
+    reference: str | None = Field(default=None, max_length=200)
+    recipient_phone: str | None = Field(default=None, max_length=30)
+    latitude: Decimal | None = Field(default=None, ge=-90, le=90)
+    longitude: Decimal | None = Field(default=None, ge=-180, le=180)
+    is_default: bool | None = None
+
+
+class AddressResponse(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    id: UUID
+    user_id: UUID
+    label: str
+    address: str
+    department: str | None = None
+    reference: str | None = None
+    recipient_phone: str | None = None
+    latitude: float
+    longitude: float
+    is_default: bool
+    created_at: datetime
+    updated_at: datetime
 
 
 class UpdateProfileRequest(StrictRequest):

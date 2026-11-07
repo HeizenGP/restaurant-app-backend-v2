@@ -6,14 +6,18 @@ from uuid import UUID, uuid4
 
 import pytest
 
+from restaurant_app.modules.m01_access.application.ports.external_identity import GoogleIdentity
 from restaurant_app.modules.m01_access.application.use_cases import (
     AssignUserRole,
     AuthenticateRequest,
     AuthorizeRoles,
     LoginUser,
+    LoginWithGoogle,
     RefreshSession,
     RegisterUser,
     RegisterUserCommand,
+    RequestPasswordReset,
+    ResetPassword,
     RevokeSession,
     StartGuestSession,
     UpdateUserProfile,
@@ -29,7 +33,9 @@ from restaurant_app.modules.m01_access.domain.entities import (
 from restaurant_app.modules.m01_access.domain.errors import (
     AuthorizationError,
     EmailAlreadyRegisteredError,
+    ExternalAuthenticationError,
     InvalidCredentialsError,
+    InvalidPasswordResetTokenError,
     InvalidTokenError,
     RoleAlreadyAssignedError,
     SessionExpiredError,
@@ -72,13 +78,20 @@ class FakePasswordHasher:
 
 class FakeUserRepository:
     def __init__(self, entries: list[tuple[User, str]] | None = None) -> None:
-        self._entries = {user.email: (user, password_hash) for user, password_hash in entries or []}
+        self._entries: dict[str, tuple[User, str | None]] = {
+            user.email: (user, password_hash) for user, password_hash in entries or []
+        }
+        self._google_subjects: dict[str, str] = {}
 
-    async def find_by_email_with_hash(self, email: str) -> tuple[User, str] | None:
+    async def find_by_email_with_hash(self, email: str) -> tuple[User, str | None] | None:
         return self._entries.get(email)
 
     async def find_by_id(self, user_id: UUID) -> User | None:
         return next((user for user, _ in self._entries.values() if user.id == user_id), None)
+
+    async def find_by_google_subject(self, subject: str) -> User | None:
+        email = self._google_subjects.get(subject)
+        return None if email is None else self._entries[email][0]
 
     async def create(
         self,
@@ -97,6 +110,35 @@ class FakeUserRepository:
         )
         self._entries[email] = (user, password_hash)
         return user
+
+    async def create_from_google(
+        self,
+        *,
+        display_name: str,
+        email: str,
+        google_subject: str,
+        avatar_url: str | None,
+    ) -> User:
+        if email in self._entries:
+            raise EmailAlreadyRegisteredError(email)
+        user = User(
+            id=uuid4(),
+            display_name=display_name,
+            email=email,
+            is_active=True,
+            roles=frozenset({RoleCode.CUSTOMER}),
+            created_at=NOW,
+            avatar_url=avatar_url,
+        )
+        self._entries[email] = (user, None)
+        self._google_subjects[google_subject] = email
+        return user
+
+    async def update_password(self, user_id: UUID, *, password_hash: str) -> None:
+        user = await self.find_by_id(user_id)
+        if user is None:
+            raise AssertionError("test target must exist")
+        self._entries[user.email] = (user, password_hash)
 
     async def assign_role(self, user_id: UUID, role_code: RoleCode) -> User:
         user = await self.find_by_id(user_id)
@@ -202,6 +244,14 @@ class FakeSessionRepository:
         self.sessions[session_id] = replace(session, revoked_at=revoked_at)
         return True
 
+    async def revoke_all_for_user(self, user_id: UUID, *, revoked_at: datetime) -> int:
+        count = 0
+        for session_id, session in list(self.sessions.items()):
+            if session.user_id == user_id and session.revoked_at is None:
+                self.sessions[session_id] = replace(session, revoked_at=revoked_at)
+                count += 1
+        return count
+
 
 class FakeTokenProvider:
     def __init__(self) -> None:
@@ -250,6 +300,55 @@ class FakeTokenProvider:
 
     def token_matches_hash(self, token: str, token_hash: str) -> bool:
         return self.hash_token(token) == token_hash
+
+
+class FakeGoogleVerifier:
+    async def verify(self, id_token: str) -> GoogleIdentity:
+        assert id_token == "valid-google-token"
+        return GoogleIdentity(
+            subject="google-subject-123",
+            email="google@example.test",
+            display_name="Google Customer",
+            avatar_url="https://example.test/avatar.png",
+        )
+
+
+class FakePasswordResetRepository:
+    def __init__(self) -> None:
+        self.user_id: UUID | None = None
+        self.token_hash: str | None = None
+        self.expires_at: datetime | None = None
+        self.used = False
+
+    async def replace_active_token(
+        self,
+        *,
+        user_id: UUID,
+        token_hash: str,
+        created_at: datetime,
+        expires_at: datetime,
+    ) -> None:
+        assert created_at == NOW
+        self.user_id = user_id
+        self.token_hash = token_hash
+        self.expires_at = expires_at
+        self.used = False
+
+    async def consume(self, *, token_hash: str, now: datetime) -> UUID | None:
+        if self.used or token_hash != self.token_hash or now >= (self.expires_at or NOW):
+            return None
+        self.used = True
+        return self.user_id
+
+
+class FakePasswordResetMessenger:
+    def __init__(self) -> None:
+        self.token: str | None = None
+
+    async def send_password_reset(self, *, email: str, display_name: str, token: str) -> None:
+        assert email == "client@example.test"
+        assert display_name == "Client"
+        self.token = token
 
 
 async def test_register_normalizes_email_hashes_password_and_assigns_customer() -> None:
@@ -336,6 +435,89 @@ async def test_login_rejects_inactive_user() -> None:
 
     with pytest.raises(UserInactiveError):
         await login(email=user.email, password="correct")
+
+
+async def test_google_login_registers_by_subject_and_issues_kairo_session() -> None:
+    users = FakeUserRepository()
+    sessions = FakeSessionRepository()
+    tokens = FakeTokenProvider()
+
+    result = await LoginWithGoogle(
+        users,
+        sessions,
+        FakeGoogleVerifier(),
+        tokens,
+        refresh_ttl=timedelta(days=7),
+        now=lambda: NOW,
+    )("valid-google-token")
+
+    assert result.user is not None
+    assert result.user.email == "google@example.test"
+    assert result.user.roles == {RoleCode.CUSTOMER}
+    assert await users.find_by_google_subject("google-subject-123") == result.user
+    assert result.tokens.refresh_token is not None
+
+
+async def test_google_login_never_links_an_existing_account_by_email_alone() -> None:
+    existing = make_user(email="google@example.test")
+    login = LoginWithGoogle(
+        FakeUserRepository([(existing, "argon::password")]),
+        FakeSessionRepository(),
+        FakeGoogleVerifier(),
+        FakeTokenProvider(),
+        refresh_ttl=timedelta(days=7),
+    )
+
+    with pytest.raises(ExternalAuthenticationError):
+        await login("valid-google-token")
+
+
+async def test_password_reset_uses_digest_once_and_revokes_existing_sessions() -> None:
+    user = make_user()
+    users = FakeUserRepository([(user, "argon::old-password")])
+    sessions = FakeSessionRepository()
+    await sessions.create_user_session(
+        session_id=uuid4(),
+        user_id=user.id,
+        renewal_token_hash="old-refresh-digest",
+        created_at=NOW,
+        expires_at=NOW + timedelta(days=1),
+    )
+    resets = FakePasswordResetRepository()
+    messenger = FakePasswordResetMessenger()
+    await RequestPasswordReset(
+        users,
+        resets,
+        messenger,
+        token_ttl=timedelta(minutes=30),
+        now=lambda: NOW,
+        token_factory=lambda: "opaque-reset-token-with-enough-entropy",
+    )(user.email)
+
+    assert messenger.token == "opaque-reset-token-with-enough-entropy"
+    assert resets.token_hash is not None
+    assert messenger.token not in resets.token_hash
+
+    await ResetPassword(
+        users,
+        sessions,
+        resets,
+        FakePasswordHasher(),
+        now=lambda: NOW + timedelta(minutes=1),
+    )(token=messenger.token, new_password="New-password-1")
+
+    stored = await users.find_by_email_with_hash(user.email)
+    assert stored is not None and stored[1] == "argon::New-password-1"
+    assert all(session.revoked_at is not None for session in sessions.sessions.values())
+
+    with pytest.raises(InvalidPasswordResetTokenError):
+        await ResetPassword(
+            users,
+            sessions,
+            resets,
+            FakePasswordHasher(),
+            now=lambda: NOW + timedelta(minutes=2),
+        )(token=messenger.token, new_password="Another-password-2")
 
 
 async def test_guest_session_has_no_user_role_or_refresh_token() -> None:

@@ -22,7 +22,8 @@ CREATE TABLE public.users (
     id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     display_name   VARCHAR(120) NOT NULL,
     email          VARCHAR(254) NOT NULL,
-    password_hash  TEXT NOT NULL,
+    password_hash  TEXT,
+    google_subject VARCHAR(255),
     is_active      BOOLEAN NOT NULL DEFAULT TRUE,
     created_at     TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     phone          VARCHAR(30),
@@ -31,7 +32,13 @@ CREATE TABLE public.users (
     saved_addresses JSONB NOT NULL DEFAULT '[]'::jsonb,
     CONSTRAINT ck_users_display_name_not_blank CHECK (btrim(display_name) <> ''),
     CONSTRAINT ck_users_email_not_blank CHECK (btrim(email) <> ''),
-    CONSTRAINT ck_users_password_hash_not_blank CHECK (btrim(password_hash) <> '')
+    CONSTRAINT ck_users_password_hash_not_blank CHECK (
+        password_hash IS NULL OR btrim(password_hash) <> ''
+    ),
+    CONSTRAINT ck_users_has_authentication_method CHECK (
+        password_hash IS NOT NULL OR google_subject IS NOT NULL
+    ),
+    CONSTRAINT uq_users_google_subject UNIQUE (google_subject)
 );
 CREATE UNIQUE INDEX ux_users_email_ci ON public.users (lower(email));
 
@@ -77,6 +84,40 @@ CREATE TABLE public.auth_sessions (
     CONSTRAINT ck_sessions_expiry CHECK (expires_at > created_at)
 );
 CREATE INDEX ix_sessions_user_expiry ON public.auth_sessions (user_id, expires_at);
+
+CREATE TABLE public.password_reset_tokens (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id     UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    token_hash  VARCHAR(64) NOT NULL,
+    created_at  TIMESTAMPTZ NOT NULL,
+    expires_at  TIMESTAMPTZ NOT NULL,
+    used_at     TIMESTAMPTZ,
+    CONSTRAINT ck_password_reset_tokens_expiry CHECK (expires_at > created_at),
+    CONSTRAINT uq_password_reset_tokens_token_hash UNIQUE (token_hash)
+);
+CREATE INDEX ix_password_reset_tokens_user_created
+    ON public.password_reset_tokens (user_id, created_at);
+
+CREATE TABLE public.user_addresses (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    label           VARCHAR(50) NOT NULL,
+    address         VARCHAR(500) NOT NULL,
+    department      VARCHAR(50),
+    reference       VARCHAR(200),
+    recipient_phone VARCHAR(30),
+    latitude        NUMERIC(10, 7) NOT NULL,
+    longitude       NUMERIC(10, 7) NOT NULL,
+    is_default      BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT ck_user_addresses_label_not_blank CHECK (btrim(label) <> ''),
+    CONSTRAINT ck_user_addresses_address_not_blank CHECK (btrim(address) <> ''),
+    CONSTRAINT ck_user_addresses_latitude_range CHECK (latitude >= -90.0 AND latitude <= 90.0),
+    CONSTRAINT ck_user_addresses_longitude_range CHECK (longitude >= -180.0 AND longitude <= 180.0)
+);
+CREATE INDEX ix_user_addresses_user_id ON public.user_addresses (user_id);
+CREATE INDEX ix_user_addresses_user_default ON public.user_addresses (user_id, is_default);
 
 -- M02 | Catálogo, producto terminado y movimientos ---------------------
 CREATE TABLE public.categories (

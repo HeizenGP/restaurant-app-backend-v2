@@ -51,3 +51,7 @@ class SessionRepository(Protocol):
     async def revoke(self, session_id: UUID, *, revoked_at: datetime) -> bool:
         """Revoke session. Return *True* if revoked, *False* if not found."""
         ...
+
+    async def revoke_all_for_user(self, user_id: UUID, *, revoked_at: datetime) -> int:
+        """Revoke all active sessions after a credential reset."""
+        ...
