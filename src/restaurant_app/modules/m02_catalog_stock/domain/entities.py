@@ -19,3 +19,5 @@ class Product:
     price: Decimal
     stock_qty: int
     is_available: bool
+    image_url: str | None = None
+    description: str | None = None

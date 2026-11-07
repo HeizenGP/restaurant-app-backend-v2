@@ -134,6 +134,8 @@ CREATE TABLE public.products (
     price        NUMERIC(12,2) NOT NULL,
     stock_qty    INTEGER NOT NULL DEFAULT 0,
     is_available BOOLEAN NOT NULL DEFAULT TRUE,
+    image_url    VARCHAR(500),
+    description  VARCHAR(500),
     CONSTRAINT ck_products_name_not_blank CHECK (btrim(name) <> ''),
     CONSTRAINT ck_products_price_nonnegative CHECK (price >= 0),
     CONSTRAINT ck_products_stock_nonnegative CHECK (stock_qty >= 0)
@@ -194,6 +196,19 @@ CREATE TABLE public.restaurant_tables (
     updated_by_user_id UUID REFERENCES public.users(id) ON DELETE RESTRICT,
     CONSTRAINT ck_restaurant_tables_code_not_blank CHECK (btrim(code) <> '')
 );
+
+INSERT INTO public.restaurant_tables (id, code, area_label, is_occupied) VALUES
+    ('7a000001-0000-4000-a000-000000000001', 'MESA-01', 'Salón Principal', FALSE),
+    ('7a000001-0000-4000-a000-000000000002', 'MESA-02', 'Salón Principal', FALSE),
+    ('7a000001-0000-4000-a000-000000000003', 'MESA-03', 'Salón Principal', FALSE),
+    ('7a000001-0000-4000-a000-000000000004', 'MESA-04', 'Salón Principal', FALSE),
+    ('7a000001-0000-4000-a000-000000000005', 'MESA-05', 'Salón Principal', FALSE),
+    ('7a000001-0000-4000-a000-000000000006', 'MESA-06', 'Terraza', FALSE),
+    ('7a000001-0000-4000-a000-000000000007', 'MESA-07', 'Terraza', FALSE),
+    ('7a000001-0000-4000-a000-000000000008', 'MESA-08', 'Terraza', FALSE),
+    ('7a000001-0000-4000-a000-000000000009', 'MESA-09', 'Zona VIP', FALSE),
+    ('7a000001-0000-4000-a000-000000000010', 'MESA-10', 'Zona VIP', FALSE)
+ON CONFLICT (code) DO NOTHING;
 
 -- M04 | Pedidos ---------------------------------------------------------
 CREATE TABLE public.orders (

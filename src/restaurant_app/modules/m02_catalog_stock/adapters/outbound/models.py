@@ -60,6 +60,8 @@ class ProductModel(Base):
     price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     stock_qty: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
     is_available: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("TRUE"))
+    image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    description: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
 
 class StockMovementModel(Base):

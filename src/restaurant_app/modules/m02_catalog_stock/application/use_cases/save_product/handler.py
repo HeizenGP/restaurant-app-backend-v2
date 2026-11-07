@@ -1,6 +1,7 @@
 """Create or edit product details and price (RF-M02-02)."""
 
 from decimal import Decimal
+from typing import Any
 from uuid import UUID
 
 from restaurant_app.modules.m01_access.public import AuthorizeRoles, Principal, RoleCode
@@ -29,11 +30,20 @@ class SaveProduct:
         name: str | None,
         price: Decimal | None,
         product_id: UUID | None = None,
+        image_url: str | None = None,
+        description: str | None = None,
     ) -> Product:
         self._authorize(actor)
         if product_id is None and (category_id is None or name is None or price is None):
             raise InvalidCatalogValueError("Category, name and price are required")
-        if product_id is not None and category_id is None and name is None and price is None:
+        if (
+            product_id is not None
+            and category_id is None
+            and name is None
+            and price is None
+            and image_url is None
+            and description is None
+        ):
             raise InvalidCatalogValueError("At least one product field is required")
         if category_id is not None and await self._catalog.get_category(category_id) is None:
             raise CategoryNotFoundError
@@ -49,9 +59,23 @@ class SaveProduct:
             raise InvalidCatalogValueError("Price must be nonnegative with at most two decimals")
         if product_id is None:
             assert category_id is not None and normalized_name is not None and price is not None
-            return await self._catalog.create_product(
-                category_id=category_id, name=normalized_name, price=price
-            )
-        return await self._catalog.update_product(
-            product_id, category_id=category_id, name=normalized_name, price=price
-        )
+            create_kwargs: dict[str, Any] = {
+                "category_id": category_id,
+                "name": normalized_name,
+                "price": price,
+            }
+            if image_url is not None:
+                create_kwargs["image_url"] = image_url
+            if description is not None:
+                create_kwargs["description"] = description
+            return await self._catalog.create_product(**create_kwargs)
+        update_kwargs: dict[str, Any] = {
+            "category_id": category_id,
+            "name": normalized_name,
+            "price": price,
+        }
+        if image_url is not None:
+            update_kwargs["image_url"] = image_url
+        if description is not None:
+            update_kwargs["description"] = description
+        return await self._catalog.update_product(product_id, **update_kwargs)

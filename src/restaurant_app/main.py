@@ -27,6 +27,7 @@ from restaurant_app.modules.m02_catalog_stock.adapters.inbound.http import (
 from restaurant_app.modules.m02_catalog_stock.seed import seed_initial_catalog
 from restaurant_app.modules.m03_tables.adapters.inbound.http import install_table_error_handlers
 from restaurant_app.modules.m03_tables.adapters.inbound.http import router as table_router
+from restaurant_app.modules.m03_tables.seed import seed_initial_tables
 from restaurant_app.modules.m04_orders.adapters.inbound.http import install_order_error_handlers
 from restaurant_app.modules.m04_orders.adapters.inbound.http import router as order_router
 from restaurant_app.modules.m05_kitchen.adapters.inbound.http import (
@@ -81,9 +82,10 @@ async def lifespan(application: FastAPI) -> AsyncIterator[None]:
         if database is not None and hasattr(database, "session_factory"):
             try:
                 await seed_initial_catalog(database.session_factory)
+                await seed_initial_tables(database.session_factory)
             except Exception as exc:
                 logging.getLogger("restaurant_app.catalog.seed").warning(
-                    "Initial catalog seeding skipped on startup: %s", exc
+                    "Initial seeding skipped on startup: %s", exc
                 )
 
     yield

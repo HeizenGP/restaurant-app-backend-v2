@@ -78,6 +78,8 @@ async def create_product(
         category_id=payload.category_id,
         name=payload.name,
         price=payload.price,
+        image_url=payload.image_url,
+        description=payload.description,
     )
     return ProductResponse.from_domain(product)
 
@@ -92,6 +94,8 @@ async def update_product(
         category_id=payload.category_id,
         name=payload.name,
         price=payload.price,
+        image_url=payload.image_url,
+        description=payload.description,
     )
     return ProductResponse.from_domain(product)
 

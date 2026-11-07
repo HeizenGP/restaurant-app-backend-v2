@@ -20,15 +20,25 @@ class CatalogRepository(Protocol):
 
     async def get_product(self, product_id: UUID) -> Product | None: ...
 
-    async def create_product(self, *, category_id: UUID, name: str, price: Decimal) -> Product: ...
+    async def create_product(
+        self,
+        *,
+        category_id: UUID,
+        name: str,
+        price: Decimal,
+        image_url: str | None = None,
+        description: str | None = None,
+    ) -> Product: ...
 
     async def update_product(
         self,
         product_id: UUID,
         *,
-        category_id: UUID | None,
-        name: str | None,
-        price: Decimal | None,
+        category_id: UUID | None = None,
+        name: str | None = None,
+        price: Decimal | None = None,
+        image_url: str | None = None,
+        description: str | None = None,
     ) -> Product: ...
 
     async def set_stock(self, product_id: UUID, *, quantity: int, actor_id: UUID) -> Product: ...

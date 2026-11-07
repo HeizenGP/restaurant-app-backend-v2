@@ -62,6 +62,8 @@ EXPECTED_COLUMNS = {
         "price",
         "stock_qty",
         "is_available",
+        "image_url",
+        "description",
     },
     "public.restaurant_tables": {
         "id",

@@ -39,6 +39,8 @@ class SqlAlchemyCatalogRepository:
             price=model.price,
             stock_qty=model.stock_qty,
             is_available=model.is_available,
+            image_url=model.image_url,
+            description=model.description,
         )
 
     async def list_categories(self) -> list[Category]:
@@ -81,8 +83,22 @@ class SqlAlchemyCatalogRepository:
         model = await self._session.get(ProductModel, product_id)
         return None if model is None else self._product(model)
 
-    async def create_product(self, *, category_id: UUID, name: str, price: Decimal) -> Product:
-        model = ProductModel(category_id=category_id, name=name, price=price)
+    async def create_product(
+        self,
+        *,
+        category_id: UUID,
+        name: str,
+        price: Decimal,
+        image_url: str | None = None,
+        description: str | None = None,
+    ) -> Product:
+        model = ProductModel(
+            category_id=category_id,
+            name=name,
+            price=price,
+            image_url=image_url,
+            description=description,
+        )
         self._session.add(model)
         await self._session.flush()
         await self._session.refresh(model)
@@ -92,9 +108,11 @@ class SqlAlchemyCatalogRepository:
         self,
         product_id: UUID,
         *,
-        category_id: UUID | None,
-        name: str | None,
-        price: Decimal | None,
+        category_id: UUID | None = None,
+        name: str | None = None,
+        price: Decimal | None = None,
+        image_url: str | None = None,
+        description: str | None = None,
     ) -> Product:
         model = await self._session.get(ProductModel, product_id)
         if model is None:
@@ -105,6 +123,10 @@ class SqlAlchemyCatalogRepository:
             model.name = name
         if price is not None:
             model.price = price
+        if image_url is not None:
+            model.image_url = image_url
+        if description is not None:
+            model.description = description
         await self._session.flush()
         return self._product(model)
 

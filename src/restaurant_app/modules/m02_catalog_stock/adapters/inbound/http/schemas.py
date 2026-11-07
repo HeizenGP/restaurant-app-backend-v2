@@ -21,16 +21,26 @@ class ProductCreateRequest(StrictRequest):
     category_id: UUID
     name: str = Field(min_length=1, max_length=160)
     price: Decimal = Field(ge=0, max_digits=12, decimal_places=2)
+    image_url: str | None = Field(default=None, max_length=500)
+    description: str | None = Field(default=None, max_length=500)
 
 
 class ProductPatchRequest(StrictRequest):
     category_id: UUID | None = None
     name: str | None = Field(default=None, min_length=1, max_length=160)
     price: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
+    image_url: str | None = Field(default=None, max_length=500)
+    description: str | None = Field(default=None, max_length=500)
 
     @model_validator(mode="after")
     def require_change(self) -> Self:
-        if self.category_id is None and self.name is None and self.price is None:
+        if (
+            self.category_id is None
+            and self.name is None
+            and self.price is None
+            and self.image_url is None
+            and self.description is None
+        ):
             raise ValueError("at least one product field is required")
         return self
 
@@ -63,6 +73,8 @@ class ProductResponse(BaseModel):
     price: Decimal
     stock_qty: int
     is_available: bool
+    image_url: str | None = None
+    description: str | None = None
 
     @classmethod
     def from_domain(cls, product: Product) -> Self:
@@ -73,6 +85,8 @@ class ProductResponse(BaseModel):
             price=product.price,
             stock_qty=product.stock_qty,
             is_available=product.is_available,
+            image_url=product.image_url,
+            description=product.description,
         )
 
 
@@ -86,6 +100,8 @@ class CatalogProductResponse(BaseModel):
     name: str
     price: Decimal
     available_for_sale: bool
+    image_url: str | None = None
+    description: str | None = None
 
     @classmethod
     def from_domain(cls, product: Product) -> Self:
@@ -95,4 +111,6 @@ class CatalogProductResponse(BaseModel):
             name=product.name,
             price=product.price,
             available_for_sale=product.is_available and product.stock_qty > 0,
+            image_url=product.image_url,
+            description=product.description,
         )
