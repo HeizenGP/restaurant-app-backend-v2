@@ -13,7 +13,7 @@ from restaurant_app.modules.m07_fulfillment.delivery_zones import (
     KAIRO_NAME,
     evaluate_delivery_zone,
     reverse_geocode_osm,
-    search_address_osm,
+    search_address_photon,
 )
 
 delivery_router = APIRouter(prefix="/delivery", tags=["Delivery & Geocoding"])
@@ -48,7 +48,11 @@ class GeocodeResultResponse(BaseModel):
 
     display_name: str
     address: str
+    street: str | None = None
+    house_number: str | None = None
     district: str | None = None
+    province: str | None = None
+    department: str | None = None
     city: str | None = None
     latitude: float
     longitude: float
@@ -132,11 +136,16 @@ async def reverse_geocode(
 @delivery_router.get(
     "/geocode/search",
     response_model=list[GeocodeResultResponse],
-    summary="Search addresses in Lima / Peru (OpenStreetMap proxy)",
+    summary="Search addresses in Lima / Peru (Photon / OpenStreetMap autocomplete)",
+)
+@delivery_router.get(
+    "/geocode/autocomplete",
+    response_model=list[GeocodeResultResponse],
+    summary="Predictive street autocomplete with Photon / OpenStreetMap",
 )
 async def search_address(
     query: str = Query(..., min_length=2, max_length=200),
     limit: int = Query(5, ge=1, le=10),
 ) -> list[GeocodeResultResponse]:
-    items = await search_address_osm(query, limit)
+    items = await search_address_photon(query, limit)
     return [GeocodeResultResponse(**item) for item in items]
