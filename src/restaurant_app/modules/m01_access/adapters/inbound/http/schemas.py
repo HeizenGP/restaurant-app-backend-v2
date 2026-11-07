@@ -103,6 +103,7 @@ class SavedAddressInput(StrictRequest):
     label: str = Field(min_length=1, max_length=50)
     address: str = Field(min_length=1, max_length=500)
     reference: str | None = Field(default=None, max_length=200)
+    delivery_instructions: str | None = Field(default=None, max_length=500)
     department: str | None = Field(default=None, max_length=50)
     recipient_phone: str | None = Field(default=None, max_length=30)
     latitude: Decimal | None = Field(default=None, ge=-90, le=90)
@@ -115,6 +116,7 @@ class CreateAddressRequest(StrictRequest):
     address: str = Field(min_length=3, max_length=500)
     department: str | None = Field(default=None, max_length=50)
     reference: str | None = Field(default=None, max_length=200)
+    delivery_instructions: str | None = Field(default=None, max_length=500)
     recipient_phone: str | None = Field(default=None, max_length=30)
     latitude: Decimal = Field(ge=-90, le=90)
     longitude: Decimal = Field(ge=-180, le=180)
@@ -126,6 +128,7 @@ class UpdateAddressRequest(StrictRequest):
     address: str | None = Field(default=None, min_length=3, max_length=500)
     department: str | None = Field(default=None, max_length=50)
     reference: str | None = Field(default=None, max_length=200)
+    delivery_instructions: str | None = Field(default=None, max_length=500)
     recipient_phone: str | None = Field(default=None, max_length=30)
     latitude: Decimal | None = Field(default=None, ge=-90, le=90)
     longitude: Decimal | None = Field(default=None, ge=-180, le=180)
@@ -141,6 +144,7 @@ class AddressResponse(BaseModel):
     address: str
     department: str | None = None
     reference: str | None = None
+    delivery_instructions: str | None = None
     recipient_phone: str | None = None
     latitude: float
     longitude: float

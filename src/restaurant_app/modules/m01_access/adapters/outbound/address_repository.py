@@ -30,6 +30,7 @@ class SqlAlchemyUserAddressRepository:
             address=model.address,
             department=model.department,
             reference=model.reference,
+            delivery_instructions=model.delivery_instructions,
             recipient_phone=model.recipient_phone,
             latitude=model.latitude,
             longitude=model.longitude,
@@ -65,6 +66,7 @@ class SqlAlchemyUserAddressRepository:
         longitude: Decimal,
         department: str | None = None,
         reference: str | None = None,
+        delivery_instructions: str | None = None,
         recipient_phone: str | None = None,
         is_default: bool = False,
     ) -> UserAddress:
@@ -94,6 +96,9 @@ class SqlAlchemyUserAddressRepository:
             address=address.strip(),
             department=department.strip() if department and department.strip() else None,
             reference=reference.strip() if reference and reference.strip() else None,
+            delivery_instructions=delivery_instructions.strip()
+            if delivery_instructions and delivery_instructions.strip()
+            else None,
             recipient_phone=recipient_phone.strip()
             if recipient_phone and recipient_phone.strip()
             else None,
@@ -117,6 +122,7 @@ class SqlAlchemyUserAddressRepository:
         address: str | None = None,
         department: str | None = None,
         reference: str | None = None,
+        delivery_instructions: str | None = None,
         recipient_phone: str | None = None,
         latitude: Decimal | None = None,
         longitude: Decimal | None = None,
@@ -142,6 +148,10 @@ class SqlAlchemyUserAddressRepository:
             values["department"] = department.strip() if department.strip() else None
         if reference is not None:
             values["reference"] = reference.strip() if reference.strip() else None
+        if delivery_instructions is not None:
+            values["delivery_instructions"] = (
+                delivery_instructions.strip() if delivery_instructions.strip() else None
+            )
         if recipient_phone is not None:
             values["recipient_phone"] = recipient_phone.strip() if recipient_phone.strip() else None
         if latitude is not None:
@@ -216,6 +226,7 @@ class SqlAlchemyUserAddressRepository:
                 "address": addr.address,
                 "department": addr.department,
                 "reference": addr.reference,
+                "delivery_instructions": addr.delivery_instructions,
                 "recipient_phone": addr.recipient_phone,
                 "latitude": float(addr.latitude),
                 "longitude": float(addr.longitude),

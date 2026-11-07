@@ -105,6 +105,7 @@ CREATE TABLE public.user_addresses (
     address         VARCHAR(500) NOT NULL,
     department      VARCHAR(50),
     reference       VARCHAR(200),
+    delivery_instructions VARCHAR(500),
     recipient_phone VARCHAR(30),
     latitude        NUMERIC(10, 7) NOT NULL,
     longitude       NUMERIC(10, 7) NOT NULL,

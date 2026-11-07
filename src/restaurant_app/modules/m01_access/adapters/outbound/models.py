@@ -199,6 +199,7 @@ class UserAddressModel(Base):
     address: Mapped[str] = mapped_column(String(500), nullable=False)
     department: Mapped[str | None] = mapped_column(String(50), nullable=True)
     reference: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    delivery_instructions: Mapped[str | None] = mapped_column(String(500), nullable=True)
     recipient_phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
     latitude: Mapped[Decimal] = mapped_column(Numeric(10, 7), nullable=False)
     longitude: Mapped[Decimal] = mapped_column(Numeric(10, 7), nullable=False)

@@ -46,6 +46,7 @@ EXPECTED_COLUMNS = {
         "address",
         "department",
         "reference",
+        "delivery_instructions",
         "recipient_phone",
         "latitude",
         "longitude",

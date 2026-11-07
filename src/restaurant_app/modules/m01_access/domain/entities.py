@@ -74,6 +74,7 @@ class UserAddress:
     updated_at: datetime
     department: str | None = None
     reference: str | None = None
+    delivery_instructions: str | None = None
     recipient_phone: str | None = None
 
 

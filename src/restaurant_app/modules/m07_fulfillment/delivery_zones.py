@@ -6,6 +6,7 @@ import asyncio
 import json
 import logging
 import math
+import os
 import time
 import urllib.parse
 import urllib.request
@@ -14,6 +15,9 @@ from decimal import Decimal
 from typing import Any
 
 logger = logging.getLogger("restaurant_app.delivery_zones")
+
+# Optional Mapbox Access Token for high-precision Peruvian geocoding
+MAPBOX_ACCESS_TOKEN = os.environ.get("MAPBOX_ACCESS_TOKEN")
 
 # KAIRO Restaurant HQ Location (Av. Las Begonias 123, San Isidro, Lima, Peru)
 KAIRO_LATITUDE = -12.0968
@@ -156,6 +160,61 @@ async def reverse_geocode_osm(lat: float, lon: float) -> dict[str, Any]:
         if now - cached_time < _CACHE_TTL_SECONDS:
             return cached_val
 
+    if MAPBOX_ACCESS_TOKEN:
+        mapbox_url = (
+            f"https://api.mapbox.com/geocoding/v5/mapbox.places/{lon},{lat}.json"
+            f"?access_token={MAPBOX_ACCESS_TOKEN}&types=address,poi,neighborhood,locality&language=es"
+        )
+        try:
+            mb_data = await asyncio.to_thread(_http_get_json, mapbox_url, 4.0)
+            mb_features = mb_data.get("features", []) if isinstance(mb_data, dict) else []
+            if mb_features:
+                feat = mb_features[0]
+                place_name = feat.get("place_name") or feat.get("place_name_es") or ""
+                text = feat.get("text") or feat.get("text_es") or ""
+                house_num = feat.get("address")
+                street = text
+
+                district = None
+                province = "Lima"
+                department = "Lima"
+                for ctx in feat.get("context", []):
+                    c_id = ctx.get("id", "")
+                    c_text = ctx.get("text") or ""
+                    if c_id.startswith("locality") or c_id.startswith("neighborhood"):
+                        district = c_text
+                    elif c_id.startswith("place"):
+                        province = c_text
+                    elif c_id.startswith("region"):
+                        department = c_text
+
+                street_part = f"{street} {house_num}".strip() if house_num else street
+                mb_area_parts = [p for p in (district, province, department) if p]
+                area_summary = ", ".join(dict.fromkeys(mb_area_parts))
+
+                if street_part and area_summary:
+                    formatted_address = f"{street_part}, {area_summary}"
+                else:
+                    formatted_address = place_name or street_part or area_summary
+
+                result = {
+                    "display_name": place_name or formatted_address,
+                    "address": formatted_address,
+                    "street": street or None,
+                    "house_number": house_num or None,
+                    "district": district,
+                    "province": province,
+                    "department": department,
+                    "latitude": lat,
+                    "longitude": lon,
+                }
+                if len(_REVERSE_GEOCODE_CACHE) > _MAX_CACHE_SIZE:
+                    _REVERSE_GEOCODE_CACHE.pop(next(iter(_REVERSE_GEOCODE_CACHE)))
+                _REVERSE_GEOCODE_CACHE[cache_key] = (now, result)
+                return result
+        except Exception as mb_exc:
+            logger.info("Mapbox reverse geocoding fallback to OSM: %s", mb_exc)
+
     url = f"https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat={lat}&lon={lon}&addressdetails=1"
     try:
         data = await asyncio.to_thread(_http_get_json, url, 4.0)
@@ -268,6 +327,70 @@ async def search_address_photon(query: str, limit: int = 5) -> list[dict[str, An
             return cached_val
 
     encoded_query = urllib.parse.quote(clean_query)
+
+    if MAPBOX_ACCESS_TOKEN:
+        mapbox_url = (
+            f"https://api.mapbox.com/geocoding/v5/mapbox.places/{encoded_query}.json"
+            f"?access_token={MAPBOX_ACCESS_TOKEN}&proximity={KAIRO_LONGITUDE},{KAIRO_LATITUDE}"
+            f"&country=PE&types=address,poi,neighborhood,locality&language=es&autocomplete=true&limit={limit}"
+        )
+        try:
+            mb_data = await asyncio.to_thread(_http_get_json, mapbox_url, 4.0)
+            mb_features = mb_data.get("features", []) if isinstance(mb_data, dict) else []
+            if mb_features:
+                mb_output: list[dict[str, Any]] = []
+                for feat in mb_features:
+                    coords = feat.get("geometry", {}).get("coordinates", [0.0, 0.0])
+                    f_lon = float(coords[0]) if len(coords) > 0 else 0.0
+                    f_lat = float(coords[1]) if len(coords) > 1 else 0.0
+                    place_name = feat.get("place_name") or feat.get("place_name_es") or ""
+                    text = feat.get("text") or feat.get("text_es") or ""
+                    house_num = feat.get("address")
+                    street = text
+
+                    district = None
+                    province = "Lima"
+                    department = "Lima"
+                    for ctx in feat.get("context", []):
+                        c_id = ctx.get("id", "")
+                        c_text = ctx.get("text") or ""
+                        if c_id.startswith("locality") or c_id.startswith("neighborhood"):
+                            district = c_text
+                        elif c_id.startswith("place"):
+                            province = c_text
+                        elif c_id.startswith("region"):
+                            department = c_text
+
+                    street_part = f"{street} {house_num}".strip() if house_num else street
+                    mb_search_area_parts = [p for p in (district, province, department) if p]
+                    area_summary = ", ".join(dict.fromkeys(mb_search_area_parts))
+                    formatted = (
+                        f"{street_part}, {area_summary}"
+                        if street_part and area_summary
+                        else (place_name or street_part)
+                    )
+
+                    mb_output.append(
+                        {
+                            "display_name": place_name or formatted,
+                            "address": formatted,
+                            "street": street or None,
+                            "house_number": house_num or None,
+                            "district": district,
+                            "province": province,
+                            "department": department,
+                            "latitude": f_lat,
+                            "longitude": f_lon,
+                        }
+                    )
+                if mb_output:
+                    if len(_SEARCH_CACHE) > _MAX_CACHE_SIZE:
+                        _SEARCH_CACHE.pop(next(iter(_SEARCH_CACHE)))
+                    _SEARCH_CACHE[cache_key] = (now, mb_output)
+                    return mb_output
+        except Exception as mb_exc:
+            logger.info("Mapbox search fallback to Photon: %s", mb_exc)
+
     # Lima bounding box to prioritize local results: minLon, minLat, maxLon, maxLat
     url_with_bbox = (
         f"https://photon.komoot.io/api/?q={encoded_query}&lat={KAIRO_LATITUDE}&lon={KAIRO_LONGITUDE}"
@@ -284,12 +407,16 @@ async def search_address_photon(query: str, limit: int = 5) -> list[dict[str, An
                 addr = item.get("address", {})
                 road = addr.get("road") or addr.get("pedestrian") or ""
                 house_no = addr.get("house_number") or None
-                dist = addr.get("city_district") or addr.get("district") or addr.get("suburb") or None
+                dist = (
+                    addr.get("city_district") or addr.get("district") or addr.get("suburb") or None
+                )
                 cty = addr.get("city") or "Lima"
                 output_list.append(
                     {
                         "display_name": item.get("display_name", ""),
-                        "address": f"{road} {house_no}".strip() if house_no else road or item.get("display_name", ""),
+                        "address": f"{road} {house_no}".strip()
+                        if house_no
+                        else road or item.get("display_name", ""),
                         "street": road or None,
                         "house_number": house_no,
                         "district": dist,
