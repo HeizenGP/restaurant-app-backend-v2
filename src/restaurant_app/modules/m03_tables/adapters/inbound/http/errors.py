@@ -8,6 +8,7 @@ from restaurant_app.modules.m03_tables.domain.errors import (
     TableCodeConflictError,
     TableError,
     TableNotFoundError,
+    TableOccupancyConflictError,
 )
 
 
@@ -21,6 +22,9 @@ def install_table_error_handlers(application: FastAPI) -> None:
         elif isinstance(error, TableCodeConflictError):
             code = status.HTTP_409_CONFLICT
             detail = "Table code already exists"
+        elif isinstance(error, TableOccupancyConflictError):
+            code = status.HTTP_409_CONFLICT
+            detail = str(error) or "Cannot release table with unpaid active orders"
         elif isinstance(error, InvalidTableValueError):
             code = status.HTTP_422_UNPROCESSABLE_CONTENT
             detail = str(error)

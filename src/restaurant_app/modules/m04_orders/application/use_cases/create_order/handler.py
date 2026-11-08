@@ -126,19 +126,26 @@ class CreateOrder:
                 if not table.is_occupied:
                     await self._waiter_tables.occupy(table_id, actor_id=actor.user_id)
             else:
-                table = await self._tables.get_table(table_id)
+                table = (
+                    await self._waiter_tables.lock_table(table_id)
+                    if self._waiter_tables is not None
+                    else await self._tables.get_table(table_id)
+                )
                 if table is None:
                     raise InvalidOrderError("Table not found")
-                if table.is_occupied and (
-                    table.occupancy_started_at is None
-                    or not await self._orders.has_verified_active_table_order(
-                        table_id=table_id,
-                        occupied_since=table.occupancy_started_at,
-                        customer_user_id=actor.user_id,
-                        guest_session_id=actor.session_id if actor.user_id is None else None,
-                    )
-                ):
-                    raise InvalidOrderError("The selected table is occupied")
+                if table.is_occupied:
+                    if (
+                        table.occupancy_started_at is None
+                        or not await self._orders.has_verified_active_table_order(
+                            table_id=table_id,
+                            occupied_since=table.occupancy_started_at,
+                            customer_user_id=actor.user_id,
+                            guest_session_id=actor.session_id if actor.user_id is None else None,
+                        )
+                    ):
+                        raise InvalidOrderError("The selected table is occupied")
+                elif self._waiter_tables is not None:
+                    await self._waiter_tables.occupy(table_id, actor_id=actor.user_id)
         lines: list[OrderLine] = []
         total = Decimal("0.00")
         for item in sorted(items, key=lambda line: line.product_id):

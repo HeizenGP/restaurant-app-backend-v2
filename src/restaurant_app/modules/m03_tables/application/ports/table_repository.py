@@ -26,5 +26,5 @@ class TableRepository(Protocol):
     ) -> RestaurantTable: ...
 
     async def set_occupancy(
-        self, table_id: UUID, *, is_occupied: bool, actor_id: UUID
+        self, table_id: UUID, *, is_occupied: bool, actor_id: UUID | None = None
     ) -> RestaurantTable: ...

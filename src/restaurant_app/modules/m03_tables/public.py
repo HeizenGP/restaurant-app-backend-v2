@@ -27,5 +27,5 @@ class TableOccupancy:
     async def lock_table(self, table_id: UUID) -> RestaurantTable | None:
         return await self._tables.get_table(table_id, lock=True, write=True)
 
-    async def occupy(self, table_id: UUID, *, actor_id: UUID) -> RestaurantTable:
+    async def occupy(self, table_id: UUID, *, actor_id: UUID | None = None) -> RestaurantTable:
         return await self._tables.set_occupancy(table_id, is_occupied=True, actor_id=actor_id)

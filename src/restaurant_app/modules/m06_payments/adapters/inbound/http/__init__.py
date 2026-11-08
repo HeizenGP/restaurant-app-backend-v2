@@ -6,8 +6,8 @@ from .routes import router
 
 __all__ = [
     "collection_router",
-    "payments_router",
     "install_advance_error_handlers",
     "install_payment_error_handlers",
+    "payments_router",
     "router",
 ]

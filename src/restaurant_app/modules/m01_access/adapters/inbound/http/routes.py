@@ -31,7 +31,6 @@ from restaurant_app.modules.m01_access.adapters.inbound.http.schemas import (
     UpdateUserStatusRequest,
     UserResponse,
 )
-from restaurant_app.modules.m01_access.domain.entities import RoleCode
 from restaurant_app.modules.m01_access.adapters.outbound import (
     GoogleIdTokenVerifier,
     SqlAlchemyPasswordResetRepository,
@@ -52,7 +51,7 @@ from restaurant_app.modules.m01_access.application.use_cases import (
     StartGuestSession,
     UpdateUserProfile,
 )
-from restaurant_app.modules.m01_access.domain.entities import SessionKind
+from restaurant_app.modules.m01_access.domain.entities import RoleCode, SessionKind
 from restaurant_app.modules.m01_access.domain.errors import (
     AuthenticationProviderUnavailableError,
 )

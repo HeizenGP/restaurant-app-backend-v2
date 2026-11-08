@@ -5,14 +5,12 @@ from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
-import pytest
 from fastapi.testclient import TestClient
 
 from restaurant_app.core.config import Settings
 from restaurant_app.core.dependencies import get_db_session
 from restaurant_app.main import create_app
 from restaurant_app.modules.m01_access.adapters.inbound.http.dependencies import (
-    get_current_principal,
     require_admin,
 )
 from restaurant_app.modules.m01_access.domain.entities import Principal, RoleCode, SessionKind, User

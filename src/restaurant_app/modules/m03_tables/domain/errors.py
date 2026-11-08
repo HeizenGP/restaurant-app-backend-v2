@@ -13,5 +13,9 @@ class TableCodeConflictError(TableError):
     """A table already has the requested visible code."""
 
 
+class TableOccupancyConflictError(TableError):
+    """Table occupancy cannot be changed because of pending active orders."""
+
+
 class InvalidTableValueError(TableError):
     """An input violates the approved table constraints."""

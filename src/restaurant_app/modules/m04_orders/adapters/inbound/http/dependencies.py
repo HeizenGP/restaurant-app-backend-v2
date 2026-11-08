@@ -72,7 +72,7 @@ class OrderTableOccupancy:
             else TableAvailability(table.id, table.is_occupied, table.occupancy_started_at)
         )
 
-    async def occupy(self, table_id: UUID, *, actor_id: UUID) -> TableAvailability:
+    async def occupy(self, table_id: UUID, *, actor_id: UUID | None = None) -> TableAvailability:
         table = await self._tables.occupy(table_id, actor_id=actor_id)
         return TableAvailability(table.id, table.is_occupied, table.occupancy_started_at)
 

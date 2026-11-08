@@ -1,8 +1,9 @@
 """SQLAlchemy Async persistence for the approved restaurant_tables table."""
 
+from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,7 +12,10 @@ from restaurant_app.modules.m03_tables.domain.entities import RestaurantTable
 from restaurant_app.modules.m03_tables.domain.errors import (
     TableCodeConflictError,
     TableNotFoundError,
+    TableOccupancyConflictError,
 )
+from restaurant_app.modules.m04_orders.adapters.outbound.models import OrderModel
+from restaurant_app.modules.m06_payments.adapters.outbound.models import PaymentModel
 
 
 class SqlAlchemyTableRepository:
@@ -100,7 +104,7 @@ class SqlAlchemyTableRepository:
         return self._table(model)
 
     async def set_occupancy(
-        self, table_id: UUID, *, is_occupied: bool, actor_id: UUID
+        self, table_id: UUID, *, is_occupied: bool, actor_id: UUID | None = None
     ) -> RestaurantTable:
         statement = (
             select(RestaurantTableModel)
@@ -111,6 +115,38 @@ class SqlAlchemyTableRepository:
         if model is None:
             raise TableNotFoundError
         if model.is_occupied != is_occupied:
+            if not is_occupied:
+                active_orders_stmt = (
+                    select(
+                        OrderModel.id,
+                        OrderModel.total_amount,
+                        func.coalesce(func.sum(PaymentModel.amount), Decimal("0")).label("paid"),
+                    )
+                    .outerjoin(PaymentModel, PaymentModel.order_id == OrderModel.id)
+                    .where(
+                        OrderModel.table_id == table_id,
+                        OrderModel.status.in_(["REQUESTED", "APPROVED", "CONFIRMED"]),
+                    )
+                    .group_by(OrderModel.id, OrderModel.total_amount)
+                )
+                rows = (await self._session.execute(active_orders_stmt)).all()
+                for row in rows:
+                    ord_id, ord_total, ord_paid = row[0], row[1], row[2]
+                    balance = ord_total - ord_paid
+                    if balance > Decimal("0.00"):
+                        raise TableOccupancyConflictError(
+                            f"No se puede liberar la mesa: la orden #{str(ord_id)[:8].upper()} tiene un saldo pendiente de S/ {balance:.2f} por cobrar."
+                        )
+
+                await self._session.execute(
+                    update(OrderModel)
+                    .where(
+                        OrderModel.table_id == table_id,
+                        OrderModel.status.in_(["REQUESTED", "APPROVED", "CONFIRMED"]),
+                    )
+                    .values(status="CLOSED")
+                )
+
             model.is_occupied = is_occupied
             model.occupancy_started_at = func.clock_timestamp() if is_occupied else None
             model.updated_at = func.clock_timestamp()

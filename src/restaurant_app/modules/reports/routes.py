@@ -1,8 +1,7 @@
 """Reports and KPIs endpoint for KAIRO Admin Dashboard."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Any
 
 from fastapi import APIRouter
 from pydantic import BaseModel, ConfigDict
@@ -59,8 +58,8 @@ async def get_dashboard_stats(
     actor: AdminPrincipal,
     session: DatabaseSession,
 ) -> DashboardStatsResponse:
-    now = datetime.now(timezone.utc)
-    today_start = datetime(now.year, now.month, now.day, tzinfo=timezone.utc)
+    now = datetime.now(UTC)
+    today_start = datetime(now.year, now.month, now.day, tzinfo=UTC)
 
     # 1. Total sales today (sum of collections)
     today_sales_query = select(func.coalesce(func.sum(PaymentModel.amount), Decimal("0"))).where(
