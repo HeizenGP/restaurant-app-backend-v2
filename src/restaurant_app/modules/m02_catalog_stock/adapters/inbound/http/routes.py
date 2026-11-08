@@ -49,6 +49,25 @@ async def list_products(
     return [CatalogProductResponse.from_domain(product) for product in products]
 
 
+@router.get("/products", response_model=list[CatalogProductResponse])
+async def list_all_products(
+    session: DatabaseSession, category_id: UUID | None = None
+) -> list[CatalogProductResponse]:
+    repo = SqlAlchemyCatalogRepository(session)
+    if category_id is not None:
+        products = await repo.list_products(category_id)
+    else:
+        products = await repo.list_all_products()
+    return [CatalogProductResponse.from_domain(product) for product in products]
+
+
+@router.get("/stock/movements")
+async def list_stock_movements(
+    actor: CatalogAdmin, session: DatabaseSession, limit: int = 100
+) -> list[dict[str, object]]:
+    return await SqlAlchemyCatalogRepository(session).list_stock_movements(limit=limit)
+
+
 @router.post("/categories", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
 async def create_category(
     payload: CategoryRequest, actor: CatalogAdmin, session: DatabaseSession

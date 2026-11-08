@@ -88,6 +88,28 @@ class RoleAssignmentRequest(StrictRequest):
     role: RoleCode
 
 
+class CreateStaffRequest(StrictRequest):
+    display_name: str = Field(min_length=1, max_length=120)
+    email: str = Field(min_length=3, max_length=254)
+    password: SecretStr = Field(min_length=8, max_length=128)
+    role: RoleCode
+    phone: str | None = Field(default=None, max_length=30)
+
+    @field_validator("email")
+    @classmethod
+    def validate_email_shape(cls, value: str) -> str:
+        return RegisterRequest.validate_email_shape(value)
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(cls, value: SecretStr) -> SecretStr:
+        return RegisterRequest.validate_password_strength(value)
+
+
+class UpdateUserStatusRequest(StrictRequest):
+    is_active: bool
+
+
 class SavedCardInput(StrictRequest):
     id: str = Field(min_length=1)
     card_number_masked: str = Field(min_length=4, max_length=30)

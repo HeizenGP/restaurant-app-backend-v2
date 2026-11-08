@@ -17,6 +17,7 @@ from restaurant_app.modules.m01_access.adapters.inbound.http.schemas import (
     AddressResponse,
     AuthenticationResponse,
     CreateAddressRequest,
+    CreateStaffRequest,
     GoogleLoginRequest,
     LoginRequest,
     MessageResponse,
@@ -27,8 +28,10 @@ from restaurant_app.modules.m01_access.adapters.inbound.http.schemas import (
     RoleAssignmentRequest,
     UpdateAddressRequest,
     UpdateProfileRequest,
+    UpdateUserStatusRequest,
     UserResponse,
 )
+from restaurant_app.modules.m01_access.domain.entities import RoleCode
 from restaurant_app.modules.m01_access.adapters.outbound import (
     GoogleIdTokenVerifier,
     SqlAlchemyPasswordResetRepository,
@@ -270,6 +273,62 @@ async def update_current_user_profile(
         avatar_url=payload.avatar_url,
         saved_cards=saved_cards_data,
         saved_addresses=saved_addresses_data,
+    )
+    return UserResponse.from_domain(user)
+
+
+@users_router.get(
+    "",
+    response_model=list[UserResponse],
+    summary="List staff members",
+)
+async def list_users(
+    actor: AdminPrincipal,
+    session: DatabaseSession,
+    role: RoleCode | None = None,
+    staff_only: bool = True,
+) -> list[UserResponse]:
+    users = await SqlAlchemyUserRepository(session).list_users(role=role, staff_only=staff_only)
+    return [UserResponse.from_domain(u) for u in users]
+
+
+@users_router.post(
+    "",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a new staff or user account",
+)
+async def create_staff_user(
+    payload: CreateStaffRequest,
+    actor: AdminPrincipal,
+    session: DatabaseSession,
+) -> UserResponse:
+    hasher = get_password_hasher()
+    password_hash = hasher.hash(payload.password.get_secret_value())
+    user = await SqlAlchemyUserRepository(session).create_staff(
+        display_name=payload.display_name,
+        email=payload.email,
+        password_hash=password_hash,
+        role=payload.role,
+        phone=payload.phone,
+    )
+    return UserResponse.from_domain(user)
+
+
+@users_router.patch(
+    "/{user_id}/status",
+    response_model=UserResponse,
+    summary="Update user active status",
+)
+async def update_user_status(
+    user_id: UUID,
+    payload: UpdateUserStatusRequest,
+    actor: AdminPrincipal,
+    session: DatabaseSession,
+) -> UserResponse:
+    user = await SqlAlchemyUserRepository(session).set_active_status(
+        user_id=user_id,
+        is_active=payload.is_active,
     )
     return UserResponse.from_domain(user)
 

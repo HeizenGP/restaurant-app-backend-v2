@@ -4,6 +4,8 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Header
+from pydantic import BaseModel, ConfigDict
+from sqlalchemy import select
 
 from restaurant_app.core.dependencies import DatabaseSession
 from restaurant_app.modules.m01_access.public import CurrentPrincipal
@@ -16,9 +18,48 @@ from restaurant_app.modules.m06_payments.adapters.inbound.http.schemas import (
     PaymentSummaryResponse,
     RecordCollectionRequest,
 )
+from restaurant_app.modules.m06_payments.adapters.outbound.models import PaymentModel
 
 collection_router = APIRouter(prefix="/orders", tags=["M06 cashier"])
+payments_router = APIRouter(prefix="/payments", tags=["M06 payments"])
 RequestKey = Annotated[str, Header(alias="Idempotency-Key", min_length=1, max_length=128)]
+
+
+class PaymentRecordResponse(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    id: str
+    order_id: str
+    kind: str
+    amount: float
+    method_code: str | None = None
+    reference_code: str | None = None
+    recorded_by_user_id: str
+    recorded_at: str
+
+
+@payments_router.get("", response_model=list[PaymentRecordResponse])
+async def list_all_payments(
+    actor: Cashier,
+    session: DatabaseSession,
+    limit: int = 100,
+) -> list[PaymentRecordResponse]:
+    """Query recent payments across all orders."""
+    statement = select(PaymentModel).order_by(PaymentModel.recorded_at.desc()).limit(limit)
+    models = (await session.scalars(statement)).all()
+    return [
+        PaymentRecordResponse(
+            id=str(m.id),
+            order_id=str(m.order_id),
+            kind=m.kind,
+            amount=float(m.amount),
+            method_code=m.method_code,
+            reference_code=m.reference_code,
+            recorded_by_user_id=str(m.recorded_by_user_id),
+            recorded_at=m.recorded_at.isoformat(),
+        )
+        for m in models
+    ]
 
 
 @collection_router.post(

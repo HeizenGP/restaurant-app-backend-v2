@@ -192,6 +192,74 @@ class SqlAlchemyUserRepository:
             raise UserNotFoundError(str(user_id))
         return user
 
+    async def list_users(self, role: RoleCode | None = None, staff_only: bool = True) -> list[User]:
+        statement = (
+            select(UserModel, UserRoleModel.role_code)
+            .outerjoin(UserRoleModel, UserRoleModel.user_id == UserModel.id)
+            .order_by(UserModel.created_at.desc(), UserRoleModel.role_code)
+        )
+        rows = (await self._session.execute(statement)).all()
+        user_roles: dict[UUID, list[RoleCode]] = {}
+        user_models: dict[UUID, UserModel] = {}
+        for model, role_code in rows:
+            if model.id not in user_models:
+                user_models[model.id] = model
+                user_roles[model.id] = []
+            if role_code is not None:
+                user_roles[model.id].append(RoleCode(role_code))
+
+        users: list[User] = []
+        for uid, model in user_models.items():
+            roles = frozenset(user_roles[uid])
+            if staff_only and not any(r != RoleCode.CUSTOMER for r in roles):
+                continue
+            if role is not None and role not in roles:
+                continue
+            users.append(self._to_user(model, roles))
+        return users
+
+    async def create_staff(
+        self,
+        *,
+        display_name: str,
+        email: str,
+        password_hash: str,
+        role: RoleCode,
+        phone: str | None = None,
+    ) -> User:
+        model = UserModel(
+            display_name=display_name,
+            email=email,
+            password_hash=password_hash,
+            phone=phone,
+        )
+        self._session.add(model)
+        try:
+            await self._session.flush()
+            self._session.add(UserRoleModel(user_id=model.id, role_code=role.value))
+            await self._session.flush()
+        except IntegrityError as error:
+            raise EmailAlreadyRegisteredError(email) from error
+        user = await self.find_by_id(model.id)
+        if user is None:
+            raise RuntimeError("created staff user could not be reloaded")
+        return user
+
+    async def set_active_status(self, user_id: UUID, is_active: bool) -> User:
+        result = await self._session.execute(
+            update(UserModel)
+            .where(UserModel.id == user_id)
+            .values(is_active=is_active)
+            .returning(UserModel.id)
+        )
+        if result.scalar_one_or_none() is None:
+            raise UserNotFoundError(str(user_id))
+        await self._session.flush()
+        user = await self.find_by_id(user_id)
+        if user is None:
+            raise UserNotFoundError(str(user_id))
+        return user
+
 
 class SqlAlchemySessionRepository:
     """Persist revocable USER/GUEST sessions and one-time refresh digests."""

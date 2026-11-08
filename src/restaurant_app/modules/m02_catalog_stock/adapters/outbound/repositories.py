@@ -79,6 +79,31 @@ class SqlAlchemyCatalogRepository:
         )
         return [self._product(row) for row in (await self._session.scalars(statement)).all()]
 
+    async def list_all_products(self) -> list[Product]:
+        statement = select(ProductModel).order_by(ProductModel.name, ProductModel.id)
+        return [self._product(row) for row in (await self._session.scalars(statement)).all()]
+
+    async def list_stock_movements(self, limit: int = 100) -> list[dict[str, object]]:
+        statement = (
+            select(StockMovementModel, ProductModel.name)
+            .join(ProductModel, ProductModel.id == StockMovementModel.product_id)
+            .order_by(StockMovementModel.recorded_at.desc())
+            .limit(limit)
+        )
+        rows = (await self._session.execute(statement)).all()
+        return [
+            {
+                "id": str(m.id),
+                "product_id": str(m.product_id),
+                "product_name": name,
+                "kind": m.kind,
+                "quantity_delta": m.quantity_delta,
+                "recorded_at": m.recorded_at.isoformat(),
+                "actor_user_id": str(m.actor_user_id) if m.actor_user_id else None,
+            }
+            for m, name in rows
+        ]
+
     async def get_product(self, product_id: UUID) -> Product | None:
         model = await self._session.get(ProductModel, product_id)
         return None if model is None else self._product(model)
