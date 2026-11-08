@@ -76,3 +76,4 @@ class Order:
     decided_by_user_id: UUID | None
     decided_at: datetime | None
     table_verified_at: datetime | None
+    table_account_id: UUID | None = None

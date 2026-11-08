@@ -14,6 +14,7 @@ from restaurant_app.modules.m02_catalog_stock.adapters.outbound.models import (
 )
 from restaurant_app.modules.m03_tables.adapters.outbound.models import (
     RestaurantTableModel,
+    TableAccountModel,
 )
 from restaurant_app.modules.m04_orders.adapters.outbound.models import (
     OrderItemModel,
@@ -39,6 +40,7 @@ __all__ = [
     "RestaurantTableModel",
     "RoleModel",
     "StockMovementModel",
+    "TableAccountModel",
     "UserAddressModel",
     "UserModel",
     "UserRoleModel",

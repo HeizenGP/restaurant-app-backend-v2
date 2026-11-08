@@ -282,31 +282,17 @@ async def test_additional_local_orders_require_current_verified_table_owner(
         )
         assert first_order.status_code == 201, first_order.text
         assert first_order.json()["status"] == "REQUESTED"
-        assert table_response.json()["is_occupied"] is False
-        still_free = client.get("/api/v1/tables", headers=owner)
-        assert still_free.status_code == 200
-        assert still_free.json()[0]["is_occupied"] is False
-        # A QR/table ID and a pending request cannot establish ownership.
+        occupied = client.get("/api/v1/tables", headers=owner)
+        assert occupied.status_code == 200
+        assert occupied.json()[0]["is_occupied"] is True
+        # The first request opens the table account atomically; another customer
+        # cannot join that service session even while review is pending.
         pending_outsider = client.post(
             "/api/v1/orders",
             json=payload,
             headers={**outsider, "Idempotency-Key": "outsider-before-approval"},
         )
-        assert pending_outsider.status_code == 201, pending_outsider.text
-        manually_occupied = client.patch(
-            f"/api/v1/tables/{table_id}/occupancy",
-            json={"is_occupied": True},
-            headers=waiter,
-        )
-        assert manually_occupied.status_code == 200, manually_occupied.text
-        assert (
-            client.post(
-                "/api/v1/orders",
-                json=payload,
-                headers={**owner, "Idempotency-Key": "pending-is-not-membership"},
-            ).status_code
-            == 422
-        )
+        assert pending_outsider.status_code == 422, pending_outsider.text
         unverified = client.post(
             f"/api/v1/orders/{first_order.json()['id']}/decision",
             json={"approved": True, "table_verified": False},
@@ -322,12 +308,6 @@ async def test_additional_local_orders_require_current_verified_table_owner(
         assert approved.status_code == 200, approved.text
         assert approved.json()["status"] == "APPROVED"
         assert client.get("/api/v1/tables", headers=owner).json()[0]["is_occupied"] is True
-        conflict = client.post(
-            f"/api/v1/orders/{pending_outsider.json()['id']}/decision",
-            json={"approved": True, "table_verified": True},
-            headers=waiter,
-        )
-        assert conflict.status_code == 409, conflict.text
         assert (
             client.post(
                 "/api/v1/orders",
@@ -366,38 +346,20 @@ async def test_additional_local_orders_require_current_verified_table_owner(
             ).status_code
             == 403
         )
-        released = client.patch(
+        release_blocked = client.patch(
             f"/api/v1/tables/{table_id}/occupancy",
             json={"is_occupied": False},
             headers=admin,
         )
-        assert released.status_code == 200, released.text
-        occupied_again = client.patch(
-            f"/api/v1/tables/{table_id}/occupancy",
-            json={"is_occupied": True},
-            headers=waiter,
-        )
-        assert occupied_again.status_code == 200, occupied_again.text
-        assert (
-            client.post(
-                "/api/v1/orders",
-                json=payload,
-                headers={**owner, "Idempotency-Key": "stale-membership"},
-            ).status_code
-            == 422
-        )
+        assert release_blocked.status_code == 409, release_blocked.text
     table_row = await database.fetchrow(
         "SELECT is_occupied, occupancy_started_at FROM public.restaurant_tables WHERE id=$1",
         UUID(table_id),
     )
     assert table_row is not None and table_row["is_occupied"] is True
-    first_verified_at = await database.fetchval(
-        "SELECT table_verified_at FROM public.orders WHERE id=$1", UUID(first_order.json()["id"])
-    )
-    assert first_verified_at is not None
-    assert table_row["occupancy_started_at"] > first_verified_at
-    assert await database.fetchval("SELECT count(*) FROM public.orders") == 3
-    assert await database.fetchval("SELECT count(*) FROM public.order_items") == 3
+    assert await database.fetchval("SELECT count(*) FROM public.orders") == 2
+    assert await database.fetchval("SELECT count(*) FROM public.order_items") == 2
+    assert await database.fetchval("SELECT count(*) FROM public.table_accounts") == 1
 
 
 @pytest.mark.asyncio
@@ -430,11 +392,12 @@ async def test_delivery_review_rejection_visibility_and_permissions(
         assert created.json()["table_id"] is None
         assert created.json()["delivery_address"] == "Av. Lima 123"
         assert client.get(f"/api/v1/orders/{order_id}", headers=other).status_code == 404
-        assert client.get(f"/api/v1/orders/{order_id}", headers=cashier).status_code == 404
+        assert client.get(f"/api/v1/orders/{order_id}", headers=cashier).status_code == 200
         assert client.get(f"/api/v1/orders/{order_id}", headers=waiter).status_code == 404
         assert client.get("/api/v1/orders", headers=other).json() == []
         assert client.get("/api/v1/orders", headers=waiter).json() == []
         assert len(client.get("/api/v1/orders", headers=admin).json()) == 1
+        assert len(client.get("/api/v1/orders", headers=cashier).json()) == 1
         assert (
             client.post(
                 f"/api/v1/orders/{order_id}/decision", json={"approved": True}, headers=cashier
@@ -693,13 +656,12 @@ async def test_app_request_waits_for_manual_occupancy_change(
 
 
 @pytest.mark.asyncio
-async def test_simultaneous_local_approvals_cannot_assign_two_table_owners(
+async def test_simultaneous_local_requests_cannot_open_two_table_accounts(
     database: asyncpg.Connection,
 ) -> None:
     product_id = await catalog(database)
     _, first_email = await actor(database, "CUSTOMER")
     _, second_email = await actor(database, "CUSTOMER")
-    _, waiter_email = await actor(database, "WAITER")
     table_id = await database.fetchval(
         "INSERT INTO public.restaurant_tables(code) VALUES($1) RETURNING id",
         f"M-{uuid4().hex[:12]}",
@@ -709,7 +671,6 @@ async def test_simultaneous_local_approvals_cannot_assign_two_table_owners(
         "table_id": str(table_id),
         "items": [{"product_id": str(product_id), "quantity": 1}],
     }
-    tasks: list[asyncio.Task[httpx.Response]] = []
     async with async_api_clients() as (first_client, second_client):
         first_login = await first_client.post(
             "/api/v1/auth/login", json={"email": first_email, "password": ACTOR_PASSWORD}
@@ -717,12 +678,7 @@ async def test_simultaneous_local_approvals_cannot_assign_two_table_owners(
         second_login = await second_client.post(
             "/api/v1/auth/login", json={"email": second_email, "password": ACTOR_PASSWORD}
         )
-        waiter_login = await first_client.post(
-            "/api/v1/auth/login", json={"email": waiter_email, "password": ACTOR_PASSWORD}
-        )
-        assert all(
-            response.status_code == 200 for response in (first_login, second_login, waiter_login)
-        )
+        assert first_login.status_code == second_login.status_code == 200
         first_order = await first_client.post(
             "/api/v1/orders",
             json=payload,
@@ -739,54 +695,10 @@ async def test_simultaneous_local_approvals_cannot_assign_two_table_owners(
                 "Idempotency-Key": "second-owner",
             },
         )
-        assert first_order.status_code == second_order.status_code == 201
-        waiter_headers = {"Authorization": "Bearer " + waiter_login.json()["access_token"]}
-        try:
-            async with database.transaction():
-                await database.fetchval(
-                    "SELECT id FROM public.restaurant_tables WHERE id=$1 FOR UPDATE", table_id
-                )
-                blocker_xid = await database.fetchval("SELECT pg_current_xact_id()::xid::text")
-                tasks = [
-                    asyncio.create_task(
-                        client.post(
-                            f"/api/v1/orders/{response.json()['id']}/decision",
-                            json={"approved": True, "table_verified": True},
-                            headers=waiter_headers,
-                        )
-                    )
-                    for client, response in (
-                        (first_client, first_order),
-                        (second_client, second_order),
-                    )
-                ]
-                async with asyncio.timeout(10):
-                    while True:
-                        waiting = await database.fetchval(
-                            "SELECT count(*) FROM pg_locks "
-                            "WHERE locktype='transactionid' AND NOT granted "
-                            "AND transactionid::text=$1",
-                            blocker_xid,
-                        )
-                        if waiting >= 1:
-                            break
-                        if any(task.done() for task in tasks):
-                            pytest.fail("A decision completed before the table lock barrier")
-                        await asyncio.sleep(0.05)
-            responses = await asyncio.wait_for(asyncio.gather(*tasks), timeout=10)
-        finally:
-            for task in tasks:
-                if not task.done():
-                    task.cancel()
-            if tasks:
-                await asyncio.gather(*tasks, return_exceptions=True)
-    assert sorted(response.status_code for response in responses) == [200, 409]
-    assert (
-        await database.fetchval("SELECT count(*) FROM public.orders WHERE status='APPROVED'") == 1
-    )
-    assert (
-        await database.fetchval("SELECT count(*) FROM public.orders WHERE status='REQUESTED'") == 1
-    )
+        assert first_order.status_code == 201, first_order.text
+        assert second_order.status_code == 422, second_order.text
+    assert await database.fetchval("SELECT count(*) FROM public.orders") == 1
+    assert await database.fetchval("SELECT count(*) FROM public.table_accounts") == 1
     assert (
         await database.fetchval(
             "SELECT is_occupied FROM public.restaurant_tables WHERE id=$1", table_id

@@ -19,6 +19,7 @@ class SqlAlchemyAdvanceRepository:
 
     @staticmethod
     def _advance(model: PaymentModel) -> AdvancePayment:
+        assert model.order_id is not None
         return AdvancePayment(
             id=model.id,
             order_id=model.order_id,

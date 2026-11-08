@@ -99,6 +99,11 @@ class OrderModel(Base):
         ForeignKey("public.restaurant_tables.id", ondelete="RESTRICT"),
         nullable=True,
     )
+    table_account_id: Mapped[UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("public.table_accounts.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
     delivery_address: Mapped[str | None] = mapped_column(Text, nullable=True)
     contact_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     contact_phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
@@ -147,6 +152,11 @@ Index(
     "ix_orders_table_id",
     OrderModel.table_id,
     postgresql_where=text("table_id IS NOT NULL"),
+)
+Index(
+    "ix_orders_table_account_id",
+    OrderModel.table_account_id,
+    postgresql_where=text("table_account_id IS NOT NULL"),
 )
 
 

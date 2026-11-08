@@ -71,3 +71,78 @@ class PaymentSummary:
         if self.balance <= 0:
             return "PAID"
         return "PARTIAL" if self.paid_amount > 0 else "UNPAID"
+
+
+# ---------------------------------------------------------------------------
+# Consolidated table account
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class TableAccountLine:
+    product_id: UUID
+    product_name: str
+    quantity: int
+    unit_price: Decimal
+
+    @property
+    def subtotal(self) -> Decimal:
+        return self.unit_price * self.quantity
+
+
+@dataclass(frozen=True, slots=True)
+class TableAccountOrder:
+    id: UUID
+    status: str
+    total_amount: Decimal
+    paid_amount: Decimal
+    created_at: datetime
+    lines: tuple[TableAccountLine, ...]
+
+    @property
+    def balance(self) -> Decimal:
+        return self.total_amount - self.paid_amount
+
+
+@dataclass(frozen=True, slots=True)
+class TableAccountPayment:
+    id: UUID
+    order_id: UUID | None
+    amount: Decimal
+    kind: str
+    method_code: str | None
+    reference_code: str | None
+    recorded_by_user_id: UUID
+    recorded_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class TableAccountSummary:
+    id: UUID
+    table_id: UUID
+    table_code: str
+    status: str
+    customer_user_id: UUID | None
+    guest_session_id: UUID | None
+    opened_at: datetime
+    closed_at: datetime | None
+    total_amount: Decimal
+    advance_amount: Decimal
+    paid_amount: Decimal
+    balance: Decimal
+    orders: tuple[TableAccountOrder, ...]
+    payments: tuple[TableAccountPayment, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class TableAccountChargeState:
+    id: UUID
+    table_id: UUID
+    order_ids: tuple[UUID, ...]
+    order_statuses: tuple[str, ...]
+    total_amount: Decimal
+    paid_amount: Decimal
+
+    @property
+    def balance(self) -> Decimal:
+        return self.total_amount - self.paid_amount

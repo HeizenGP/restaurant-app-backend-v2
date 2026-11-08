@@ -51,10 +51,20 @@ def test_users_list_and_create_and_status() -> None:
         phone="987654321",
     )
 
-    with patch("restaurant_app.modules.m01_access.adapters.outbound.repositories.SqlAlchemyUserRepository.list_users", new_callable=AsyncMock) as mock_list, \
-         patch("restaurant_app.modules.m01_access.adapters.outbound.repositories.SqlAlchemyUserRepository.create_staff", new_callable=AsyncMock) as mock_create, \
-         patch("restaurant_app.modules.m01_access.adapters.outbound.repositories.SqlAlchemyUserRepository.set_active_status", new_callable=AsyncMock) as mock_status:
-        
+    with (
+        patch(
+            "restaurant_app.modules.m01_access.adapters.outbound.repositories.SqlAlchemyUserRepository.list_users",
+            new_callable=AsyncMock,
+        ) as mock_list,
+        patch(
+            "restaurant_app.modules.m01_access.adapters.outbound.repositories.SqlAlchemyUserRepository.create_staff",
+            new_callable=AsyncMock,
+        ) as mock_create,
+        patch(
+            "restaurant_app.modules.m01_access.adapters.outbound.repositories.SqlAlchemyUserRepository.set_active_status",
+            new_callable=AsyncMock,
+        ) as mock_status,
+    ):
         mock_list.return_value = [sample_user]
         mock_create.return_value = sample_user
         mock_status.return_value = sample_user
@@ -105,6 +115,7 @@ def test_catalog_all_products_and_movements() -> None:
     app.dependency_overrides[get_db_session] = lambda: mock_session
 
     from restaurant_app.modules.m02_catalog_stock.domain.entities import Product
+
     sample_product = Product(
         id=uuid4(),
         category_id=uuid4(),
@@ -116,9 +127,16 @@ def test_catalog_all_products_and_movements() -> None:
         description="Arroz chaufa al wok",
     )
 
-    with patch("restaurant_app.modules.m02_catalog_stock.adapters.outbound.repositories.SqlAlchemyCatalogRepository.list_all_products", new_callable=AsyncMock) as mock_products, \
-         patch("restaurant_app.modules.m02_catalog_stock.adapters.outbound.repositories.SqlAlchemyCatalogRepository.list_stock_movements", new_callable=AsyncMock) as mock_movements:
-        
+    with (
+        patch(
+            "restaurant_app.modules.m02_catalog_stock.adapters.outbound.repositories.SqlAlchemyCatalogRepository.list_all_products",
+            new_callable=AsyncMock,
+        ) as mock_products,
+        patch(
+            "restaurant_app.modules.m02_catalog_stock.adapters.outbound.repositories.SqlAlchemyCatalogRepository.list_stock_movements",
+            new_callable=AsyncMock,
+        ) as mock_movements,
+    ):
         mock_products.return_value = [sample_product]
         mock_movements.return_value = [
             {
@@ -139,7 +157,9 @@ def test_catalog_all_products_and_movements() -> None:
             assert len(data) == 1
             assert data[0]["name"] == "Chaufán Especial"
 
-            res_mov = client.get("/api/v1/catalog/stock/movements", headers={"Authorization": "Bearer fake"})
+            res_mov = client.get(
+                "/api/v1/catalog/stock/movements", headers={"Authorization": "Bearer fake"}
+            )
             assert res_mov.status_code == 200
             data_mov = res_mov.json()
             assert len(data_mov) == 1
@@ -164,6 +184,7 @@ def test_payments_list_endpoint() -> None:
     app.dependency_overrides[get_db_session] = lambda: mock_session
 
     from restaurant_app.modules.m06_payments.adapters.outbound.models import PaymentModel
+
     p_id = uuid4()
     o_id = uuid4()
     u_id = uuid4()
@@ -207,12 +228,12 @@ def test_dashboard_reports_endpoint() -> None:
     # Mock scalar returns for the queries
     mock_session.scalar.side_effect = [
         Decimal("1450.00"),  # today_sales
-        12,                  # today_orders_count
-        4,                   # active_orders_count
-        8,                   # total_tables_count
-        3,                   # occupied_tables_count
-        24,                  # total_products_count
-        2,                   # low_stock_count
+        12,  # today_orders_count
+        4,  # active_orders_count
+        8,  # total_tables_count
+        3,  # occupied_tables_count
+        24,  # total_products_count
+        2,  # low_stock_count
     ]
 
     mock_execute = MagicMock()

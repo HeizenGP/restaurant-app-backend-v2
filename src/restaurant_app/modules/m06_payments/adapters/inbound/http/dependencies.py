@@ -19,14 +19,23 @@ from restaurant_app.modules.m06_payments.adapters.outbound import (
     SqlAlchemyAdvanceRepository,
     SqlAlchemyCollectionRepository,
 )
+from restaurant_app.modules.m06_payments.adapters.outbound.table_account_repository import (
+    SqlAlchemyTableAccountRepository,
+)
 from restaurant_app.modules.m06_payments.application.use_cases.get_advance_summary import (
     GetAdvanceSummary,
 )
 from restaurant_app.modules.m06_payments.application.use_cases.get_payment_summary import (
     GetPaymentSummary,
 )
+from restaurant_app.modules.m06_payments.application.use_cases.get_table_account import (
+    GetTableAccount,
+)
 from restaurant_app.modules.m06_payments.application.use_cases.record_collection import (
     RecordCollection,
+)
+from restaurant_app.modules.m06_payments.application.use_cases.record_table_account_payment import (
+    RecordTableAccountPayment,
 )
 from restaurant_app.modules.m06_payments.application.use_cases.verify_advance import VerifyAdvance
 from restaurant_app.modules.m07_fulfillment.public import SqlAlchemyHandoverReader
@@ -82,3 +91,11 @@ async def require_cashier(actor: CurrentPrincipal) -> Principal:
 
 
 Cashier = Annotated[Principal, Depends(require_cashier)]
+
+
+def get_table_account_handler(session: AsyncSession) -> GetTableAccount:
+    return GetTableAccount(SqlAlchemyTableAccountRepository(session))
+
+
+def record_table_account_payment_handler(session: AsyncSession) -> RecordTableAccountPayment:
+    return RecordTableAccountPayment(SqlAlchemyTableAccountRepository(session))

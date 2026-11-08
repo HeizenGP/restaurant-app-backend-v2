@@ -34,7 +34,9 @@ APP_TABLES = {
     "restaurant_tables",
     "roles",
     "stock_movements",
+    "table_accounts",
     "user_roles",
+    "user_addresses",
     "users",
 }
 
@@ -46,15 +48,21 @@ EXPLICIT_INDEXES = {
     "ix_orders_guest_created",
     "ix_orders_status_created",
     "ix_orders_table_id",
+    "ix_orders_table_account_id",
     "ix_payments_order_recorded",
+    "ix_payments_table_account_recorded",
     "ix_password_reset_tokens_user_created",
     "ix_products_category_available",
     "ix_sessions_user_expiry",
     "ix_stock_movements_product_recorded",
     "ix_user_roles_role_code_user_id",
+    "ix_user_addresses_user_default",
+    "ix_user_addresses_user_id",
     "ux_idempotency_guest_request",
     "ux_idempotency_user_request",
     "ux_payments_one_advance_per_order",
+    "ix_table_accounts_table_opened",
+    "ux_table_accounts_one_open_per_table",
     "ux_stock_movements_order_item",
     "ux_users_email_ci",
 }
@@ -99,17 +107,19 @@ MUTABLE_TABLES = (
     "stock_movements",
     "order_items",
     "orders",
+    "table_accounts",
     "restaurant_tables",
     "products",
     "categories",
     "auth_sessions",
     "password_reset_tokens",
     "user_roles",
+    "user_addresses",
     "users",
 )
 
 DISPOSABLE_DATABASE_NAME = re.compile(r"^[a-z0-9][a-z0-9_]*(?:_test|_stage07)$")
-ALEMBIC_HEAD = "20261106_0007"
+ALEMBIC_HEAD = "20261107_0012"
 
 
 def _test_database_target() -> tuple[str, str]:

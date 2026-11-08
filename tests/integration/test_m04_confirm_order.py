@@ -603,7 +603,7 @@ async def test_manual_whatsapp_needs_advance_but_no_second_approval(
 
 
 @pytest.mark.asyncio
-async def test_local_app_confirmation_rejects_stale_table_occupation(
+async def test_local_app_account_prevents_stale_table_occupation(
     database: asyncpg.Connection,
 ) -> None:
     product_id = await product(database)
@@ -631,24 +631,22 @@ async def test_local_app_confirmation_rejects_stale_table_occupation(
             == 200
         )
         occupancy = f"/api/v1/tables/{table_id}/occupancy"
-        assert (
-            client.patch(occupancy, json={"is_occupied": False}, headers=admin).status_code == 200
-        )
-        assert client.patch(occupancy, json={"is_occupied": True}, headers=admin).status_code == 200
-        stale = client.post(
+        release = client.patch(occupancy, json={"is_occupied": False}, headers=admin)
+        assert release.status_code == 409, release.text
+        confirmed = client.post(
             f"/api/v1/orders/{order_id}/confirm",
-            headers={**waiter, "Idempotency-Key": "stale-table"},
+            headers={**waiter, "Idempotency-Key": "protected-table"},
         )
-        assert stale.status_code == 409, stale.text
+        assert confirmed.status_code == 200, confirmed.text
     assert (
         await database.fetchval("SELECT status FROM public.orders WHERE id=$1", order_id)
-        == "APPROVED"
+        == "CONFIRMED"
     )
     assert (
         await database.fetchval("SELECT stock_qty FROM public.products WHERE id=$1", product_id)
-        == 10
+        == 9
     )
-    assert await database.fetchval("SELECT count(*) FROM public.kitchen_tickets") == 0
+    assert await database.fetchval("SELECT count(*) FROM public.kitchen_tickets") == 1
 
 
 async def wait_for_lock_waiters(

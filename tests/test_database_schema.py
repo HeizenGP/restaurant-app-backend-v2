@@ -74,6 +74,17 @@ EXPECTED_COLUMNS = {
         "updated_at",
         "updated_by_user_id",
     },
+    "public.table_accounts": {
+        "id",
+        "table_id",
+        "customer_user_id",
+        "guest_session_id",
+        "opened_by_user_id",
+        "status",
+        "opened_at",
+        "closed_at",
+        "closed_by_user_id",
+    },
     "public.orders": {
         "id",
         "modality",
@@ -83,6 +94,7 @@ EXPECTED_COLUMNS = {
         "guest_session_id",
         "created_by_user_id",
         "table_id",
+        "table_account_id",
         "delivery_address",
         "contact_name",
         "contact_phone",
@@ -132,6 +144,7 @@ EXPECTED_COLUMNS = {
         "request_key",
         "request_hash",
         "result_order_id",
+        "result_table_account_id",
         "created_at",
         "expires_at",
         "completed_at",
@@ -139,6 +152,7 @@ EXPECTED_COLUMNS = {
     "public.payments": {
         "id",
         "order_id",
+        "table_account_id",
         "kind",
         "amount",
         "method_code",
@@ -171,6 +185,9 @@ EXPECTED_INDEXES = {
     "ix_orders_guest_created",
     "ix_orders_status_created",
     "ix_orders_table_id",
+    "ix_orders_table_account_id",
+    "ux_table_accounts_one_open_per_table",
+    "ix_table_accounts_table_opened",
     "ix_order_items_product",
     "ux_stock_movements_order_item",
     "ix_stock_movements_product_recorded",
@@ -180,6 +197,7 @@ EXPECTED_INDEXES = {
     "ix_idempotency_expiry",
     "ux_payments_one_advance_per_order",
     "ix_payments_order_recorded",
+    "ix_payments_table_account_recorded",
 }
 
 EXPECTED_FUNCTIONS = {

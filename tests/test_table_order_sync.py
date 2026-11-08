@@ -70,9 +70,7 @@ async def test_app_order_occupies_table_immediately() -> None:
             )
         )
     )
-    tables = SimpleNamespace(
-        get_table=AsyncMock(return_value=TableAvailability(table_id, False))
-    )
+    tables = SimpleNamespace(get_table=AsyncMock(return_value=TableAvailability(table_id, False)))
     table_occupancy = SimpleNamespace(
         lock_table=AsyncMock(return_value=TableAvailability(table_id, False)),
         occupy=AsyncMock(return_value=TableAvailability(table_id, True, datetime.now(UTC))),

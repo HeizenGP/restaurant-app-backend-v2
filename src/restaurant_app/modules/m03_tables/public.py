@@ -29,3 +29,25 @@ class TableOccupancy:
 
     async def occupy(self, table_id: UUID, *, actor_id: UUID | None = None) -> RestaurantTable:
         return await self._tables.set_occupancy(table_id, is_occupied=True, actor_id=actor_id)
+
+
+class TableAccountRegistry:
+    """Public M03 contract used by M04 to attach orders to one table visit."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._tables = SqlAlchemyTableRepository(session)
+
+    async def get_or_create(
+        self,
+        table_id: UUID,
+        *,
+        customer_user_id: UUID | None,
+        guest_session_id: UUID | None,
+        opened_by_user_id: UUID | None,
+    ) -> UUID:
+        return await self._tables.get_or_create_open_account(
+            table_id,
+            customer_user_id=customer_user_id,
+            guest_session_id=guest_session_id,
+            opened_by_user_id=opened_by_user_id,
+        )

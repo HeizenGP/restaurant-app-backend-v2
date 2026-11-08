@@ -9,6 +9,7 @@ from restaurant_app.modules.m01_access.public import AuthorizeRoles, Principal, 
 from restaurant_app.modules.m04_orders.application.ports.order_repository import (
     OrderRepository,
     ProductReader,
+    TableAccountRegistry,
     TableOccupancy,
     TableReader,
 )
@@ -32,11 +33,13 @@ class CreateOrder:
         products: ProductReader,
         tables: TableReader,
         waiter_tables: TableOccupancy | None = None,
+        table_accounts: TableAccountRegistry | None = None,
     ) -> None:
         self._orders = orders
         self._products = products
         self._tables = tables
         self._waiter_tables = waiter_tables
+        self._table_accounts = table_accounts
         self._authorize_admin = AuthorizeRoles(RoleCode.ADMIN)
 
     async def __call__(
@@ -117,6 +120,7 @@ class CreateOrder:
         )
         if replay is not None:
             return replay
+        table_account_id: UUID | None = None
         if table_id is not None:
             if channel is Channel.WAITER:
                 assert self._waiter_tables is not None and actor.user_id is not None
@@ -146,6 +150,17 @@ class CreateOrder:
                         raise InvalidOrderError("The selected table is occupied")
                 elif self._waiter_tables is not None:
                     await self._waiter_tables.occupy(table_id, actor_id=actor.user_id)
+            if self._table_accounts is not None:
+                table_account_id = await self._table_accounts.get_or_create(
+                    table_id,
+                    customer_user_id=actor.user_id if channel is Channel.APP else None,
+                    guest_session_id=(
+                        actor.session_id
+                        if channel is Channel.APP and actor.user_id is None
+                        else None
+                    ),
+                    opened_by_user_id=actor.user_id,
+                )
         lines: list[OrderLine] = []
         total = Decimal("0.00")
         for item in sorted(items, key=lambda line: line.product_id):
@@ -178,6 +193,7 @@ class CreateOrder:
             else None,
             created_by_user_id=actor.user_id if channel is not Channel.APP else None,
             table_id=table_id,
+            table_account_id=table_account_id,
             delivery_address=delivery_address,
             contact_name=contact_name,
             contact_phone=contact_phone,

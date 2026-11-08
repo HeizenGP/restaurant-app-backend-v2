@@ -25,7 +25,20 @@ class TableReader(Protocol):
 class TableOccupancy(Protocol):
     async def lock_table(self, table_id: UUID) -> TableAvailability | None: ...
 
-    async def occupy(self, table_id: UUID, *, actor_id: UUID | None = None) -> TableAvailability: ...
+    async def occupy(
+        self, table_id: UUID, *, actor_id: UUID | None = None
+    ) -> TableAvailability: ...
+
+
+class TableAccountRegistry(Protocol):
+    async def get_or_create(
+        self,
+        table_id: UUID,
+        *,
+        customer_user_id: UUID | None,
+        guest_session_id: UUID | None,
+        opened_by_user_id: UUID | None,
+    ) -> UUID: ...
 
 
 class OrderRepository(Protocol):
@@ -61,6 +74,7 @@ class OrderRepository(Protocol):
         guest_session_id: UUID | None,
         created_by_user_id: UUID | None,
         table_id: UUID | None,
+        table_account_id: UUID | None,
         delivery_address: str | None,
         contact_name: str | None,
         contact_phone: str | None,

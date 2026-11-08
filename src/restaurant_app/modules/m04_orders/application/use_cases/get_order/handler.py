@@ -13,6 +13,7 @@ def can_read(actor: Principal, order: Order) -> bool:
         (actor.user_id is not None and actor.user_id == order.customer_user_id)
         or (actor.user_id is None and actor.session_id == order.guest_session_id)
         or actor.has_any_role(RoleCode.ADMIN)
+        or actor.has_any_role(RoleCode.CASHIER)
         or (order.modality is Modality.LOCAL and actor.has_any_role(RoleCode.WAITER))
     )
 
@@ -37,6 +38,6 @@ class ListOrders:
             customer_user_id=actor.user_id,
             guest_session_id=actor.session_id if actor.user_id is None else None,
             staff_local=actor.has_any_role(RoleCode.WAITER),
-            staff_all=actor.has_any_role(RoleCode.ADMIN),
+            staff_all=actor.has_any_role(RoleCode.ADMIN, RoleCode.CASHIER),
         )
         return [order for order in orders if can_read(actor, order)]

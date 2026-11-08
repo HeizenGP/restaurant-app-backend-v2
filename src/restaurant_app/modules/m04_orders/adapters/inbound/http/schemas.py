@@ -77,6 +77,7 @@ class OrderResponse(BaseModel):
     channel: Channel
     status: str
     table_id: UUID | None
+    table_account_id: UUID | None
     delivery_address: str | None
     contact_name: str | None
     contact_phone: str | None
@@ -94,6 +95,7 @@ class OrderResponse(BaseModel):
             channel=order.channel,
             status=order.status,
             table_id=order.table_id,
+            table_account_id=order.table_account_id,
             delivery_address=order.delivery_address,
             contact_name=order.contact_name,
             contact_phone=order.contact_phone,

@@ -1,6 +1,6 @@
 """HTTP entry point for the M06 advance slice."""
 
-from .collection_routes import collection_router, payments_router
+from .collection_routes import collection_router, payments_router, table_accounts_router
 from .errors import install_advance_error_handlers, install_payment_error_handlers
 from .routes import router
 
@@ -10,4 +10,5 @@ __all__ = [
     "install_payment_error_handlers",
     "payments_router",
     "router",
+    "table_accounts_router",
 ]

@@ -7,6 +7,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from restaurant_app.modules.m04_orders.adapters.outbound.models import OrderModel
 from restaurant_app.modules.m06_payments.adapters.outbound.models import PaymentModel
 from restaurant_app.modules.m06_payments.domain.entities import (
     AdvancePayment,
@@ -54,15 +55,18 @@ class SqlAlchemyCollectionRepository:
 
     async def list_payments(self, order_id: UUID) -> list[AdvancePayment | CollectionPayment]:
         """All payments (advance + collections) for the order, chronologically."""
-        models = (
-            await self._session.scalars(
-                select(PaymentModel)
-                .where(PaymentModel.order_id == order_id)
-                .order_by(PaymentModel.recorded_at)
-            )
-        ).all()
+        models = list(
+            (
+                await self._session.scalars(
+                    select(PaymentModel)
+                    .where(PaymentModel.order_id == order_id)
+                    .order_by(PaymentModel.recorded_at)
+                )
+            ).all()
+        )
         result: list[AdvancePayment | CollectionPayment] = []
         for m in models:
+            assert m.order_id is not None
             if m.kind == "ADVANCE":
                 result.append(
                     AdvancePayment(
@@ -85,16 +89,70 @@ class SqlAlchemyCollectionRepository:
                         recorded_at=m.recorded_at,
                     )
                 )
-        return result
+        result.extend(await self._allocated_account_payments(order_id))
+        return sorted(result, key=lambda payment: payment.recorded_at)
 
     async def sum_paid(self, order_id: UUID) -> Decimal:
         """Total amount already paid (advance + collections)."""
-        total = await self._session.scalar(
-            select(func.coalesce(func.sum(PaymentModel.amount), 0)).where(
-                PaymentModel.order_id == order_id
-            )
+        payments = await self.list_payments(order_id)
+        return sum((payment.amount for payment in payments), Decimal("0.00"))
+
+    async def _allocated_account_payments(self, order_id: UUID) -> list[CollectionPayment]:
+        """Project consolidated payments onto orders, oldest outstanding order first."""
+        target = await self._session.get(OrderModel, order_id)
+        if target is None or target.table_account_id is None:
+            return []
+        orders = list(
+            (
+                await self._session.scalars(
+                    select(OrderModel)
+                    .where(OrderModel.table_account_id == target.table_account_id)
+                    .order_by(OrderModel.created_at, OrderModel.id)
+                )
+            ).all()
         )
-        return Decimal(str(total))
+        order_ids = [order.id for order in orders]
+        direct_rows = (
+            await self._session.execute(
+                select(PaymentModel.order_id, func.coalesce(func.sum(PaymentModel.amount), 0))
+                .where(PaymentModel.order_id.in_(order_ids))
+                .group_by(PaymentModel.order_id)
+            )
+        ).all()
+        paid_by_order = {row[0]: Decimal(str(row[1])) for row in direct_rows}
+        account_payments = list(
+            (
+                await self._session.scalars(
+                    select(PaymentModel)
+                    .where(PaymentModel.table_account_id == target.table_account_id)
+                    .order_by(PaymentModel.recorded_at, PaymentModel.id)
+                )
+            ).all()
+        )
+        allocations: list[CollectionPayment] = []
+        for payment in account_payments:
+            remaining = payment.amount
+            for order in orders:
+                already = paid_by_order.get(order.id, Decimal("0.00"))
+                allocation = min(max(order.total_amount - already, Decimal("0.00")), remaining)
+                if allocation > 0:
+                    paid_by_order[order.id] = already + allocation
+                    if order.id == order_id:
+                        allocations.append(
+                            CollectionPayment(
+                                id=payment.id,
+                                order_id=order_id,
+                                amount=allocation,
+                                method_code=payment.method_code,
+                                reference_code=payment.reference_code,
+                                recorded_by_user_id=payment.recorded_by_user_id,
+                                recorded_at=payment.recorded_at,
+                            )
+                        )
+                    remaining -= allocation
+                if remaining <= 0:
+                    break
+        return allocations
 
     async def record_collection(
         self,
@@ -130,6 +188,7 @@ class SqlAlchemyCollectionRepository:
         self._session.add(payment)
         await self._session.flush()
         await self._session.refresh(payment)
+        assert payment.order_id is not None
 
         request.result_order_id = order_id
         request.completed_at = func.clock_timestamp()

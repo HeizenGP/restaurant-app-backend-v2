@@ -16,7 +16,11 @@ from restaurant_app.modules.m02_catalog_stock.public import (
     ProductQuoteReader,
     SqlAlchemyStockConfirmer,
 )
-from restaurant_app.modules.m03_tables.public import TableLookup, TableOccupancy
+from restaurant_app.modules.m03_tables.public import (
+    TableAccountRegistry,
+    TableLookup,
+    TableOccupancy,
+)
 from restaurant_app.modules.m04_orders.adapters.outbound import SqlAlchemyOrderRepository
 from restaurant_app.modules.m04_orders.application.use_cases.confirm_order import ConfirmOrder
 from restaurant_app.modules.m04_orders.application.use_cases.create_order import CreateOrder
@@ -85,6 +89,7 @@ def create_order_handler(
         OrderProductReader(session, lock_for_update=lock_products_for_update),
         OrderTableReader(session),
         OrderTableOccupancy(session),
+        TableAccountRegistry(session),
     )
 
 

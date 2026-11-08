@@ -17,5 +17,9 @@ class TableOccupancyConflictError(TableError):
     """Table occupancy cannot be changed because of pending active orders."""
 
 
+class TableAccountConflictError(TableError):
+    """An open table account belongs to another service session."""
+
+
 class InvalidTableValueError(TableError):
     """An input violates the approved table constraints."""

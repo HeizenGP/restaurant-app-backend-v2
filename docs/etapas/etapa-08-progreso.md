@@ -185,6 +185,14 @@ El punto de control siguiente documenta el cierre anterior de 08.02; sus referen
 - **Siguiente acción exacta:** detenerse tras 08.02 y esperar revisión del usuario. No iniciar 08.03. Cuando M04 y ConfirmOrder existan, revalidar CA-M02-04-01 y RF-M02-05/06 en sus bloques previstos; no marcarlos completos por inferencia.
 - **Commit/push:** no realizados ni autorizados. La verificación técnica de 08.02 no aprueba la ETAPA 08 completa.
 
+### Corrección transversal KAIRO — sincronización y cobro consolidado por mesa (2026-11-07)
+
+- **Alcance autorizado:** la petición expresa del usuario abarcó backend y frontend, por lo que esta corrección transversal prevaleció sobre la regla histórica de no editar la UI durante ETAPA 08. No se hizo commit, push, despliegue ni migración en Render.
+- **Causa comprobada:** `customer_app` usaba Render por defecto, mientras `staff_app` caía en `localhost`; además, staff esperaba `items` y números JSON, pero M04 devuelve `lines` y decimales como texto. Ambos defectos ocultaban pedidos válidos. La lectura de Caja también excluía pedidos pese a necesitar la cuenta.
+- **Backend:** la migración aditiva `20261107_0012` incorpora una cuenta persistente por sesión de mesa, relación de pedidos y pagos consolidados. Se agregaron `GET /api/v1/tables/{table_id}/account` y `POST /api/v1/tables/{table_id}/account/payments`, conservando `/orders/{order_id}/payments`. Los cobros usan bloqueo transaccional, idempotencia persistente, control de sobrepago y cierre/liberación solo al liquidar la cuenta sin consumos pendientes.
+- **Frontend:** staff usa el mismo Render por defecto, tolera el contrato real de M04, conserva refresco automático cada cuatro segundos y ofrece «Cobrar mesa» con detalle, pago parcial/total, método y referencia.
+- **Verificación local:** suite backend completa con PostgreSQL descartable `restaurant_app_test`: **176 passed**; `alembic upgrade/downgrade/upgrade` y `alembic check`: sin operaciones pendientes. La integración cubre registro → Mesa 1 → dos pedidos visibles → cuenta consolidada → parcial/sobrepago/idempotencia → pago total → pedidos cerrados y mesa disponible. Staff: `flutter analyze`, **25 tests** y build web release; customer: `flutter analyze` y **173 tests**. El endpoint de salud de Render respondió correctamente, pero su OpenAPI aún no expone la cuenta consolidada: falta desplegar este código y ejecutar la migración aditiva mediante el proceso de release.
+
 ## 3. Matriz de trazabilidad (actualizar por RF realmente verificado)
 
 | RF / CA | Bloque | Caso de uso / slice | Endpoint REST | Pruebas ejecutadas | Resultado |

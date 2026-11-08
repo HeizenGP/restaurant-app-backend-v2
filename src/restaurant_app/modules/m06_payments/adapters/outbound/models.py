@@ -20,6 +20,10 @@ class PaymentModel(Base):
         CheckConstraint("kind IN ('ADVANCE','COLLECTION')", name="ck_payments_kind"),
         CheckConstraint("amount > 0", name="ck_payments_amount_positive"),
         CheckConstraint(
+            "num_nonnulls(order_id, table_account_id) = 1",
+            name="ck_payments_single_target",
+        ),
+        CheckConstraint(
             "(kind = 'ADVANCE' AND reference_code IS NULL) OR "
             "(kind = 'COLLECTION' AND method_code IS NOT NULL AND ("
             "(method_code = 'EFECTIVO' AND reference_code IS NULL) OR "
@@ -48,10 +52,15 @@ class PaymentModel(Base):
     id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
     )
-    order_id: Mapped[UUID] = mapped_column(
+    order_id: Mapped[UUID | None] = mapped_column(
         PG_UUID(as_uuid=True),
         ForeignKey("public.orders.id", ondelete="RESTRICT"),
-        nullable=False,
+        nullable=True,
+    )
+    table_account_id: Mapped[UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("public.table_accounts.id", ondelete="RESTRICT"),
+        nullable=True,
     )
     kind: Mapped[str] = mapped_column(String(12), nullable=False)
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
@@ -87,4 +96,10 @@ Index(
     PaymentModel.order_id,
     unique=True,
     postgresql_where=text("kind = 'ADVANCE'"),
+)
+Index(
+    "ix_payments_table_account_recorded",
+    PaymentModel.table_account_id,
+    PaymentModel.recorded_at,
+    postgresql_where=text("table_account_id IS NOT NULL"),
 )

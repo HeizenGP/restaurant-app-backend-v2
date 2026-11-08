@@ -52,6 +52,11 @@ class IdempotencyRequestModel(Base):
         ForeignKey("public.orders.id", ondelete="RESTRICT"),
         nullable=True,
     )
+    result_table_account_id: Mapped[UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("public.table_accounts.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, server_default=text("CURRENT_TIMESTAMP")
     )

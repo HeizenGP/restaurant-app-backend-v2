@@ -7,9 +7,13 @@ from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from restaurant_app.modules.m03_tables.adapters.outbound.models import RestaurantTableModel
+from restaurant_app.modules.m03_tables.adapters.outbound.models import (
+    RestaurantTableModel,
+    TableAccountModel,
+)
 from restaurant_app.modules.m03_tables.domain.entities import RestaurantTable
 from restaurant_app.modules.m03_tables.domain.errors import (
+    TableAccountConflictError,
     TableCodeConflictError,
     TableNotFoundError,
     TableOccupancyConflictError,
@@ -116,6 +120,43 @@ class SqlAlchemyTableRepository:
             raise TableNotFoundError
         if model.is_occupied != is_occupied:
             if not is_occupied:
+                open_account = (
+                    await self._session.scalars(
+                        select(TableAccountModel)
+                        .where(
+                            TableAccountModel.table_id == table_id,
+                            TableAccountModel.status == "OPEN",
+                        )
+                        .with_for_update()
+                    )
+                ).one_or_none()
+                if open_account is not None:
+                    account_totals = (
+                        await self._session.execute(
+                            select(
+                                func.coalesce(func.sum(OrderModel.total_amount), Decimal("0")),
+                                func.count().filter(OrderModel.status != "CLOSED"),
+                            ).where(OrderModel.table_account_id == open_account.id)
+                        )
+                    ).one()
+                    account_paid = await self._session.scalar(
+                        select(func.coalesce(func.sum(PaymentModel.amount), Decimal("0")))
+                        .select_from(PaymentModel)
+                        .outerjoin(OrderModel, OrderModel.id == PaymentModel.order_id)
+                        .where(
+                            (PaymentModel.table_account_id == open_account.id)
+                            | (OrderModel.table_account_id == open_account.id)
+                        )
+                    )
+                    total, not_closed = Decimal(str(account_totals[0])), int(account_totals[1])
+                    paid = Decimal(str(account_paid))
+                    if not_closed or paid < total:
+                        raise TableOccupancyConflictError(
+                            "No se puede liberar la mesa mientras su cuenta esté abierta."
+                        )
+                    open_account.status = "PAID"
+                    open_account.closed_at = func.clock_timestamp()
+                    open_account.closed_by_user_id = actor_id
                 active_orders_stmt = (
                     select(
                         OrderModel.id,
@@ -154,3 +195,42 @@ class SqlAlchemyTableRepository:
             await self._session.flush()
             await self._session.refresh(model)
         return self._table(model)
+
+    async def get_or_create_open_account(
+        self,
+        table_id: UUID,
+        *,
+        customer_user_id: UUID | None,
+        guest_session_id: UUID | None,
+        opened_by_user_id: UUID | None,
+    ) -> UUID:
+        """Return the single account for the current locked table visit."""
+        account = (
+            await self._session.scalars(
+                select(TableAccountModel)
+                .where(
+                    TableAccountModel.table_id == table_id,
+                    TableAccountModel.status == "OPEN",
+                )
+                .with_for_update()
+            )
+        ).one_or_none()
+        if account is not None:
+            if (
+                account.customer_user_id != customer_user_id
+                or account.guest_session_id != guest_session_id
+            ):
+                raise TableAccountConflictError(
+                    "The open table account belongs to another service session"
+                )
+            return account.id
+
+        account = TableAccountModel(
+            table_id=table_id,
+            customer_user_id=customer_user_id,
+            guest_session_id=guest_session_id,
+            opened_by_user_id=opened_by_user_id,
+        )
+        self._session.add(account)
+        await self._session.flush()
+        return account.id
