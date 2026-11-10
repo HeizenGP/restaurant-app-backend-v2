@@ -3,10 +3,12 @@
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Literal, cast
 
 from fastapi import FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict
 
 from restaurant_app.core.config import AppEnvironment, Settings, get_settings
@@ -134,14 +136,23 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(fulfillment_router, prefix=app_settings.api_v1_prefix)
     application.include_router(delivery_router, prefix=app_settings.api_v1_prefix)
 
-    if app_settings.cors_origins:
-        application.add_middleware(
-            CORSMiddleware,
-            allow_origins=app_settings.cors_origins,
-            allow_credentials=False,
-            allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-            allow_headers=["Authorization", "Content-Type", "Idempotency-Key"],
-        )
+    uploads_dir = Path("uploads")
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+    application.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
+
+    cors_kwargs: dict[str, object] = {
+        "allow_credentials": False,
+        "allow_methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        "allow_headers": ["Authorization", "Content-Type", "Idempotency-Key", "Accept"],
+    }
+    if app_settings.environment == AppEnvironment.LOCAL:
+        cors_kwargs["allow_origin_regex"] = r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
+        cors_kwargs["allow_origins"] = app_settings.cors_origins or ["*"]
+    elif app_settings.cors_origins:
+        cors_kwargs["allow_origins"] = app_settings.cors_origins
+
+    if "allow_origins" in cors_kwargs or "allow_origin_regex" in cors_kwargs:
+        application.add_middleware(CORSMiddleware, **cors_kwargs)
 
     @application.get(
         "/health",

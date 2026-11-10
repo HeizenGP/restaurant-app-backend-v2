@@ -20,7 +20,7 @@ from restaurant_app.modules.m06_payments.domain.payment_methods import validate_
 class RecordTableAccountPayment:
     def __init__(self, accounts: TableAccountRepository) -> None:
         self._accounts = accounts
-        self._authorize = AuthorizeRoles(RoleCode.CASHIER)
+        self._authorize = AuthorizeRoles(RoleCode.CASHIER, RoleCode.ADMIN)
 
     async def __call__(
         self,
@@ -63,9 +63,9 @@ class RecordTableAccountPayment:
             return await self._accounts.get_summary(replay_account_id)
 
         state = await self._accounts.open_account_state(table_id)
-        if any(status != "CONFIRMED" for status in state.order_statuses):
+        if any(status not in {"REQUESTED", "APPROVED", "CONFIRMED"} for status in state.order_statuses):
             raise PaymentConflictError(
-                "All table orders must be confirmed before collecting the account"
+                "All table orders must be active before collecting the account"
             )
         if state.balance <= 0:
             raise PaymentConflictError("The table account is already paid")

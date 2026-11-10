@@ -91,7 +91,7 @@ class ProductResponse(BaseModel):
 
 
 class CatalogProductResponse(BaseModel):
-    """Public sale availability without disclosing exact stock."""
+    """Product response including sale availability and stock for staff."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -100,6 +100,8 @@ class CatalogProductResponse(BaseModel):
     name: str
     price: Decimal
     available_for_sale: bool
+    stock_qty: int = 0
+    is_available: bool = True
     image_url: str | None = None
     description: str | None = None
 
@@ -111,6 +113,23 @@ class CatalogProductResponse(BaseModel):
             name=product.name,
             price=product.price,
             available_for_sale=product.is_available and product.stock_qty > 0,
+            stock_qty=product.stock_qty,
+            is_available=product.is_available,
             image_url=product.image_url,
             description=product.description,
         )
+
+
+class ImageUploadRequest(StrictRequest):
+    filename: str = Field(min_length=1, max_length=255)
+    content_type: str = Field(default="image/jpeg", max_length=100)
+    data_base64: str = Field(min_length=1)
+
+
+class ImageUploadResponse(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    image_url: str
+    filename: str
+    size_bytes: int
+

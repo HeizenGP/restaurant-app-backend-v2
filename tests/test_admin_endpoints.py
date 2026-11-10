@@ -38,6 +38,9 @@ def test_users_list_and_create_and_status() -> None:
     admin = make_admin_principal()
     mock_session = AsyncMock()
 
+    from restaurant_app.modules.reports.routes import require_dashboard_viewer
+
+    app.dependency_overrides[require_dashboard_viewer] = lambda: admin
     app.dependency_overrides[require_admin] = lambda: admin
     app.dependency_overrides[get_db_session] = lambda: mock_session
 
@@ -222,6 +225,9 @@ def test_dashboard_reports_endpoint() -> None:
     admin = make_admin_principal()
     mock_session = AsyncMock()
 
+    from restaurant_app.modules.reports.routes import require_dashboard_viewer
+
+    app.dependency_overrides[require_dashboard_viewer] = lambda: admin
     app.dependency_overrides[require_admin] = lambda: admin
     app.dependency_overrides[get_db_session] = lambda: mock_session
 

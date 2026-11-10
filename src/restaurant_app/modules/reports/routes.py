@@ -3,18 +3,33 @@
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from fastapi import APIRouter
+from typing import Annotated
+
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import func, select
 
 from restaurant_app.core.dependencies import DatabaseSession
-from restaurant_app.modules.m01_access.adapters.inbound.http.dependencies import AdminPrincipal
+from restaurant_app.modules.m01_access.adapters.inbound.http.dependencies import (
+    CurrentPrincipal,
+)
+from restaurant_app.modules.m01_access.application.use_cases.authorize_roles import AuthorizeRoles
+from restaurant_app.modules.m01_access.domain.entities import Principal, RoleCode
 from restaurant_app.modules.m02_catalog_stock.adapters.outbound.models import ProductModel
 from restaurant_app.modules.m03_tables.adapters.outbound.models import RestaurantTableModel
 from restaurant_app.modules.m04_orders.adapters.outbound.models import OrderItemModel, OrderModel
 from restaurant_app.modules.m06_payments.adapters.outbound.models import PaymentModel
 
 router = APIRouter(prefix="/reports", tags=["Reports & Analytics"])
+
+
+async def require_dashboard_viewer(principal: CurrentPrincipal) -> Principal:
+    """Allow all staff roles (Admin, Cashier, Waiter, Kitchen) to view dashboard metrics."""
+    AuthorizeRoles(RoleCode.ADMIN, RoleCode.CASHIER, RoleCode.WAITER, RoleCode.KITCHEN)(principal)
+    return principal
+
+
+DashboardPrincipal = Annotated[Principal, Depends(require_dashboard_viewer)]
 
 
 class TopProductStat(BaseModel):
@@ -55,7 +70,7 @@ class DashboardStatsResponse(BaseModel):
 
 @router.get("/dashboard", response_model=DashboardStatsResponse)
 async def get_dashboard_stats(
-    actor: AdminPrincipal,
+    actor: DashboardPrincipal,
     session: DatabaseSession,
 ) -> DashboardStatsResponse:
     now = datetime.now(UTC)
