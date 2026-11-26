@@ -33,6 +33,8 @@ class KitchenTicketResponse(BaseModel):
     order_id: UUID
     modality: str
     status: KitchenStatus
+    table_id: UUID | None = None
+    table_code: str | None = None
     lines: list[KitchenLineResponse]
     created_at: datetime
     started_at: datetime | None
@@ -48,6 +50,8 @@ class KitchenTicketResponse(BaseModel):
             order_id=ticket.order_id,
             modality=view.modality,
             status=ticket.status,
+            table_id=view.table_id,
+            table_code=view.table_code,
             lines=[
                 KitchenLineResponse(
                     product_id=line.product_id,

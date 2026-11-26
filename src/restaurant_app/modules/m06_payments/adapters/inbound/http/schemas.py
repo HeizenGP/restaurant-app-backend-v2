@@ -5,7 +5,7 @@ from decimal import Decimal
 from typing import Self
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from restaurant_app.modules.m06_payments.domain.entities import (
     AdvancePayment,
@@ -121,6 +121,8 @@ class TableAccountLineResponse(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     product_id: UUID
+    item_id: UUID | None = None
+    paid_quantity: int = 0
     product_name: str
     quantity: int
     unit_price: Decimal
@@ -132,6 +134,8 @@ class TableAccountOrderResponse(BaseModel):
 
     id: UUID
     status: str
+    kitchen_status: str | None = None
+    fulfillment_kind: str | None = None
     total_amount: Decimal
     paid_amount: Decimal
     balance: Decimal
@@ -169,6 +173,7 @@ class TableAccountSummaryResponse(BaseModel):
     balance: Decimal
     orders: list[TableAccountOrderResponse]
     payments: list[TableAccountPaymentResponse]
+    supports_item_selection: bool
 
     @classmethod
     def from_domain(cls, summary: TableAccountSummary) -> Self:
@@ -185,10 +190,13 @@ class TableAccountSummaryResponse(BaseModel):
             advance_amount=summary.advance_amount,
             paid_amount=summary.paid_amount,
             balance=summary.balance,
+            supports_item_selection=summary.supports_item_selection,
             orders=[
                 TableAccountOrderResponse(
                     id=order.id,
                     status=order.status,
+                    kitchen_status=order.kitchen_status,
+                    fulfillment_kind=order.fulfillment_kind,
                     total_amount=order.total_amount,
                     paid_amount=order.paid_amount,
                     balance=order.balance,
@@ -196,6 +204,8 @@ class TableAccountSummaryResponse(BaseModel):
                     lines=[
                         TableAccountLineResponse(
                             product_id=line.product_id,
+                            item_id=line.item_id,
+                            paid_quantity=line.paid_quantity,
                             product_name=line.product_name,
                             quantity=line.quantity,
                             unit_price=line.unit_price,
@@ -220,3 +230,14 @@ class TableAccountSummaryResponse(BaseModel):
                 for payment in summary.payments
             ],
         )
+
+
+class TableCheckoutItem(BaseModel):
+    item_id: UUID
+    quantity: int = Field(ge=1, le=2_147_483_647)
+
+
+class TableCheckoutRequest(BaseModel):
+    account_id: UUID
+    payments: list[RecordCollectionRequest] = Field(min_length=1, max_length=4)
+    items: list[TableCheckoutItem] = Field(default_factory=list, max_length=100)

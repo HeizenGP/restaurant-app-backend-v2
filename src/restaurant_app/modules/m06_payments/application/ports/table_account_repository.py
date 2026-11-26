@@ -29,7 +29,9 @@ class TableAccountRepository(Protocol):
         amount: Decimal,
         method_code: str,
         reference_code: str | None,
-    ) -> None: ...
+        allocate_to_items: bool = False,
+        allocation_request_id: UUID | None = None,
+    ) -> UUID: ...
 
     async def settle(
         self,
@@ -38,3 +40,9 @@ class TableAccountRepository(Protocol):
         order_ids: tuple[UUID, ...],
         actor_id: UUID,
     ) -> None: ...
+
+
+class TableCheckoutRepository(TableAccountRepository, Protocol):
+    async def lock_checkout(self, request_key: str) -> None: ...
+
+    async def record_allocations(self, request_id: UUID, items: dict[UUID, int]) -> None: ...

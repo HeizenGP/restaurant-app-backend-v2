@@ -38,6 +38,7 @@ from restaurant_app.modules.m06_payments.application.use_cases.record_table_acco
     RecordTableAccountPayment,
 )
 from restaurant_app.modules.m06_payments.application.use_cases.verify_advance import VerifyAdvance
+from restaurant_app.modules.m05_kitchen.public import SqlAlchemyKitchenProgressReader
 from restaurant_app.modules.m07_fulfillment.public import SqlAlchemyHandoverReader
 
 # ---------------------------------------------------------------------------
@@ -75,6 +76,7 @@ def record_collection_handler(session: AsyncSession) -> RecordCollection:
         SqlAlchemyCollectionOrderReader(session),
         SqlAlchemyCollectionRepository(session),
         SqlAlchemyHandoverReader(session),
+        SqlAlchemyKitchenProgressReader(session),
     )
 
 

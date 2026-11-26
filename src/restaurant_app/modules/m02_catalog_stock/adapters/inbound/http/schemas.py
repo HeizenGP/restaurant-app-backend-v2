@@ -17,6 +17,11 @@ class CategoryRequest(StrictRequest):
     name: str = Field(min_length=1, max_length=100)
 
 
+class CategorySettingsRequest(StrictRequest):
+    is_active: bool
+    sort_order: int = Field(ge=0, le=10000)
+
+
 class ProductCreateRequest(StrictRequest):
     category_id: UUID
     name: str = Field(min_length=1, max_length=160)
@@ -47,6 +52,9 @@ class ProductPatchRequest(StrictRequest):
 
 class StockSetRequest(StrictRequest):
     quantity: int = Field(ge=0, le=2_147_483_647)
+    expected_quantity: int | None = Field(default=None, ge=0, le=2_147_483_647)
+    reason: str = Field(min_length=1, max_length=300)
+    minimum_stock: int | None = Field(default=None, ge=0, le=2_147_483_647)
 
 
 class AvailabilityRequest(StrictRequest):
@@ -58,10 +66,12 @@ class CategoryResponse(BaseModel):
 
     id: UUID
     name: str
+    is_active: bool = True
+    sort_order: int = 0
 
     @classmethod
     def from_domain(cls, category: Category) -> Self:
-        return cls(id=category.id, name=category.name)
+        return cls(id=category.id, name=category.name, is_active=category.is_active, sort_order=category.sort_order)
 
 
 class ProductResponse(BaseModel):
@@ -71,6 +81,7 @@ class ProductResponse(BaseModel):
     category_id: UUID
     name: str
     price: Decimal
+    minimum_stock: int = 10
     stock_qty: int
     is_available: bool
     image_url: str | None = None
@@ -84,6 +95,7 @@ class ProductResponse(BaseModel):
             name=product.name,
             price=product.price,
             stock_qty=product.stock_qty,
+            minimum_stock=product.minimum_stock,
             is_available=product.is_available,
             image_url=product.image_url,
             description=product.description,
@@ -100,6 +112,7 @@ class CatalogProductResponse(BaseModel):
     name: str
     price: Decimal
     available_for_sale: bool
+    minimum_stock: int = 10
     stock_qty: int = 0
     is_available: bool = True
     image_url: str | None = None
@@ -114,6 +127,7 @@ class CatalogProductResponse(BaseModel):
             price=product.price,
             available_for_sale=product.is_available and product.stock_qty > 0,
             stock_qty=product.stock_qty,
+            minimum_stock=product.minimum_stock,
             is_available=product.is_available,
             image_url=product.image_url,
             description=product.description,

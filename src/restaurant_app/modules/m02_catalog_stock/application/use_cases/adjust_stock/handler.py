@@ -15,9 +15,17 @@ class AdjustStock:
         self._catalog = catalog
         self._authorize = AuthorizeRoles(RoleCode.ADMIN)
 
-    async def __call__(self, *, actor: Principal, product_id: UUID, quantity: int) -> Product:
+    async def __call__(self, *, actor: Principal, product_id: UUID, quantity: int, reason: str | None = None, minimum_stock: int | None = None, expected_quantity: int | None = None) -> Product:
         self._authorize(actor)
         if quantity < 0 or quantity > 2_147_483_647:
             raise InvalidCatalogValueError("Stock must be a nonnegative 32-bit integer")
         assert actor.user_id is not None
-        return await self._catalog.set_stock(product_id, quantity=quantity, actor_id=actor.user_id)
+        if reason is None and minimum_stock is None and expected_quantity is None:
+            return await self._catalog.set_stock(product_id, quantity=quantity, actor_id=actor.user_id)
+        if reason is None or not reason.strip() or len(reason) > 300:
+            raise InvalidCatalogValueError("Ingresa un motivo de ajuste válido")
+        if minimum_stock is not None and not 0 <= minimum_stock <= 2_147_483_647:
+            raise InvalidCatalogValueError("El mínimo debe ser un entero no negativo")
+        return await self._catalog.set_stock(
+            product_id, quantity=quantity, actor_id=actor.user_id, reason=reason.strip(), minimum_stock=minimum_stock, expected_quantity=expected_quantity,
+        )

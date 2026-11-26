@@ -9,6 +9,8 @@ from uuid import UUID
 class Category:
     id: UUID
     name: str
+    is_active: bool = True
+    sort_order: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,3 +23,4 @@ class Product:
     is_available: bool
     image_url: str | None = None
     description: str | None = None
+    minimum_stock: int = 10

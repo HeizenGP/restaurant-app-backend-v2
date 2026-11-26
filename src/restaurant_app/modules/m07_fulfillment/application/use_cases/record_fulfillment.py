@@ -28,14 +28,15 @@ class RecordFulfillment:
         *,
         kind: FulfillmentKind,
         modality: str,
-        role: RoleCode,
+        role: RoleCode | tuple[RoleCode, ...],
     ) -> None:
         self._orders = orders
         self._kitchen = kitchen
         self._fulfillments = fulfillments
         self._kind = kind
         self._modality = modality
-        self._authorize = AuthorizeRoles(role)
+        roles = role if isinstance(role, tuple) else (role,)
+        self._authorize = AuthorizeRoles(*roles)
 
     async def __call__(self, *, actor: Principal, order_id: UUID, request_key: str) -> Fulfillment:
         self._authorize(actor)

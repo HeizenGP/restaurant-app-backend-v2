@@ -27,7 +27,7 @@ def kitchen_handler(session: AsyncSession) -> ManageKitchenTickets:
 
 
 async def require_kitchen(actor: CurrentPrincipal) -> Principal:
-    AuthorizeRoles(RoleCode.KITCHEN)(actor)
+    AuthorizeRoles(RoleCode.KITCHEN, RoleCode.ADMIN)(actor)
     return actor
 
 

@@ -6,6 +6,7 @@ from typing import Annotated
 
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import text
 
 from restaurant_app.core.dependencies import AppSettings, DatabaseSession
 from restaurant_app.modules.m01_access.adapters.outbound import (
@@ -77,11 +78,17 @@ async def get_current_principal(
 
     if credentials is None or credentials.scheme.casefold() != "bearer":
         raise InvalidTokenError
-    return await AuthenticateRequest(
+    principal = await AuthenticateRequest(
         SqlAlchemyUserRepository(session),
         SqlAlchemySessionRepository(session),
         build_token_provider(settings),
     )(credentials.credentials)
+    if principal.user_id is not None:
+        await session.execute(
+            text("SELECT set_config('kairo.actor_id', :actor_id, true)"),
+            {"actor_id": str(principal.user_id)},
+        )
+    return principal
 
 
 CurrentPrincipal = Annotated[Principal, Depends(get_current_principal)]

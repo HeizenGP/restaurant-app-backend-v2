@@ -1,11 +1,13 @@
 """REST endpoints for the M01 access slice."""
 
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Response, status
+from fastapi.responses import JSONResponse
 
 from restaurant_app.core.dependencies import AppSettings, DatabaseSession
+from restaurant_app.modules.administration.audit_store import record_access
 from restaurant_app.modules.m01_access.adapters.inbound.http.dependencies import (
     AdminPrincipal,
     CurrentPrincipal,
@@ -16,6 +18,7 @@ from restaurant_app.modules.m01_access.adapters.inbound.http.dependencies import
 from restaurant_app.modules.m01_access.adapters.inbound.http.schemas import (
     AddressResponse,
     AuthenticationResponse,
+    ChangePasswordRequest,
     CreateAddressRequest,
     CreateStaffRequest,
     GoogleLoginRequest,
@@ -28,6 +31,7 @@ from restaurant_app.modules.m01_access.adapters.inbound.http.schemas import (
     RoleAssignmentRequest,
     UpdateAddressRequest,
     UpdateProfileRequest,
+    UpdateStaffProfileRequest,
     UpdateUserStatusRequest,
     UserResponse,
 )
@@ -54,6 +58,10 @@ from restaurant_app.modules.m01_access.application.use_cases import (
 from restaurant_app.modules.m01_access.domain.entities import RoleCode, SessionKind
 from restaurant_app.modules.m01_access.domain.errors import (
     AuthenticationProviderUnavailableError,
+    AuthorizationError,
+    InvalidCredentialsError,
+    UserInactiveError,
+    UserNotFoundError,
 )
 
 auth_router = APIRouter(prefix="/auth", tags=["M01 access"])
@@ -87,17 +95,22 @@ async def login_user(
     payload: LoginRequest,
     session: DatabaseSession,
     settings: AppSettings,
-) -> AuthenticationResponse:
-    result = await LoginUser(
-        SqlAlchemyUserRepository(session),
-        SqlAlchemySessionRepository(session),
-        get_password_hasher(),
-        build_token_provider(settings),
-        refresh_ttl=timedelta(days=settings.jwt_refresh_ttl_days),
-    )(
-        email=payload.email,
-        password=payload.password.get_secret_value(),
-    )
+) -> AuthenticationResponse | Response:
+    try:
+        result = await LoginUser(
+            SqlAlchemyUserRepository(session),
+            SqlAlchemySessionRepository(session),
+            get_password_hasher(),
+            build_token_provider(settings),
+            refresh_ttl=timedelta(days=settings.jwt_refresh_ttl_days),
+        )(
+            email=payload.email,
+            password=payload.password.get_secret_value(),
+        )
+    except (InvalidCredentialsError, UserInactiveError):
+        await record_access(session, action="PASSWORD_LOGIN", actor_id=None, success=False)
+        return JSONResponse(status_code=401, content={"detail": "Invalid email or password"}, headers={"WWW-Authenticate": "Bearer"})
+    await record_access(session, action="PASSWORD_LOGIN", actor_id=result.user.id if result.user else None, success=True)
     return AuthenticationResponse.from_result(result)
 
 
@@ -120,6 +133,7 @@ async def login_with_google(
         build_token_provider(settings),
         refresh_ttl=timedelta(days=settings.jwt_refresh_ttl_days),
     )(payload.id_token.get_secret_value())
+    await record_access(session, action="GOOGLE_LOGIN", actor_id=result.user.id if result.user else None, success=True)
     return AuthenticationResponse.from_result(result)
 
 
@@ -212,6 +226,8 @@ async def revoke_session(
     session: DatabaseSession,
 ) -> Response:
     await RevokeSession(SqlAlchemySessionRepository(session))(principal)
+    if principal.user_id is not None:
+        await record_access(session, action="LOGOUT", actor_id=principal.user_id, success=True)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -276,6 +292,37 @@ async def update_current_user_profile(
     return UserResponse.from_domain(user)
 
 
+@users_router.post("/me/password", status_code=status.HTTP_204_NO_CONTENT)
+async def change_current_password(
+    payload: ChangePasswordRequest, principal: CurrentPrincipal, session: DatabaseSession
+) -> Response:
+    if principal.user_id is None:
+        raise AuthorizationError("Debes iniciar sesión para cambiar la contraseña")
+    users = SqlAlchemyUserRepository(session)
+    hasher = get_password_hasher()
+    current = await users.lock_password_hash(principal.user_id)
+    if current is None or not hasher.verify(payload.current_password.get_secret_value(), current):
+        raise InvalidCredentialsError
+    await users.update_password(principal.user_id, password_hash=hasher.hash(payload.new_password.get_secret_value()))
+    await SqlAlchemySessionRepository(session).revoke_all_for_user(principal.user_id, revoked_at=datetime.now(UTC))
+    await record_access(session, action="PASSWORD_CHANGED", actor_id=principal.user_id, success=True)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@users_router.patch("/{user_id}/profile", response_model=UserResponse)
+async def update_staff_profile(
+    user_id: UUID, payload: UpdateStaffProfileRequest, actor: AdminPrincipal, session: DatabaseSession
+) -> UserResponse:
+    users = SqlAlchemyUserRepository(session)
+    target = await users.find_by_id(user_id)
+    if target is None or not any(role != RoleCode.CUSTOMER for role in target.roles):
+        raise UserNotFoundError(str(user_id))
+    if RoleCode.SUPER_ADMIN in target.roles and not actor.is_super_admin:
+        raise AuthorizationError("No puedes modificar esta cuenta")
+    updated = await UpdateUserProfile(users)(user_id, display_name=payload.display_name, phone=payload.phone)
+    return UserResponse.from_domain(updated)
+
+
 @users_router.get(
     "",
     response_model=list[UserResponse],
@@ -302,6 +349,8 @@ async def create_staff_user(
     actor: AdminPrincipal,
     session: DatabaseSession,
 ) -> UserResponse:
+    if payload.role == RoleCode.SUPER_ADMIN and not actor.is_super_admin:
+        raise AuthorizationError("Solo un superadministrador puede crear otro superadministrador")
     hasher = get_password_hasher()
     password_hash = hasher.hash(payload.password.get_secret_value())
     user = await SqlAlchemyUserRepository(session).create_staff(
@@ -325,6 +374,12 @@ async def update_user_status(
     actor: AdminPrincipal,
     session: DatabaseSession,
 ) -> UserResponse:
+    users = SqlAlchemyUserRepository(session)
+    target = await users.find_by_id(user_id)
+    if target is None:
+        raise UserNotFoundError(str(user_id))
+    if actor.user_id == user_id or (RoleCode.SUPER_ADMIN in target.roles and not actor.is_super_admin):
+        raise AuthorizationError("No puedes cambiar el estado de esta cuenta")
     user = await SqlAlchemyUserRepository(session).set_active_status(
         user_id=user_id,
         is_active=payload.is_active,

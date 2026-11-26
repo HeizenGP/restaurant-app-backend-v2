@@ -26,7 +26,7 @@ from restaurant_app.modules.m07_fulfillment.domain.entities import FulfillmentKi
 
 
 async def require_service_waiter(actor: CurrentPrincipal) -> Principal:
-    AuthorizeRoles(RoleCode.WAITER)(actor)
+    AuthorizeRoles(RoleCode.WAITER, RoleCode.ADMIN)(actor)
     return actor
 
 
@@ -43,7 +43,7 @@ def record_fulfillment_handler(
     session: AsyncSession, *, kind: FulfillmentKind
 ) -> RecordFulfillment:
     modality, role = {
-        FulfillmentKind.SERVED: ("LOCAL", RoleCode.WAITER),
+        FulfillmentKind.SERVED: ("LOCAL", (RoleCode.WAITER, RoleCode.ADMIN)),
         FulfillmentKind.PICKED_UP: ("PICKUP", RoleCode.ADMIN),
         FulfillmentKind.DELIVERED: ("DELIVERY", RoleCode.ADMIN),
     }[kind]

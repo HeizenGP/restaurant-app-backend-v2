@@ -77,3 +77,4 @@ class Order:
     decided_at: datetime | None
     table_verified_at: datetime | None
     table_account_id: UUID | None = None
+    table_code: str | None = None

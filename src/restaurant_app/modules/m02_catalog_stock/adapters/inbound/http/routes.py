@@ -3,10 +3,12 @@
 import base64
 from pathlib import Path
 import re
+from typing import Annotated
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
 import requests
+import re
 
 from restaurant_app.core.dependencies import DatabaseSession
 from restaurant_app.modules.m02_catalog_stock.adapters.inbound.http.dependencies import CatalogAdmin
@@ -15,6 +17,7 @@ from restaurant_app.modules.m02_catalog_stock.adapters.inbound.http.schemas impo
     CatalogProductResponse,
     CategoryRequest,
     CategoryResponse,
+    CategorySettingsRequest,
     ImageUploadRequest,
     ImageUploadResponse,
     ProductCreateRequest,
@@ -67,11 +70,37 @@ async def list_all_products(
     return [CatalogProductResponse.from_domain(product) for product in products]
 
 
+@router.get("/admin/categories", response_model=list[CategoryResponse])
+async def list_staff_categories(actor: CatalogAdmin, session: DatabaseSession) -> list[CategoryResponse]:
+    categories = await SqlAlchemyCatalogRepository(session).list_categories(active_only=False)
+    return [CategoryResponse.from_domain(category) for category in categories]
+
+
+@router.get("/admin/products", response_model=list[CatalogProductResponse])
+async def list_staff_products(actor: CatalogAdmin, session: DatabaseSession) -> list[CatalogProductResponse]:
+    products = await SqlAlchemyCatalogRepository(session).list_all_products(active_only=False)
+    return [CatalogProductResponse.from_domain(product) for product in products]
+
+
+@router.patch("/categories/{category_id}/settings", response_model=CategoryResponse)
+async def update_category_settings(
+    category_id: UUID, payload: CategorySettingsRequest, actor: CatalogAdmin, session: DatabaseSession
+) -> CategoryResponse:
+    category = await SqlAlchemyCatalogRepository(session).update_category_settings(
+        category_id, is_active=payload.is_active, sort_order=payload.sort_order,
+    )
+    return CategoryResponse.from_domain(category)
+
+
 @router.get("/stock/movements")
 async def list_stock_movements(
-    actor: CatalogAdmin, session: DatabaseSession, limit: int = 100
+    actor: CatalogAdmin, session: DatabaseSession,
+    limit: Annotated[int, Query(ge=1, le=200)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    product_id: UUID | None = None,
+    kind: str | None = None,
 ) -> list[dict[str, object]]:
-    return await SqlAlchemyCatalogRepository(session).list_stock_movements(limit=limit)
+    return await SqlAlchemyCatalogRepository(session).list_stock_movements(limit=limit, offset=offset, product_id=product_id, kind=kind)
 
 
 @router.post("/categories", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
@@ -130,7 +159,7 @@ async def set_stock(
     product_id: UUID, payload: StockSetRequest, actor: CatalogAdmin, session: DatabaseSession
 ) -> ProductResponse:
     product = await AdjustStock(SqlAlchemyCatalogRepository(session))(
-        actor=actor, product_id=product_id, quantity=payload.quantity
+        actor=actor, product_id=product_id, quantity=payload.quantity, reason=payload.reason, minimum_stock=payload.minimum_stock, expected_quantity=payload.expected_quantity
     )
     return ProductResponse.from_domain(product)
 

@@ -4,11 +4,14 @@ from datetime import timedelta
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from restaurant_app.modules.administration.settings import enabled_staff_payment_methods
 from restaurant_app.modules.m04_orders.adapters.outbound.models import OrderModel
+from restaurant_app.modules.m06_payments.adapters.outbound.cash_shifts import require_open_shift
 from restaurant_app.modules.m06_payments.adapters.outbound.models import PaymentModel
+from restaurant_app.modules.m06_payments.adapters.outbound.order_allocations import allocate_order_payments
 from restaurant_app.modules.m06_payments.domain.entities import (
     AdvancePayment,
     CollectionPayment,
@@ -112,47 +115,21 @@ class SqlAlchemyCollectionRepository:
             ).all()
         )
         order_ids = [order.id for order in orders]
-        direct_rows = (
-            await self._session.execute(
-                select(PaymentModel.order_id, func.coalesce(func.sum(PaymentModel.amount), 0))
-                .where(PaymentModel.order_id.in_(order_ids))
-                .group_by(PaymentModel.order_id)
+        all_payments = list(await self._session.scalars(
+            select(PaymentModel).where(or_(
+                PaymentModel.order_id.in_(order_ids),
+                PaymentModel.table_account_id == target.table_account_id,
+            )).order_by(PaymentModel.recorded_at, PaymentModel.id)
+        ))
+        _, allocated = await allocate_order_payments(self._session, orders, all_payments)
+        return [
+            CollectionPayment(
+                id=payment.id, order_id=order_id, amount=amount,
+                method_code=payment.method_code, reference_code=payment.reference_code,
+                recorded_by_user_id=payment.recorded_by_user_id, recorded_at=payment.recorded_at,
             )
-        ).all()
-        paid_by_order = {row[0]: Decimal(str(row[1])) for row in direct_rows}
-        account_payments = list(
-            (
-                await self._session.scalars(
-                    select(PaymentModel)
-                    .where(PaymentModel.table_account_id == target.table_account_id)
-                    .order_by(PaymentModel.recorded_at, PaymentModel.id)
-                )
-            ).all()
-        )
-        allocations: list[CollectionPayment] = []
-        for payment in account_payments:
-            remaining = payment.amount
-            for order in orders:
-                already = paid_by_order.get(order.id, Decimal("0.00"))
-                allocation = min(max(order.total_amount - already, Decimal("0.00")), remaining)
-                if allocation > 0:
-                    paid_by_order[order.id] = already + allocation
-                    if order.id == order_id:
-                        allocations.append(
-                            CollectionPayment(
-                                id=payment.id,
-                                order_id=order_id,
-                                amount=allocation,
-                                method_code=payment.method_code,
-                                reference_code=payment.reference_code,
-                                recorded_by_user_id=payment.recorded_by_user_id,
-                                recorded_at=payment.recorded_at,
-                            )
-                        )
-                    remaining -= allocation
-                if remaining <= 0:
-                    break
-        return allocations
+            for payment, amount in allocated.get(order_id, [])
+        ]
 
     async def record_collection(
         self,
@@ -176,9 +153,12 @@ class SqlAlchemyCollectionRepository:
         self._session.add(request)
         await self._session.flush()
 
+        if method_code not in await enabled_staff_payment_methods(self._session):
+            raise PaymentConflictError("El método de pago está deshabilitado")
         payment = PaymentModel(
             order_id=order_id,
             kind="COLLECTION",
+            cash_shift_id=(await require_open_shift(self._session)).id,
             amount=amount,
             method_code=method_code,
             reference_code=reference_code,

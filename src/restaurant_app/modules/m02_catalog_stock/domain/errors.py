@@ -19,3 +19,7 @@ class CategoryNameConflictError(CatalogError):
 
 class InvalidCatalogValueError(CatalogError):
     """A value violates the approved catalog or stock rules."""
+
+
+class StaleStockQuantityError(CatalogError):
+    """The stock snapshot used for a manual adjustment is no longer current."""

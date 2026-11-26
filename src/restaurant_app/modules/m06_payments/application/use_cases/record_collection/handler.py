@@ -5,6 +5,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from restaurant_app.modules.m01_access.public import AuthorizeRoles, Principal, RoleCode
+from restaurant_app.modules.m05_kitchen.public import KitchenProgressReader
 from restaurant_app.modules.m06_payments.application.ports.collection_repository import (
     CollectionHandoverReader,
     CollectionOrderReader,
@@ -27,10 +28,12 @@ class RecordCollection:
         orders: CollectionOrderReader,
         payments: CollectionRepository,
         handovers: CollectionHandoverReader,
+        kitchen: KitchenProgressReader | None = None,
     ) -> None:
         self._orders = orders
         self._payments = payments
         self._handovers = handovers
+        self._kitchen = kitchen
         self._authorize = AuthorizeRoles(RoleCode.CASHIER)
 
     async def __call__(
@@ -74,6 +77,18 @@ class RecordCollection:
         remaining = order.total_amount - already_paid
         if remaining <= 0:
             raise PaymentConflictError("Order is already fully paid")
+        if order.modality == "LOCAL":
+            kitchen_progress = (
+                await self._kitchen.get_progress(order_id)
+                if self._kitchen is not None
+                else None
+            )
+            is_ready = kitchen_progress is not None and kitchen_progress.status == "READY"
+            is_served = await self._handovers.has_handover(order_id, kind="SERVED")
+            if not (is_ready or is_served):
+                raise PaymentConflictError(
+                    "El pedido debe estar LISTO en cocina antes de cobrar"
+                )
         if order.modality in {"PICKUP", "DELIVERY"}:
             handover_kind = "PICKED_UP" if order.modality == "PICKUP" else "DELIVERED"
             if not await self._handovers.has_handover(order_id, kind=handover_kind):

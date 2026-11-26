@@ -14,6 +14,9 @@ from pydantic import BaseModel, ConfigDict
 from restaurant_app.core.config import AppEnvironment, Settings, get_settings
 from restaurant_app.core.database import DatabaseResources, create_database_resources
 from restaurant_app.core.dependencies import DatabaseReady
+from restaurant_app.modules.administration.audit import router as audit_router
+from restaurant_app.modules.administration.notifications import router as notifications_router
+from restaurant_app.modules.administration.routes import router as administration_router
 from restaurant_app.modules.m01_access.adapters.inbound.http import (
     install_access_error_handlers,
 )
@@ -52,6 +55,9 @@ from restaurant_app.modules.m07_fulfillment.adapters.inbound.http import (
 )
 from restaurant_app.modules.m07_fulfillment.adapters.inbound.http.delivery_routes import (
     delivery_router,
+)
+from restaurant_app.modules.m06_payments.adapters.inbound.http.cash_routes import (
+    router as cash_router,
 )
 from restaurant_app.modules.reports import reports_router
 
@@ -123,6 +129,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     install_advance_error_handlers(application)
     install_payment_error_handlers(application)
     install_fulfillment_error_handlers(application)
+    application.include_router(audit_router, prefix=app_settings.api_v1_prefix)
+    application.include_router(administration_router, prefix=app_settings.api_v1_prefix)
+    application.include_router(notifications_router, prefix=app_settings.api_v1_prefix)
     application.include_router(access_router, prefix=app_settings.api_v1_prefix)
     application.include_router(catalog_router, prefix=app_settings.api_v1_prefix)
     application.include_router(table_router, prefix=app_settings.api_v1_prefix)
@@ -130,6 +139,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(kitchen_router, prefix=app_settings.api_v1_prefix)
     application.include_router(advance_router, prefix=app_settings.api_v1_prefix)
     application.include_router(collection_router, prefix=app_settings.api_v1_prefix)
+    application.include_router(cash_router, prefix=app_settings.api_v1_prefix)
     application.include_router(payments_router, prefix=app_settings.api_v1_prefix)
     application.include_router(table_accounts_router, prefix=app_settings.api_v1_prefix)
     application.include_router(reports_router, prefix=app_settings.api_v1_prefix)

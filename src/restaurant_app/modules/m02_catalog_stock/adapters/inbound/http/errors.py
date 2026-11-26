@@ -9,6 +9,7 @@ from restaurant_app.modules.m02_catalog_stock.domain.errors import (
     CategoryNotFoundError,
     InvalidCatalogValueError,
     ProductNotFoundError,
+    StaleStockQuantityError,
 )
 
 
@@ -26,6 +27,9 @@ def install_catalog_error_handlers(application: FastAPI) -> None:
         elif isinstance(error, CategoryNameConflictError):
             code = status.HTTP_409_CONFLICT
             detail = "Category name already exists"
+        elif isinstance(error, StaleStockQuantityError):
+            code = status.HTTP_409_CONFLICT
+            detail = str(error)
         elif isinstance(error, InvalidCatalogValueError):
             code = status.HTTP_422_UNPROCESSABLE_CONTENT
             detail = str(error)

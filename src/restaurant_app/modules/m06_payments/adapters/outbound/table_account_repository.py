@@ -5,15 +5,20 @@ from datetime import timedelta
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import case, func, or_, select
+from sqlalchemy import text, case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from restaurant_app.modules.administration.settings import enabled_staff_payment_methods
 from restaurant_app.modules.m03_tables.adapters.outbound.models import (
     RestaurantTableModel,
     TableAccountModel,
 )
 from restaurant_app.modules.m04_orders.adapters.outbound.models import OrderItemModel, OrderModel
-from restaurant_app.modules.m06_payments.adapters.outbound.models import PaymentModel
+from restaurant_app.modules.m05_kitchen.adapters.outbound.models import KitchenTicketModel
+from restaurant_app.modules.m06_payments.adapters.outbound.cash_shifts import require_open_shift
+from restaurant_app.modules.m06_payments.adapters.outbound.models import PaymentModel, TablePaymentAllocation
+from restaurant_app.modules.m06_payments.adapters.outbound.order_allocations import allocate_order_payments
+from restaurant_app.modules.m07_fulfillment.adapters.outbound.models import FulfillmentModel
 from restaurant_app.modules.m06_payments.domain.entities import (
     TableAccountChargeState,
     TableAccountLine,
@@ -31,6 +36,19 @@ from restaurant_app.shared.adapters.outbound.models import IdempotencyRequestMod
 class SqlAlchemyTableAccountRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
+
+    async def lock_checkout(self, request_key: str) -> None:
+        await self._session.execute(
+            text("SELECT pg_advisory_xact_lock(603, hashtext(:key))"),
+            {"key": request_key},
+        )
+
+    async def record_allocations(self, request_id: UUID, items: dict[UUID, int]) -> None:
+        self._session.add_all(
+            TablePaymentAllocation(request_id=request_id, item_id=item, quantity=quantity)
+            for item, quantity in items.items()
+        )
+        await self._session.flush()
 
     async def find_request(self, *, actor_id: UUID, key: str, fingerprint: str) -> UUID | None:
         lock_name = f"RECORD_TABLE_ACCOUNT_COLLECTION:{actor_id}:{key}"
@@ -89,6 +107,9 @@ class SqlAlchemyTableAccountRepository:
         return await self._summary(account)
 
     async def open_account_state(self, table_id: UUID) -> TableAccountChargeState:
+        await self._session.scalar(
+            select(RestaurantTableModel.id).where(RestaurantTableModel.id == table_id).with_for_update()
+        )
         account = await self.get_account_for_table(table_id, open_only=True, lock=True)
         if account is None:
             raise PaymentNotFoundError("Open table account not found")
@@ -117,6 +138,29 @@ class SqlAlchemyTableAccountRepository:
                 )
             )
         )
+        order_ids = [order.id for order in orders]
+        ready_order_ids = set(
+            (
+                await self._session.scalars(
+                    select(KitchenTicketModel.order_id).where(
+                        KitchenTicketModel.order_id.in_(order_ids),
+                        KitchenTicketModel.status == "READY",
+                    )
+                )
+            ).all()
+        )
+        served_order_ids = set(
+            (
+                await self._session.scalars(
+                    select(FulfillmentModel.order_id).where(
+                        FulfillmentModel.order_id.in_(order_ids),
+                        FulfillmentModel.kind == "SERVED",
+                    )
+                )
+            ).all()
+        )
+        chargeable_ids = ready_order_ids | served_order_ids
+        unserved = tuple(order.id for order in orders if order.id not in chargeable_ids)
         return TableAccountChargeState(
             id=account.id,
             table_id=account.table_id,
@@ -124,6 +168,7 @@ class SqlAlchemyTableAccountRepository:
             order_statuses=tuple(order.status for order in orders),
             total_amount=total,
             paid_amount=paid,
+            unserved_order_ids=unserved,
         )
 
     async def record_payment(
@@ -136,7 +181,9 @@ class SqlAlchemyTableAccountRepository:
         amount: Decimal,
         method_code: str,
         reference_code: str | None,
-    ) -> None:
+        allocate_to_items: bool = False,
+        allocation_request_id: UUID | None = None,
+    ) -> UUID:
         request = IdempotencyRequestModel(
             actor_user_id=actor_id,
             operation="RECORD_TABLE_ACCOUNT_COLLECTION",
@@ -147,10 +194,14 @@ class SqlAlchemyTableAccountRepository:
         )
         self._session.add(request)
         await self._session.flush()
+        if method_code not in await enabled_staff_payment_methods(self._session):
+            raise PaymentConflictError("El método de pago está deshabilitado")
         self._session.add(
             PaymentModel(
                 table_account_id=account_id,
                 kind="COLLECTION",
+                allocation_request_id=request.id if allocate_to_items else allocation_request_id,
+                cash_shift_id=(await require_open_shift(self._session)).id,
                 amount=amount,
                 method_code=method_code,
                 reference_code=reference_code,
@@ -161,6 +212,7 @@ class SqlAlchemyTableAccountRepository:
         await self._session.flush()
         request.completed_at = func.clock_timestamp()
         await self._session.flush()
+        return request.id
 
     async def settle(
         self,
@@ -242,6 +294,17 @@ class SqlAlchemyTableAccountRepository:
             if order_ids
             else []
         )
+        allocated = dict(
+            (await self._session.execute(
+                select(TablePaymentAllocation.item_id, func.sum(TablePaymentAllocation.quantity))
+                .where(TablePaymentAllocation.item_id.in_([line.id for line in line_models]))
+                .group_by(TablePaymentAllocation.item_id)
+            )).tuples().all()
+        ) if line_models else {}
+        allocated_total = sum(
+            (line.unit_price_snapshot * allocated.get(line.id, 0) for line in line_models),
+            Decimal("0.00"),
+        )
         lines_by_order: dict[UUID, list[TableAccountLine]] = defaultdict(list)
         for line in line_models:
             lines_by_order[line.order_id].append(
@@ -250,6 +313,8 @@ class SqlAlchemyTableAccountRepository:
                     product_name=line.product_name_snapshot,
                     quantity=line.quantity,
                     unit_price=line.unit_price_snapshot,
+                    item_id=line.id,
+                    paid_quantity=allocated.get(line.id, 0),
                 )
             )
 
@@ -265,23 +330,27 @@ class SqlAlchemyTableAccountRepository:
                 )
             ).all()
         )
-        paid_by_order: dict[UUID, Decimal] = defaultdict(lambda: Decimal("0.00"))
-        for payment in payment_models:
-            if payment.order_id is not None:
-                paid_by_order[payment.order_id] += payment.amount
-        # Consolidated collections are allocated oldest-order-first for the legacy
-        # per-order payment views. The account payment itself remains immutable.
-        for payment in payment_models:
-            if payment.table_account_id is None:
-                continue
-            remaining = payment.amount
-            for order in orders:
-                capacity = max(order.total_amount - paid_by_order[order.id], Decimal("0.00"))
-                allocation = min(capacity, remaining)
-                paid_by_order[order.id] += allocation
-                remaining -= allocation
-                if remaining <= 0:
-                    break
+        paid_by_order, _ = await allocate_order_payments(self._session, orders, payment_models)
+
+        kitchen_by_order: dict[UUID, str] = {}
+        fulfillment_by_order: dict[UUID, str] = {}
+        if order_ids:
+            k_rows = (
+                await self._session.execute(
+                    select(KitchenTicketModel.order_id, KitchenTicketModel.status).where(
+                        KitchenTicketModel.order_id.in_(order_ids)
+                    )
+                )
+            ).all()
+            kitchen_by_order = {row[0]: row[1] for row in k_rows}
+            f_rows = (
+                await self._session.execute(
+                    select(FulfillmentModel.order_id, FulfillmentModel.kind).where(
+                        FulfillmentModel.order_id.in_(order_ids)
+                    )
+                )
+            ).all()
+            fulfillment_by_order = {row[0]: row[1] for row in f_rows}
 
         order_views = tuple(
             TableAccountOrder(
@@ -291,6 +360,8 @@ class SqlAlchemyTableAccountRepository:
                 paid_amount=paid_by_order[order.id],
                 created_at=order.created_at,
                 lines=tuple(lines_by_order[order.id]),
+                kitchen_status=kitchen_by_order.get(order.id),
+                fulfillment_kind=fulfillment_by_order.get(order.id),
             )
             for order in orders
         )
@@ -328,4 +399,5 @@ class SqlAlchemyTableAccountRepository:
             balance=total - paid,
             orders=order_views,
             payments=payments,
+            supports_item_selection=account.status == "OPEN" and allocated_total == paid,
         )

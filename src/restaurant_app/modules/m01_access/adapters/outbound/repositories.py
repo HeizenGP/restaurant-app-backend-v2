@@ -136,6 +136,11 @@ class SqlAlchemyUserRepository:
             raise RuntimeError("created Google user could not be reloaded")
         return user
 
+    async def lock_password_hash(self, user_id: UUID) -> str | None:
+        return await self._session.scalar(
+            select(UserModel.password_hash).where(UserModel.id == user_id).with_for_update()
+        )
+
     async def update_password(self, user_id: UUID, *, password_hash: str) -> None:
         result = await self._session.execute(
             update(UserModel)

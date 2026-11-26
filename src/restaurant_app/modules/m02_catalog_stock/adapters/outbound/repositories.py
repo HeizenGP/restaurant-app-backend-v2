@@ -3,7 +3,7 @@
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,6 +17,7 @@ from restaurant_app.modules.m02_catalog_stock.domain.errors import (
     CategoryNameConflictError,
     CategoryNotFoundError,
     ProductNotFoundError,
+    StaleStockQuantityError,
 )
 
 
@@ -28,7 +29,7 @@ class SqlAlchemyCatalogRepository:
 
     @staticmethod
     def _category(model: CategoryModel) -> Category:
-        return Category(id=model.id, name=model.name)
+        return Category(id=model.id, name=model.name, is_active=model.is_active, sort_order=model.sort_order)
 
     @staticmethod
     def _product(model: ProductModel) -> Product:
@@ -38,20 +39,41 @@ class SqlAlchemyCatalogRepository:
             name=model.name,
             price=model.price,
             stock_qty=model.stock_qty,
+            minimum_stock=model.minimum_stock,
             is_available=model.is_available,
             image_url=model.image_url,
             description=model.description,
         )
 
-    async def list_categories(self) -> list[Category]:
-        statement = select(CategoryModel).order_by(CategoryModel.name, CategoryModel.id)
+    async def list_categories(self, *, active_only: bool = True) -> list[Category]:
+        statement = select(CategoryModel).order_by(CategoryModel.sort_order, CategoryModel.name, CategoryModel.id)
+        if active_only:
+            statement = statement.where(CategoryModel.is_active.is_(True))
         return [self._category(row) for row in (await self._session.scalars(statement)).all()]
 
     async def get_category(self, category_id: UUID) -> Category | None:
         model = await self._session.get(CategoryModel, category_id)
         return None if model is None else self._category(model)
 
+    async def _check_category_name(self, name: str, *, omit_id: UUID | None = None) -> None:
+        await self._session.execute(text("SELECT pg_advisory_xact_lock(202, 1)"))
+        duplicate = select(CategoryModel.id).where(func.lower(CategoryModel.name) == func.lower(name))
+        if omit_id is not None:
+            duplicate = duplicate.where(CategoryModel.id != omit_id)
+        if await self._session.scalar(duplicate.limit(1)) is not None:
+            raise CategoryNameConflictError
+
+    async def update_category_settings(self, category_id: UUID, *, is_active: bool, sort_order: int) -> Category:
+        model = await self._session.get(CategoryModel, category_id)
+        if model is None:
+            raise CategoryNotFoundError
+        model.is_active = is_active
+        model.sort_order = sort_order
+        await self._session.flush()
+        return self._category(model)
+
     async def create_category(self, name: str) -> Category:
+        await self._check_category_name(name)
         model = CategoryModel(name=name)
         self._session.add(model)
         try:
@@ -64,6 +86,7 @@ class SqlAlchemyCatalogRepository:
         model = await self._session.get(CategoryModel, category_id)
         if model is None:
             raise CategoryNotFoundError
+        await self._check_category_name(name, omit_id=category_id)
         model.name = name
         try:
             await self._session.flush()
@@ -74,22 +97,29 @@ class SqlAlchemyCatalogRepository:
     async def list_products(self, category_id: UUID) -> list[Product]:
         statement = (
             select(ProductModel)
-            .where(ProductModel.category_id == category_id)
+            .join(CategoryModel, CategoryModel.id == ProductModel.category_id)
+            .where(ProductModel.category_id == category_id, CategoryModel.is_active.is_(True))
             .order_by(ProductModel.name, ProductModel.id)
         )
         return [self._product(row) for row in (await self._session.scalars(statement)).all()]
 
-    async def list_all_products(self) -> list[Product]:
+    async def list_all_products(self, *, active_only: bool = True) -> list[Product]:
         statement = select(ProductModel).order_by(ProductModel.name, ProductModel.id)
+        if active_only:
+            statement = statement.join(CategoryModel, CategoryModel.id == ProductModel.category_id).where(CategoryModel.is_active.is_(True))
         return [self._product(row) for row in (await self._session.scalars(statement)).all()]
 
-    async def list_stock_movements(self, limit: int = 100) -> list[dict[str, object]]:
+    async def list_stock_movements(self, limit: int = 100, *, offset: int = 0, product_id: UUID | None = None, kind: str | None = None) -> list[dict[str, object]]:
         statement = (
             select(StockMovementModel, ProductModel.name)
             .join(ProductModel, ProductModel.id == StockMovementModel.product_id)
-            .order_by(StockMovementModel.recorded_at.desc())
-            .limit(limit)
+            .order_by(StockMovementModel.recorded_at.desc(), StockMovementModel.id.desc())
+            .limit(limit).offset(offset)
         )
+        if product_id is not None:
+            statement = statement.where(StockMovementModel.product_id == product_id)
+        if kind is not None:
+            statement = statement.where(StockMovementModel.kind == kind)
         rows = (await self._session.execute(statement)).all()
         return [
             {
@@ -98,6 +128,7 @@ class SqlAlchemyCatalogRepository:
                 "product_name": name,
                 "kind": m.kind,
                 "quantity_delta": m.quantity_delta,
+                "reason": m.reason,
                 "recorded_at": m.recorded_at.isoformat(),
                 "actor_user_id": str(m.actor_user_id) if m.actor_user_id else None,
             }
@@ -155,11 +186,15 @@ class SqlAlchemyCatalogRepository:
         await self._session.flush()
         return self._product(model)
 
-    async def set_stock(self, product_id: UUID, *, quantity: int, actor_id: UUID) -> Product:
+    async def set_stock(self, product_id: UUID, *, quantity: int, actor_id: UUID, reason: str | None = None, minimum_stock: int | None = None, expected_quantity: int | None = None) -> Product:
         statement = select(ProductModel).where(ProductModel.id == product_id).with_for_update()
         model = (await self._session.scalars(statement)).one_or_none()
         if model is None:
             raise ProductNotFoundError
+        if expected_quantity is not None and model.stock_qty != expected_quantity:
+            raise StaleStockQuantityError("El stock cambió. Actualiza las existencias y vuelve a ajustar")
+        if minimum_stock is not None:
+            model.minimum_stock = minimum_stock
         delta = quantity - model.stock_qty
         if delta:
             model.stock_qty = quantity
@@ -167,12 +202,13 @@ class SqlAlchemyCatalogRepository:
                 StockMovementModel(
                     product_id=product_id,
                     kind="MANUAL",
+                    reason=reason,
                     quantity_delta=delta,
                     order_item_id=None,
                     actor_user_id=actor_id,
                 )
             )
-            await self._session.flush()
+        await self._session.flush()
         return self._product(model)
 
     async def set_availability(self, product_id: UUID, *, is_available: bool) -> Product:

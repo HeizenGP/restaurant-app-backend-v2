@@ -34,6 +34,8 @@ class CategoryModel(Base):
         PG_UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
     )
     name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("TRUE"))
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
 
 
 class ProductModel(Base):
@@ -58,6 +60,7 @@ class ProductModel(Base):
     )
     name: Mapped[str] = mapped_column(String(160), nullable=False)
     price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    minimum_stock: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("10"))
     stock_qty: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
     is_available: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("TRUE"))
     image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
@@ -87,6 +90,7 @@ class StockMovementModel(Base):
         nullable=False,
     )
     kind: Mapped[str] = mapped_column(String(12), nullable=False)
+    reason: Mapped[str | None] = mapped_column(String(300))
     quantity_delta: Mapped[int] = mapped_column(Integer, nullable=False)
     order_item_id: Mapped[UUID | None] = mapped_column(
         PG_UUID(as_uuid=True),

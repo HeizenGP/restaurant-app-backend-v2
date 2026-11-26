@@ -84,6 +84,8 @@ class TableAccountLine:
     product_name: str
     quantity: int
     unit_price: Decimal
+    item_id: UUID | None = None
+    paid_quantity: int = 0
 
     @property
     def subtotal(self) -> Decimal:
@@ -98,6 +100,8 @@ class TableAccountOrder:
     paid_amount: Decimal
     created_at: datetime
     lines: tuple[TableAccountLine, ...]
+    kitchen_status: str | None = None
+    fulfillment_kind: str | None = None
 
     @property
     def balance(self) -> Decimal:
@@ -132,6 +136,7 @@ class TableAccountSummary:
     balance: Decimal
     orders: tuple[TableAccountOrder, ...]
     payments: tuple[TableAccountPayment, ...]
+    supports_item_selection: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -142,6 +147,7 @@ class TableAccountChargeState:
     order_statuses: tuple[str, ...]
     total_amount: Decimal
     paid_amount: Decimal
+    unserved_order_ids: tuple[UUID, ...] = ()
 
     @property
     def balance(self) -> Decimal:

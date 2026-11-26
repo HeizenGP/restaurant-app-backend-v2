@@ -120,25 +120,25 @@ class SqlAlchemyTableRepository:
             raise TableNotFoundError
         if model.is_occupied != is_occupied:
             if not is_occupied:
-                open_account = (
-                    await self._session.scalars(
-                        select(TableAccountModel)
-                        .where(
-                            TableAccountModel.table_id == table_id,
-                            TableAccountModel.status == "OPEN",
+                open_accounts = list(
+                    (
+                        await self._session.scalars(
+                            select(TableAccountModel)
+                            .where(
+                                TableAccountModel.table_id == table_id,
+                                TableAccountModel.status == "OPEN",
+                            )
+                            .with_for_update()
                         )
-                        .with_for_update()
+                    ).all()
+                )
+                for open_account in open_accounts:
+                    account_total = await self._session.scalar(
+                        select(func.coalesce(func.sum(OrderModel.total_amount), Decimal("0"))).where(
+                            OrderModel.table_account_id == open_account.id,
+                            OrderModel.status.notin_(["REJECTED", "CANCELLED"]),
+                        )
                     )
-                ).one_or_none()
-                if open_account is not None:
-                    account_totals = (
-                        await self._session.execute(
-                            select(
-                                func.coalesce(func.sum(OrderModel.total_amount), Decimal("0")),
-                                func.count().filter(OrderModel.status != "CLOSED"),
-                            ).where(OrderModel.table_account_id == open_account.id)
-                        )
-                    ).one()
                     account_paid = await self._session.scalar(
                         select(func.coalesce(func.sum(PaymentModel.amount), Decimal("0")))
                         .select_from(PaymentModel)
@@ -148,15 +148,30 @@ class SqlAlchemyTableRepository:
                             | (OrderModel.table_account_id == open_account.id)
                         )
                     )
-                    total, not_closed = Decimal(str(account_totals[0])), int(account_totals[1])
-                    paid = Decimal(str(account_paid))
-                    if not_closed or paid < total:
+                    total = Decimal(str(account_total or 0))
+                    paid = Decimal(str(account_paid or 0))
+                    if paid < total:
+                        balance = total - paid
                         raise TableOccupancyConflictError(
-                            "No se puede liberar la mesa mientras su cuenta esté abierta."
+                            f"No se puede liberar la mesa: su cuenta abierta tiene un saldo pendiente de S/ {balance:.2f}."
                         )
+                    now = func.clock_timestamp()
+                    await self._session.execute(
+                        update(OrderModel)
+                        .where(
+                            OrderModel.table_account_id == open_account.id,
+                            OrderModel.status.in_(["REQUESTED", "APPROVED", "CONFIRMED"]),
+                        )
+                        .values(
+                            status="CLOSED",
+                            closed_at=now,
+                            closed_by_user_id=actor_id,
+                        )
+                    )
                     open_account.status = "PAID"
-                    open_account.closed_at = func.clock_timestamp()
+                    open_account.closed_at = now
                     open_account.closed_by_user_id = actor_id
+                await self._session.flush()
                 active_orders_stmt = (
                     select(
                         OrderModel.id,

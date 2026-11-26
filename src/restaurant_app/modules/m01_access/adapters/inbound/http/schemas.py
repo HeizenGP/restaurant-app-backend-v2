@@ -74,6 +74,21 @@ class PasswordResetConfirmRequest(StrictRequest):
         return RegisterRequest.validate_password_strength(value)
 
 
+class ChangePasswordRequest(StrictRequest):
+    current_password: SecretStr = Field(min_length=1, max_length=128)
+    new_password: SecretStr = Field(min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_password_strength(cls, value: SecretStr) -> SecretStr:
+        return RegisterRequest.validate_password_strength(value)
+
+
+class UpdateStaffProfileRequest(StrictRequest):
+    display_name: str = Field(min_length=1, max_length=120)
+    phone: str | None = Field(default=None, max_length=30)
+
+
 class MessageResponse(BaseModel):
     model_config = ConfigDict(frozen=True)
 

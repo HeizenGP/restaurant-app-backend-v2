@@ -1,6 +1,7 @@
 """Reports and KPIs endpoint for KAIRO Admin Dashboard."""
 
 from datetime import UTC, datetime
+from zoneinfo import ZoneInfo
 from decimal import Decimal
 
 from typing import Annotated
@@ -73,8 +74,7 @@ async def get_dashboard_stats(
     actor: DashboardPrincipal,
     session: DatabaseSession,
 ) -> DashboardStatsResponse:
-    now = datetime.now(UTC)
-    today_start = datetime(now.year, now.month, now.day, tzinfo=UTC)
+    today_start = datetime.now(ZoneInfo("America/Lima")).replace(hour=0, minute=0, second=0, microsecond=0).astimezone(UTC)
 
     # 1. Total sales today (sum of collections)
     today_sales_query = select(func.coalesce(func.sum(PaymentModel.amount), Decimal("0"))).where(
@@ -108,7 +108,7 @@ async def get_dashboard_stats(
     total_products_query = select(func.count(ProductModel.id))
     total_products_count = await session.scalar(total_products_query) or 0
 
-    low_stock_query = select(func.count(ProductModel.id)).where(ProductModel.stock_qty <= 10)
+    low_stock_query = select(func.count(ProductModel.id)).where(ProductModel.stock_qty <= ProductModel.minimum_stock)
     low_stock_count = await session.scalar(low_stock_query) or 0
 
     # 6. Orders by modality

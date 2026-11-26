@@ -3,3 +3,4 @@
 from restaurant_app.modules.reports.routes import router as reports_router
 
 __all__ = ["reports_router"]
+from restaurant_app.modules.reports import analytics as analytics

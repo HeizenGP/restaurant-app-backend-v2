@@ -62,6 +62,10 @@ class PaymentModel(Base):
         ForeignKey("public.table_accounts.id", ondelete="RESTRICT"),
         nullable=True,
     )
+    allocation_request_id: Mapped[UUID | None] = mapped_column(ForeignKey("public.idempotency_requests.id", ondelete="RESTRICT"))
+    cash_shift_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("public.cash_shifts.id", ondelete="RESTRICT")
+    )
     kind: Mapped[str] = mapped_column(String(12), nullable=False)
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     method_code: Mapped[str | None] = mapped_column(String(24), nullable=True)
@@ -103,3 +107,35 @@ Index(
     PaymentModel.recorded_at,
     postgresql_where=text("table_account_id IS NOT NULL"),
 )
+
+
+class CashShiftModel(Base):
+    """One register shift with attributable opening and cash count."""
+
+    __tablename__ = "cash_shifts"
+    __table_args__ = {"schema": "public"}
+
+    id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+    )
+    opened_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True))
+    opened_by_id: Mapped[UUID] = mapped_column(ForeignKey("public.users.id", ondelete="RESTRICT"))
+    initial_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2))
+    opening_notes: Mapped[str | None] = mapped_column(String(500))
+    closed_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
+    closed_by_id: Mapped[UUID | None] = mapped_column(ForeignKey("public.users.id", ondelete="RESTRICT"))
+    counted_cash: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
+    closing_notes: Mapped[str | None] = mapped_column(String(500))
+
+
+class TablePaymentAllocation(Base):
+    __tablename__ = "table_payment_allocations"
+    __table_args__ = {"schema": "public"}
+
+    request_id: Mapped[UUID] = mapped_column(
+        ForeignKey("public.idempotency_requests.id", ondelete="RESTRICT"), primary_key=True,
+    )
+    item_id: Mapped[UUID] = mapped_column(
+        ForeignKey("public.order_items.id", ondelete="RESTRICT"), primary_key=True,
+    )
+    quantity: Mapped[int]

@@ -63,9 +63,9 @@ class RecordTableAccountPayment:
             return await self._accounts.get_summary(replay_account_id)
 
         state = await self._accounts.open_account_state(table_id)
-        if any(status not in {"REQUESTED", "APPROVED", "CONFIRMED"} for status in state.order_statuses):
+        if any(status != "CONFIRMED" for status in state.order_statuses) or state.unserved_order_ids:
             raise PaymentConflictError(
-                "All table orders must be active before collecting the account"
+                "No se puede cobrar la mesa hasta que todos los pedidos estén listos en cocina"
             )
         if state.balance <= 0:
             raise PaymentConflictError("The table account is already paid")

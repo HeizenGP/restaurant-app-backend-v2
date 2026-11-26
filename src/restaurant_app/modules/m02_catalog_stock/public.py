@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from restaurant_app.modules.m02_catalog_stock.adapters.outbound.models import (
+    CategoryModel,
     ProductModel,
     StockMovementModel,
 )
@@ -23,8 +24,9 @@ class ProductQuoteReader:
         model = (
             await self._session.scalars(
                 select(ProductModel)
-                .where(ProductModel.id == product_id)
-                .with_for_update(read=not self._lock_for_update)
+                .join(CategoryModel, CategoryModel.id == ProductModel.category_id)
+                .where(ProductModel.id == product_id, CategoryModel.is_active.is_(True))
+                .with_for_update(read=not self._lock_for_update, of=ProductModel)
             )
         ).one_or_none()
         return (

@@ -67,6 +67,8 @@ class OrderForKitchen:
     id: UUID
     modality: str
     lines: tuple[KitchenOrderLine, ...]
+    table_id: UUID | None = None
+    table_code: str | None = None
 
 
 class KitchenOrderReader(Protocol):
@@ -84,6 +86,8 @@ class SqlAlchemyKitchenOrderReader:
     async def get_confirmed_orders(self, order_ids: Sequence[UUID]) -> dict[UUID, OrderForKitchen]:
         if not order_ids:
             return {}
+        from restaurant_app.modules.m03_tables.adapters.outbound.models import RestaurantTableModel
+
         orders = (
             await self._session.scalars(
                 select(OrderModel).where(
@@ -93,6 +97,17 @@ class SqlAlchemyKitchenOrderReader:
         ).all()
         if not orders:
             return {}
+        table_ids = [order.table_id for order in orders if order.table_id is not None]
+        table_codes: dict[UUID, str] = {}
+        if table_ids:
+            rows = (
+                await self._session.execute(
+                    select(RestaurantTableModel.id, RestaurantTableModel.code).where(
+                        RestaurantTableModel.id.in_(table_ids)
+                    )
+                )
+            ).all()
+            table_codes = {row[0]: row[1] for row in rows}
         lines = (
             await self._session.scalars(
                 select(OrderItemModel)
@@ -106,7 +121,13 @@ class SqlAlchemyKitchenOrderReader:
                 KitchenOrderLine(line.product_id, line.product_name_snapshot, line.quantity)
             )
         return {
-            order.id: OrderForKitchen(order.id, order.modality, tuple(by_order[order.id]))
+            order.id: OrderForKitchen(
+                order.id,
+                order.modality,
+                tuple(by_order[order.id]),
+                table_id=order.table_id,
+                table_code=table_codes.get(order.table_id) if order.table_id else None,
+            )
             for order in orders
         }
 

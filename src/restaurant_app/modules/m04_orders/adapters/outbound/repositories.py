@@ -7,6 +7,7 @@ from uuid import UUID
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from restaurant_app.modules.administration.settings import get_setting
 from restaurant_app.modules.m04_orders.adapters.outbound.models import OrderItemModel, OrderModel
 from restaurant_app.modules.m04_orders.domain.entities import (
     Channel,
@@ -24,6 +25,8 @@ class SqlAlchemyOrderRepository:
         self._session = session
 
     async def _order(self, model: OrderModel) -> Order:
+        from restaurant_app.modules.m03_tables.adapters.outbound.models import RestaurantTableModel
+
         rows = (
             await self._session.scalars(
                 select(OrderItemModel)
@@ -31,6 +34,13 @@ class SqlAlchemyOrderRepository:
                 .order_by(OrderItemModel.id)
             )
         ).all()
+        table_code: str | None = None
+        if model.table_id is not None:
+            table_code = await self._session.scalar(
+                select(RestaurantTableModel.code).where(
+                    RestaurantTableModel.id == model.table_id
+                )
+            )
         return Order(
             id=model.id,
             modality=Modality(model.modality),
@@ -41,6 +51,7 @@ class SqlAlchemyOrderRepository:
             created_by_user_id=model.created_by_user_id,
             table_id=model.table_id,
             table_account_id=model.table_account_id,
+            table_code=table_code,
             delivery_address=model.delivery_address,
             contact_name=model.contact_name,
             contact_phone=model.contact_phone,
@@ -174,6 +185,9 @@ class SqlAlchemyOrderRepository:
         )
         self._session.add(request)
         await self._session.flush()
+        modalities = await get_setting(self._session, "modalities", share_lock=True)
+        if modality.value not in modalities["enabled"]:
+            raise OrderConflictError("La modalidad de atención está deshabilitada")
         total = sum((line.unit_price_snapshot * line.quantity for line in lines), Decimal("0.00"))
         model = OrderModel(
             modality=modality.value,

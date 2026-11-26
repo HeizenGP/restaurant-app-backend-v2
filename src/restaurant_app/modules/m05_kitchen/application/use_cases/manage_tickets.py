@@ -23,13 +23,15 @@ class KitchenTicketView:
     ticket: KitchenTicket
     modality: str
     lines: tuple[KitchenOrderLine, ...]
+    table_id: UUID | None = None
+    table_code: str | None = None
 
 
 class ManageKitchenTickets:
     def __init__(self, tickets: KitchenRepository, orders: KitchenOrderReader) -> None:
         self._tickets = tickets
         self._orders = orders
-        self._authorize = AuthorizeRoles(RoleCode.KITCHEN)
+        self._authorize = AuthorizeRoles(RoleCode.KITCHEN, RoleCode.ADMIN)
 
     async def list_tickets(
         self, *, actor: Principal, modality: KitchenModality | None = None
@@ -39,7 +41,11 @@ class ManageKitchenTickets:
         orders = await self._orders.get_confirmed_orders([ticket.order_id for ticket in tickets])
         return [
             KitchenTicketView(
-                ticket, orders[ticket.order_id].modality, orders[ticket.order_id].lines
+                ticket,
+                orders[ticket.order_id].modality,
+                orders[ticket.order_id].lines,
+                table_id=orders[ticket.order_id].table_id,
+                table_code=orders[ticket.order_id].table_code,
             )
             for ticket in tickets
             if ticket.order_id in orders
@@ -88,4 +94,10 @@ class ManageKitchenTickets:
         order = orders.get(ticket.order_id)
         if order is None or not order.lines:
             raise KitchenTicketNotFound
-        return KitchenTicketView(ticket, order.modality, order.lines)
+        return KitchenTicketView(
+            ticket,
+            order.modality,
+            order.lines,
+            table_id=order.table_id,
+            table_code=order.table_code,
+        )

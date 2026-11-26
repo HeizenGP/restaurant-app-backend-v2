@@ -25,6 +25,8 @@ class AssignUserRole:
         self._authorize_admin(actor)
         if role is RoleCode.SUPER_ADMIN and not actor.is_super_admin:
             raise AuthorizationError("Only a Super Admin can grant the Super Admin role")
+        if actor.user_id == user_id and role not in actor.roles:
+            raise AuthorizationError("No puedes ampliar los roles de tu propia cuenta")
         if await self._users.find_by_id(user_id) is None:
             raise UserNotFoundError(str(user_id))
         return await self._users.assign_role(user_id, role)
