@@ -94,6 +94,21 @@ async def get_current_principal(
 CurrentPrincipal = Annotated[Principal, Depends(get_current_principal)]
 
 
+async def get_optional_principal(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
+    session: DatabaseSession,
+    settings: AppSettings,
+) -> Principal | None:
+    """Authenticate Bearer credentials when present; return None for anonymous reads."""
+
+    if credentials is None:
+        return None
+    return await get_current_principal(credentials, session, settings)
+
+
+OptionalPrincipal = Annotated[Principal | None, Depends(get_optional_principal)]
+
+
 async def require_admin(principal: CurrentPrincipal) -> Principal:
     """HTTP-level guard; the role-assignment handler repeats this check."""
 

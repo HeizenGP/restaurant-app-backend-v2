@@ -114,23 +114,99 @@ class SqlAlchemyOrderRepository:
             if customer_user_id is not None
             else OrderModel.guest_session_id == guest_session_id
         )
-        # Only an earlier, in-person-verified APP order establishes table membership.
-        # CONFIRMED exists in the approved schema; its transition belongs to 08.07.
+        # Allow a customer/guest to add orders to a table they already actively occupy.
         statement = (
             select(OrderModel.id)
             .where(
                 OrderModel.table_id == table_id,
                 OrderModel.modality == Modality.LOCAL.value,
                 OrderModel.channel == Channel.APP.value,
-                OrderModel.table_verified_at.is_not(None),
-                OrderModel.table_verified_at >= occupied_since,
-                OrderModel.status.in_((OrderStatus.APPROVED.value, "CONFIRMED")),
+                OrderModel.status.in_(
+                    (OrderStatus.REQUESTED.value, OrderStatus.APPROVED.value, "CONFIRMED")
+                ),
+                or_(
+                    OrderModel.created_at >= occupied_since,
+                    and_(
+                        OrderModel.table_verified_at.is_not(None),
+                        OrderModel.table_verified_at >= occupied_since,
+                    ),
+                ),
                 owner,
             )
             .limit(1)
             .with_for_update(read=True)
         )
         return (await self._session.scalar(statement)) is not None
+
+    async def get_active_table_id_for_customer(
+        self,
+        *,
+        customer_user_id: UUID | None,
+        guest_session_id: UUID | None,
+        lock: bool = False,
+    ) -> UUID | None:
+        from restaurant_app.modules.m03_tables.adapters.outbound.models import (
+            RestaurantTableModel,
+            TableAccountModel,
+        )
+
+        actor_id = customer_user_id or guest_session_id
+        if actor_id is None:
+            return None
+        if lock:
+            # Different request keys must still serialize table assignment for this customer.
+            lock_name = f"CREATE_LOCAL_ORDER:{actor_id}"
+            await self._session.execute(
+                select(func.pg_advisory_xact_lock(func.hashtextextended(lock_name, 0)))
+            )
+        account_owner = (
+            TableAccountModel.customer_user_id == customer_user_id
+            if customer_user_id is not None
+            else TableAccountModel.guest_session_id == guest_session_id
+        )
+        order_owner = (
+            OrderModel.customer_user_id == customer_user_id
+            if customer_user_id is not None
+            else OrderModel.guest_session_id == guest_session_id
+        )
+        open_accounts = select(
+            TableAccountModel.table_id.label("table_id"),
+            TableAccountModel.opened_at.label("started_at"),
+        ).where(TableAccountModel.status == "OPEN", account_owner)
+        active_orders = (
+            select(OrderModel.table_id, OrderModel.created_at)
+            .join(RestaurantTableModel, RestaurantTableModel.id == OrderModel.table_id)
+            .outerjoin(TableAccountModel, TableAccountModel.id == OrderModel.table_account_id)
+            .where(
+                OrderModel.modality == Modality.LOCAL.value,
+                OrderModel.channel == Channel.APP.value,
+                OrderModel.status.in_(
+                    (
+                        OrderStatus.REQUESTED.value,
+                        OrderStatus.APPROVED.value,
+                        OrderStatus.CONFIRMED.value,
+                    )
+                ),
+                order_owner,
+                or_(
+                    TableAccountModel.status == "OPEN",
+                    and_(
+                        OrderModel.table_account_id.is_(None),
+                        RestaurantTableModel.is_occupied.is_(True),
+                        or_(
+                            OrderModel.created_at >= RestaurantTableModel.occupancy_started_at,
+                            OrderModel.table_verified_at >= RestaurantTableModel.occupancy_started_at,
+                        ),
+                    ),
+                ),
+            )
+        )
+        assignments = open_accounts.union_all(active_orders).subquery()
+        return await self._session.scalar(
+            select(assignments.c.table_id)
+            .order_by(assignments.c.started_at, assignments.c.table_id)
+            .limit(1)
+        )
 
     async def has_conflicting_verified_table_owner(
         self,

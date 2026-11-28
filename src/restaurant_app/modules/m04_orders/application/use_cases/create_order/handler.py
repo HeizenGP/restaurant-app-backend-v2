@@ -22,6 +22,7 @@ from restaurant_app.modules.m04_orders.domain.entities import (
 )
 from restaurant_app.modules.m04_orders.domain.errors import (
     InvalidOrderError,
+    OrderConflictError,
     ProductUnavailableError,
 )
 
@@ -130,6 +131,15 @@ class CreateOrder:
                 if not table.is_occupied:
                     await self._waiter_tables.occupy(table_id, actor_id=actor.user_id)
             else:
+                active_table_id = await self._orders.get_active_table_id_for_customer(
+                    customer_user_id=actor.user_id,
+                    guest_session_id=actor.session_id if actor.user_id is None else None,
+                    lock=True,
+                )
+                if active_table_id is not None and active_table_id != table_id:
+                    raise OrderConflictError(
+                        "Ya tienes una mesa asignada. Solo puedes pedir desde tu mesa actual."
+                    )
                 table = (
                     await self._waiter_tables.lock_table(table_id)
                     if self._waiter_tables is not None
@@ -137,7 +147,7 @@ class CreateOrder:
                 )
                 if table is None:
                     raise InvalidOrderError("Table not found")
-                if table.is_occupied:
+                if table.is_occupied and active_table_id != table_id:
                     if (
                         table.occupancy_started_at is None
                         or not await self._orders.has_verified_active_table_order(
@@ -148,7 +158,7 @@ class CreateOrder:
                         )
                     ):
                         raise InvalidOrderError("The selected table is occupied")
-                elif self._waiter_tables is not None:
+                elif not table.is_occupied and self._waiter_tables is not None:
                     await self._waiter_tables.occupy(table_id, actor_id=actor.user_id)
             if self._table_accounts is not None:
                 table_account_id = await self._table_accounts.get_or_create(

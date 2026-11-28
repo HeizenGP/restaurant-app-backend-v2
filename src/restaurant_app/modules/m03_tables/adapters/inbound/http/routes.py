@@ -2,10 +2,14 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Response, status
 
 from restaurant_app.core.dependencies import DatabaseSession
-from restaurant_app.modules.m01_access.public import AuthorizeRoles, RoleCode
+from restaurant_app.modules.m01_access.public import (
+    AuthorizeRoles,
+    OptionalPrincipal,
+    RoleCode,
+)
 from restaurant_app.modules.m03_tables.adapters.inbound.http.dependencies import (
     TableAdmin,
     TableStaff,
@@ -26,14 +30,26 @@ from restaurant_app.modules.m03_tables.application.use_cases.save_table import S
 from restaurant_app.modules.m03_tables.application.use_cases.set_table_occupancy import (
     SetTableOccupancy,
 )
+from restaurant_app.modules.m04_orders.public import get_active_customer_table
 
 router = APIRouter(prefix="/tables", tags=["M03 tables"])
 
 
 @router.get("", response_model=list[PublicTableResponse])
-async def list_tables(session: DatabaseSession) -> list[PublicTableResponse]:
+async def list_tables(
+    session: DatabaseSession,
+    response: Response,
+    actor: OptionalPrincipal = None,
+) -> list[PublicTableResponse]:
     tables = await ListTables(SqlAlchemyTableRepository(session))()
-    return [PublicTableResponse.from_domain(table) for table in tables]
+    active_table_id = await get_active_customer_table(session, actor) if actor is not None else None
+    response.headers["Cache-Control"] = "private, no-store"
+    return [
+        PublicTableResponse.from_domain(
+            table, is_mine=(table.id == active_table_id) if actor is not None else None
+        )
+        for table in tables
+    ]
 
 
 @router.get("/{table_id}", response_model=StaffTableResponse)

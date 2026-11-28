@@ -37,6 +37,7 @@ async def test_app_order_occupies_table_immediately() -> None:
 
     orders = SimpleNamespace(
         find_request=AsyncMock(return_value=None),
+        get_active_table_id_for_customer=AsyncMock(return_value=None),
         create_order=AsyncMock(
             return_value=Order(
                 id=uuid4(),
@@ -103,6 +104,7 @@ async def test_second_user_cannot_order_on_occupied_table() -> None:
 
     orders = SimpleNamespace(
         find_request=AsyncMock(return_value=None),
+        get_active_table_id_for_customer=AsyncMock(return_value=None),
         create_order=AsyncMock(),
         has_verified_active_table_order=AsyncMock(return_value=False),
     )

@@ -66,6 +66,7 @@ def order(*, modality: Modality = Modality.LOCAL, status: str = "REQUESTED") -> 
 async def test_create_app_guest_snapshots_total_and_rejects_disabled() -> None:
     orders = SimpleNamespace(
         find_request=AsyncMock(return_value=None),
+        get_active_table_id_for_customer=AsyncMock(return_value=None),
         has_verified_active_table_order=AsyncMock(return_value=False),
         create_order=AsyncMock(),
     )
@@ -158,6 +159,7 @@ async def test_occupied_table_additional_request_needs_verified_owner(guest: boo
     product_id = uuid4()
     orders = SimpleNamespace(
         find_request=AsyncMock(return_value=None),
+        get_active_table_id_for_customer=AsyncMock(return_value=None),
         has_verified_active_table_order=AsyncMock(return_value=True),
         create_order=AsyncMock(return_value=existing),
     )

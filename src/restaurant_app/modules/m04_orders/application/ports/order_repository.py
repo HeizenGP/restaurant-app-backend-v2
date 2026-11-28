@@ -44,6 +44,14 @@ class TableAccountRegistry(Protocol):
 class OrderRepository(Protocol):
     async def find_request(self, *, actor_id: UUID, key: str, fingerprint: str) -> Order | None: ...
 
+    async def get_active_table_id_for_customer(
+        self,
+        *,
+        customer_user_id: UUID | None,
+        guest_session_id: UUID | None,
+        lock: bool = False,
+    ) -> UUID | None: ...
+
     async def has_verified_active_table_order(
         self,
         *,

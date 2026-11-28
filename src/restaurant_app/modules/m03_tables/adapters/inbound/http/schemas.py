@@ -42,14 +42,16 @@ class PublicTableResponse(BaseModel):
     code: str
     area_label: str | None
     is_occupied: bool
+    is_mine: bool | None = Field(default=None, exclude_if=lambda value: value is None)
 
     @classmethod
-    def from_domain(cls, table: RestaurantTable) -> Self:
+    def from_domain(cls, table: RestaurantTable, *, is_mine: bool | None = None) -> Self:
         return cls(
             id=table.id,
             code=table.code,
             area_label=table.area_label,
             is_occupied=table.is_occupied,
+            is_mine=is_mine,
         )
 
 

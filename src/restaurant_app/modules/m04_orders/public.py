@@ -23,6 +23,13 @@ from restaurant_app.modules.m04_orders.application.use_cases.get_order import Ge
 from restaurant_app.modules.m04_orders.domain.errors import OrderNotFoundError
 
 
+async def get_active_customer_table(session: AsyncSession, actor: Principal) -> UUID | None:
+    return await SqlAlchemyOrderRepository(session).get_active_table_id_for_customer(
+        customer_user_id=actor.user_id,
+        guest_session_id=actor.session_id if actor.user_id is None else None,
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class OrderForAdvance:
     id: UUID
